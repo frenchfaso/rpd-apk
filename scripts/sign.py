@@ -44,7 +44,7 @@ for pkg in packages:
         control.write_bytes(parts[1][0])
         subprocess.run(['abuild-sign', '-k', str(key), '-p', str(pub), str(control)], check=True)
         pkg.write_bytes(control.read_bytes() + parts[2][0])
-subprocess.run(['apk', '--keys-dir', str(root/'keys'), 'index', '-o', str(root/'out/aarch64/APKINDEX.tar.gz'), *map(str, packages)], check=True)
+subprocess.run(['apk', '--keys-dir', str(root/'keys'), 'index', '--rewrite-arch', 'aarch64', '-o', str(root/'out/aarch64/APKINDEX.tar.gz'), *map(str, packages)], check=True)
 subprocess.run(['abuild-sign', '-k', str(key), '-p', str(pub), str(root/'out/aarch64/APKINDEX.tar.gz')], check=True)
 (root/'out/rpd-apk.rsa.pub').write_bytes(pub.read_bytes())
 # Test-build keys must never be distributed as production trust anchors.
