@@ -6,7 +6,7 @@
     "sha512": "9ac647fc77401cb681dec22ac3d791668a01d2d1dad4fca1eb473f322d8f1a5d9d2b71dc762760149401aab5a66343958d8e0bfa99dc6109b63e3b14c9758cee",
     "filename": "wf-panel-pi_1.32.tar.xz",
     "directory": "wf-panel-pi",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "pplug-clock": {
     "version": "1.13",
@@ -15,7 +15,7 @@
     "sha512": "5c4850967af2d9105a8634aa3bcc7f1198b834f3be3e0d1e5ee7be04412028e588374b27882a9daab23cb0e6ddd37fd64611adf8f3592b3d37d148c703164e21",
     "filename": "pplug-clock_1.13.tar.xz",
     "directory": "pplug-clock",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "wfplug-squeek": {
     "version": "1.10",
@@ -24,7 +24,7 @@
     "sha512": "2acb54acc858d5266103767eb18fd0cdb55092424f78b47dc1ad53b3d75752ec34dda6cdf5e498e6e667feaeaeb01382ca10ecf283a3c264efd17a3af34f5aab",
     "filename": "wfplug-squeek_1.10.tar.xz",
     "directory": "wfplug-squeek",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "wfplug-wlist": {
     "version": "0.8",
@@ -33,7 +33,7 @@
     "sha512": "44698a57c4fb4fa9062309941423e889daa72c60a011b4c55beedd7dad130df285948fb29eca22f80697a1c14566c73faf43f9ec5c6374cb4e791db1c1756d8b",
     "filename": "wfplug-wlist_0.8.tar.xz",
     "directory": "wfplug-wlist",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "wfplug-imenu": {
     "version": "0.10",
@@ -42,7 +42,7 @@
     "sha512": "e4abb8c89ab09eda53eda88bc167fdecd72203f2374547790aa8a5a9758c1ec45556885dfe01fd3d2ccdb925d094c000474a50cac1099cb822041a972823e151",
     "filename": "wfplug-imenu_0.10.tar.xz",
     "directory": "wfplug-imenu",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "pcmanfm-pi": {
     "version": "1.7",
@@ -51,7 +51,7 @@
     "sha512": "a465490ad67bfeaee0abc7aa2ef2acef376ecd48c6f1bab7a7e909a990662cdfa32db8f9162894836e5d5bb4105e02655bc11b737d593820007884f552f6f094",
     "filename": "pcmanfm-pi_1.7.tar.xz",
     "directory": "pcmanfm-pi",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "pixtrix-theme": {
     "version": "0.6",
@@ -60,7 +60,7 @@
     "sha512": "0871a8c5838e60411c182e66a78bdc7dcdce3f8911eb330008641cd267de55a78cacc7350c57947a34f33bdcd17e0195987546d2111ad59b4c9d26bfcd749ff4",
     "filename": "pixtrix-theme_0.6.tar.xz",
     "directory": "pixtrix-theme",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "pixtrix-icons": {
     "version": "0.6",
@@ -69,7 +69,7 @@
     "sha512": "c01902125a71a712eb4b6875dce96b04ea4b6f460f193bbb29045327a064d889aac3f25042ad1b3b0b0f7f3eeec31bc74170a83fc3bcfa7e2f5a9189072d1906",
     "filename": "pixtrix-icons_0.6.tar.xz",
     "directory": "pixtrix-icons",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "rpd-metas": {
     "version": "1.30",
@@ -78,6 +78,6 @@
     "sha512": "a810f3dbbf75d9aa226c250b587ef323151b9cc12d3787defff306fe6172b9f06192792afcf93380fb14349093e786628edc8675371a4bfe37ee8305de0cbb7b",
     "filename": "rpd-metas_1.30.tar.xz",
     "directory": "rpd-metas",
-    "pkgrel": 0
+    "pkgrel": 1
   }
 }
