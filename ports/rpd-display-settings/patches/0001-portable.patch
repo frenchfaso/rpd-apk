@@ -1,0 +1,50 @@
+--- a/src/labwc.c
++++ b/src/labwc.c
+@@ -67,19 +67,7 @@
+ 
+ void update_labwc_system_config (void)
+ {
+-    char *cmd;
+-
+-    system (SUDO_PREFIX "mkdir -p /etc/xdg/labwc-greeter/");
+-
+-    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/kanshi/config /etc/xdg/labwc-greeter/config.kanshi",
+-        g_get_user_config_dir ());
+-    system (cmd);
+-    g_free (cmd);
+-
+-    cmd = g_strdup_printf (SUDO_PREFIX "cp %s/labwc/rcgreeter.xml /etc/xdg/labwc-greeter/rc.xml",
+-        g_get_user_config_dir ());
+-    system (cmd);
+-    g_free (cmd);
++    system ("rpd-apply-greeter displays");
+ }
+ 
+ /*----------------------------------------------------------------------------*/
+@@ -340,7 +328,7 @@
+     g_free (outfile);
+ 
+     // make a local working copy of the current greeter touchscreen file
+-    cmd = g_strdup_printf ("cp /etc/xdg/labwc-greeter/rc.xml %s/labwc/rcgreeter.xml", g_get_user_config_dir ());
++    cmd = g_strdup_printf ("cp /etc/xdg/rpd/greeter/rc.xml %s/labwc/rcgreeter.xml", g_get_user_config_dir ());
+     system (cmd);
+     g_free (cmd);
+ }
+@@ -351,7 +339,7 @@
+ 
+ void reload_labwc_config (void)
+ {
+-    system ("pkill --signal SIGHUP kanshi");
++    system ("rpd-reload-displays");
+ }
+ 
+ void revert_labwc_config (void)
+@@ -504,7 +492,7 @@
+ {
+     char *infile;
+ 
+-    read_touchscreen_xml ("/etc/xdg/labwc/rc.xml");
++    read_touchscreen_xml ("/etc/xdg/rpd/labwc/rc.xml");
+ 
+     infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+     read_touchscreen_xml (infile);

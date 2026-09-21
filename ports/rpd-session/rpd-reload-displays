@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+if command -v systemctl >/dev/null && systemctl --user show-environment >/dev/null 2>&1; then
+    systemctl --user restart rpd-kanshi.service
+else
+    if ! pkill --signal SIGHUP -u "$(id -u)" -x kanshi; then
+        kanshi >/dev/null 2>&1 &
+    fi
+fi

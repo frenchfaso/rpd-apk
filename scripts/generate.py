@@ -8,13 +8,26 @@ NAMES={'wf-panel-pi':'rpd-panel','pplug-clock':'rpd-clock','wfplug-squeek':'rpd-
 NAMES.update({'pplug-menu': 'rpd-classic-menu', 'rpcc': 'rpd-control-center', 'pipanel': 'rpd-appearance', 'gui-runcmd': 'rpd-run', 'gui-screenshot': 'rpd-screenshot', 'merp': 'rpd-menu-editor', 'pished': 'rpd-shortcuts'})
 NAMES['rasputin']='rpd-input-settings'
 NAMES['lxtask']='rpd-task-manager'
+NAMES['rc-gui']='rpd-localisation'
+NAMES['gtk2-engines-pixflat']='rpd-gtk2-engine'
+NAMES['qtstyleplugins-src']='rpd-qt-gtk2'
+NAMES.update({'raindrop': 'rpd-display-settings', 'rpinters': 'rpd-printer-settings', 'rp-bookshelf': 'rpd-bookshelf'})
 for name,m in lock.items():
  pkg=NAMES[name];p=ROOT/'ports'/pkg;p.mkdir(parents=True,exist_ok=True)
  asset=name in ['pixtrix-theme','pixtrix-icons','rpd-metas']
- license='MIT' if name=='wf-panel-pi' else 'GPL-2.0-or-later' if asset or name in ['pcmanfm-pi','pplug-netman','pi-greeter','lxtask'] else 'BSD-3-Clause'
+ license='MIT' if name=='wf-panel-pi' else 'GPL-2.0-or-later' if asset or name in ['pcmanfm-pi','pplug-netman','pi-greeter','lxtask','gtk2-engines-pixflat'] else 'BSD-3-Clause'
+ if name=='qtstyleplugins-src':license='GPL-3.0-only'
  if name in ['pplug-menu','gui-runcmd']:license='BSD-3-Clause AND GPL-2.0-or-later'
  depends='rpd-panel' if name.startswith('wfplug-') or name.startswith('pplug-') else ''
  if name in ['pipanel','merp','pished','rasputin']:depends='rpd-control-center procps-ng grep'
+ if name=='pipanel':depends+=' rpd-settings-backend'
+ if name=='rasputin':depends+=' rpd-localisation'
+ if name=='qtstyleplugins-src':depends='rpd-gtk2-engine'
+ if name=='pixtrix-theme':depends='rpd-gtk2-engine'
+ if name=='rc-gui':depends='rpd-control-center python3 musl-locales musl-locales-lang xkeyboard-config tzdata'
+ if name=='raindrop':depends='rpd-control-center rpd-settings-backend wlr-randr kanshi procps-ng'
+ if name=='rpinters':depends='rpd-control-center cups cups-pk-helper cups-filters'
+ if name=='rp-bookshelf':depends='evince xdg-utils'
  if name=='gui-screenshot':depends='grim'
  if name=='pplug-menu':depends+=' rpd-control-center rpd-menu-editor rpd-run rpd-shutdown'
  if name=='wf-panel-pi':depends='gtk-layer-shell>=0.10.1-r100'
@@ -26,7 +39,7 @@ for name,m in lock.items():
  if name=='pi-greeter':depends='lightdm rpd-theme rpd-icons'
  if name=='pishutdown':depends='swaylock usbutils'
  if name=='pixtrix-icons':depends='adwaita-icon-theme'
- # The portable session uses GTK3; Raspberry's GTK2 pixflat engine is omitted.
+ # Retain the original GTK2 engine for the Qt5 GTK style used by VLC.
  extra='\nsubpackages="$pkgname-dev"' if name=='wf-panel-pi' else ''
  if name=='lxtask':extra+='\nsubpackages="$pkgname-doc"'
  if name=='pcmanfm-pi':
@@ -41,7 +54,7 @@ url="https://github.com/frenchfaso/rpd-apk"
 arch="{'noarch' if asset else 'aarch64'}"
 license="{license}"
 depends="{depends}"
-makedepends="{'' if asset else COMMON + {'pplug-netman':' networkmanager-dev libnma-dev libsecret-dev','pplug-volumepulse':' pulseaudio-dev','lxtask':' autoconf automake libtool intltool','pi-greeter':' lightdm-dev autoconf automake libtool intltool gobject-introspection-dev'}.get(name,'') + (' rpd-panel-dev' if depends.startswith('rpd-panel') else '')}"
+makedepends="{'' if asset else COMMON + {'pplug-netman':' networkmanager-dev libnma-dev libsecret-dev','pplug-volumepulse':' pulseaudio-dev','qtstyleplugins-src':' qt5-qtbase-dev gtk+2.0-dev libx11-dev','gtk2-engines-pixflat':' gtk+2.0-dev autoconf automake libtool intltool','rc-gui':' python3 musl-locales musl-locales-lang iso-codes xkeyboard-config','rpinters':' samba-dev cups-dev polkit-dev gsettings-desktop-schemas-dev','rp-bookshelf':' curl-dev','lxtask':' autoconf automake libtool intltool','pi-greeter':' lightdm-dev autoconf automake libtool intltool gobject-introspection-dev'}.get(name,'') + (' rpd-panel-dev' if depends.startswith('rpd-panel') else '')}"
 options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="{m['url']}"
@@ -49,8 +62,10 @@ builddir="$srcdir/{m['directory']}"{extra}
 '''
  patches=sorted((p/'patches').glob('*.patch')) if (p/'patches').exists() else []
  if patches:text+='source="$source '+' '.join('patches/'+x.name for x in patches)+'"\n'
- if name=='lxtask':
+ if name=='rc-gui':text+='source="$source rpd-localisation generate-data.py"\n'
+ if name in ['lxtask','qtstyleplugins-src']:
   text+='source="$source '+m['debian']['url']+'"\n'
+ if name=='lxtask':
   text+='''
 prepare() {
     default_prepare
@@ -62,6 +77,32 @@ prepare() {
 }
 build() {
     ./configure --prefix=/usr --enable-gtk3
+    make
+}
+'''
+ elif name=='qtstyleplugins-src':
+  text+='''
+prepare() {
+    default_prepare
+    test "$(cat "$srcdir/debian/patches/series")" = "$(printf 'fix-build-qt5.15.patch\\ngtk2-enable-animation.patch\\ntab-ext.patch')"
+    for patch in fix-build-qt5.15.patch gtk2-enable-animation.patch tab-ext.patch; do
+        patch -p1 < "$srcdir/debian/patches/$patch"
+    done
+    cp -a "$srcdir/debian" .
+}
+build() {
+    /usr/lib/qt5/bin/qmake
+    make
+}
+'''
+ elif name=='gtk2-engines-pixflat':
+  text+='''
+prepare() {
+    default_prepare
+    autoreconf -fi
+}
+build() {
+    ./configure --prefix=/usr
     make
 }
 '''
@@ -86,13 +127,16 @@ build() {
 }
 '''
  body='DESTDIR="$pkgdir" meson install --no-rebuild -C output' if not asset else {
- 'pixtrix-theme':'mkdir -p "$pkgdir/usr/share"\n    cp -a usr/share/themes "$pkgdir/usr/share/"\n    rm -rf "$pkgdir/usr/share/themes/PiXtrix/gtk-2.0"',
+ 'pixtrix-theme':'mkdir -p "$pkgdir/usr/share"\n    cp -a usr/share/themes "$pkgdir/usr/share/"',
  'pixtrix-icons':'mkdir -p "$pkgdir/usr/share/icons"\n    cp -a PiXtrix "$pkgdir/usr/share/icons/"',
- 'rpd-metas':'mkdir -p "$pkgdir/etc/xdg/rpd/menus" "$pkgdir/usr/share"\n    cp common/etc/xdg/menus/rpd-applications.menu "$pkgdir/etc/xdg/rpd/menus/"\n    cp -a common/usr/share/desktop-directories "$pkgdir/usr/share/"',
+ 'rpd-metas':'mkdir -p "$pkgdir/etc/xdg/rpd/menus" "$pkgdir/usr/share"\n    cp common/etc/xdg/menus/rpd-applications.menu "$pkgdir/etc/xdg/rpd/menus/"\n    cp -a common/usr/share/desktop-directories common/usr/share/raspi-ui-overrides "$pkgdir/usr/share/"\n    mkdir -p "$pkgdir/etc/xdg/rpd"\n    cp -a common/etc/xdg/qt5ct common/etc/xdg/qt6ct "$pkgdir/etc/xdg/rpd/"\n    sed -i "/x-www-browser.desktop/d; /Thonny.desktop/d; /glade.desktop/d" "$pkgdir/usr/share/raspi-ui-overrides/applications/mimeapps.list"',
  }[name]
- if name in ['pi-greeter','lxtask']:body='make DESTDIR="$pkgdir" install'
+ if name=='rc-gui':body+='\n    install -Dm755 "$srcdir/rpd-localisation" "$pkgdir/usr/bin/rpd-localisation"\n    python3 "$srcdir/generate-data.py" "$pkgdir/usr/share/rpd-localisation"'
+ if name=='qtstyleplugins-src':body='make INSTALL_ROOT="$pkgdir" install\n    rm -f "$pkgdir"/usr/lib/qt5/plugins/styles/libqcleanlooksstyle.so "$pkgdir"/usr/lib/qt5/plugins/styles/libqmotifstyle.so "$pkgdir"/usr/lib/qt5/plugins/styles/libqplastiquestyle.so'
+ if name in ['pi-greeter','lxtask','gtk2-engines-pixflat']:body='make DESTDIR="$pkgdir" install'
  text+='\npackage() {\n    '+body+'\n    install -Dm644 debian/copyright "$pkgdir/usr/share/licenses/$pkgname/copyright"\n}\n'
  sums=[f"{m['sha512']}  {m['filename']}"]+[hashlib.sha512(x.read_bytes()).hexdigest()+'  '+x.name for x in patches]
+ if name=='rc-gui':sums += [hashlib.sha512((p/x).read_bytes()).hexdigest()+'  '+x for x in ['rpd-localisation','generate-data.py']]
  if 'debian' in m:sums.append(m['debian']['sha512']+'  '+m['debian']['filename'])
  # abuild strips directory components when fetching local sources.
  text+='\nsha512sums="\n'+'\n'.join(sums)+'\n"\n'

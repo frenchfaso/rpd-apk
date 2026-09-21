@@ -1,5 +1,6 @@
 #!/bin/sh
 # This private greeter bus/session never runs the user's autostart applications.
 gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
+[ ! -f /etc/xdg/rpd/greeter/config.kanshi ] || kanshi -c /etc/xdg/rpd/greeter/config.kanshi &
 squeekboard &
 /usr/sbin/pi-greeter &

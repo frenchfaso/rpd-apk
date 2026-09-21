@@ -4,6 +4,16 @@ export XDG_CURRENT_DESKTOP=labwc
 export XDG_SESSION_TYPE=wayland
 export XDG_CONFIG_DIRS=/etc/xdg/rpd:${XDG_CONFIG_DIRS:-/etc/xdg}
 export XDG_MENU_PREFIX=rpd-
+export XDG_DATA_DIRS=/usr/share/raspi-ui-overrides:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}
+locale_file=${XDG_CONFIG_HOME:-$HOME/.config}/rpd/locale.conf
+if [ -r "$locale_file" ]; then
+    while IFS='=' read -r key value; do
+        [ "$key" != LANG ] || export LANG="$value"
+    done < "$locale_file"
+    unset LC_ALL LANGUAGE
+fi
+export MUSL_LOCPATH=/usr/share/i18n/locales/musl
+export QT_QPA_PLATFORMTHEME=gtk2
 export XCURSOR_THEME=PiXtrix
 export XCURSOR_SIZE=24
 # Explicit opt-in software rendering; do not impose it on other hardware.

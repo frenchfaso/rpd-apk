@@ -1,0 +1,320 @@
+--- a/src/rc_gui.c
++++ b/src/rc_gui.c
+@@ -379,35 +379,8 @@
+ 
+ static void init_config (void)
+ {
+-    DIR *dir = opendir ("/boot/firmware");
+-
+-    if (dir)
+-    {
+-        batch_get (33, GET_PI_TYPE, GET_SPLASH, GET_ALOGIN_CLI, GET_ALOGIN_DESK, GET_PSUDO, GET_BOOT_CLI, GET_LEDS,
+-            GET_BROWSER, FF_INSTALLED, FFE_INSTALLED, CR_INSTALLED, GET_SSH, GET_VNC, GET_SPI, GET_I2C, GET_1WIRE,
+-            GET_SERIALCON, GET_SERIALHW, RVNC_INSTALLED, WVNC_INSTALLED, GET_BLANK, GET_OVERSCAN, GET_OVERSCAN2,
+-            GET_SQUEEK, GET_SQUEEKOUT, GET_VNC_RES, VKBD_INSTALLED, XSCR_INSTALLED, GET_USBI, GET_FAN, GET_FAN_GPIO,
+-            GET_FAN_TEMP, GET_OVERCLOCK);
+-        closedir (dir);
+-    }
+-    else
+-    {
+-        batch_get (20, GET_PI_TYPE, GET_IS_LIVE, GET_SPLASH, GET_ALOGIN_CLI, GET_ALOGIN_DESK, GET_PSUDO, GET_BOOT_CLI,
+-            GET_BROWSER, FF_INSTALLED, FFE_INSTALLED, CR_INSTALLED, GET_SSH, GET_VNC,
+-            RVNC_INSTALLED, WVNC_INSTALLED, GET_BLANK,
+-            GET_SQUEEK, GET_SQUEEKOUT, VKBD_INSTALLED, XSCR_INSTALLED);
+-    }
+-
+-    load_system_tab (builder);
+-    load_display_tab (builder);
+-    load_interfacing_tab (builder);
+-    load_performance_tab (builder);
+     load_localisation_tab (builder);
+-
+-    if (get_status (GET_PI_TYPE) != -1) ispi = TRUE;
+-    else ispi = FALSE;
+-
+-    batch_free ();
++    ispi = FALSE;
+     needs_reboot = FALSE;
+ }
+ 
+@@ -437,85 +410,33 @@
+ 
+ int plugin_tabs (void)
+ {
+-    if (ispi) return 5;
+-    else return 4;
++    return 1;
+ }
+ 
+ const char *tab_name (int tab)
+ {
+-    switch (tab)
+-    {
+-        case 0 : return C_("tab", "System");
+-        case 1 : return C_("tab", "Display");
+-        case 2 : return C_("tab", "Interfaces");
+-        case 3 : return C_("tab", "Localisation");
+-        case 4 : return C_("tab", "Performance");
+-        default : return _("No such tab");
+-    }
++    return C_("tab", "Localisation");
+ }
+ 
+ const char *icon_name (int tab)
+ {
+-    switch (tab)
+-    {
+-        case 0 : return "applications-system";
+-        case 1 : return "computer";
+-        case 2 : return "rc-gui-interfaces";
+-        case 3 : return "rc-gui-localisation";
+-        case 4 : return "system-run";
+-        default : return NULL;
+-    }
++    return "rc-gui-localisation";
+ }
+ 
+ const char *tab_id (int tab)
+ {
+-    switch (tab)
+-    {
+-        case 3 : return ("localisation");
+-        default : return NULL;
+-    }
++    return "localisation";
+ }
+ 
+ GtkWidget *get_tab (int tab)
+ {
+-    GtkWidget *window, *plugin;
+-
+-    window = (GtkWidget *) gtk_builder_get_object (builder, "notebook1");
+-    switch (tab)
+-    {
+-        case 0 :
+-            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox10");
+-            break;
+-        case 1 :
+-            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox50");
+-            break;
+-        case 2 :
+-            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox20");
+-            break;
+-        case 3 :
+-            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox40");
+-            break;
+-        case 4 :
+-            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox30");
+-            break;
+-        default :
+-            plugin = NULL;
+-    }
+-
+-    gtk_container_remove (GTK_CONTAINER (window), plugin);
+-
++    GtkWidget *plugin = GTK_WIDGET (gtk_builder_get_object (builder, "vbox40"));
++    gtk_container_remove (GTK_CONTAINER (gtk_builder_get_object (builder, "notebook1")), plugin);
+     return plugin;
+ }
+ 
+ gboolean reboot_needed (void)
+ {
+-    if (needs_reboot) return TRUE;
+-
+-    if (system_reboot ()) return TRUE;
+-    if (display_reboot ()) return TRUE;
+-    if (interfacing_reboot ()) return TRUE;
+-    if (performance_reboot ()) return TRUE;
+-
+     return FALSE;
+ }
+ 
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -1,9 +1,5 @@
+ sources = files (
+     'rc_gui.c',
+-    'system.c',
+-    'display.c',
+-    'interface.c',
+-    'perform.c',
+     'local.c'
+ )
+ 
+--- a/meson.build
++++ b/meson.build
+@@ -14,7 +14,7 @@
+ i18n = import('i18n')
+ 
+ add_project_arguments('-DPACKAGE_LOCALE_DIR="' + share_dir + '/locale"', language : 'c' )
+-add_project_link_arguments('-lcrypt', language : 'c' )
++
+ 
+ subdir('po')
+ subdir('src')
+--- a/src/local.c
++++ b/src/local.c
+@@ -68,6 +68,8 @@
+ static gboolean alt_keys;
+ 
+ static char gbuffer[512];
++static gboolean setting_failed;
++static gboolean locale_changed;
+ 
+ /*----------------------------------------------------------------------------*/
+ /* Prototypes                                                                 */
+@@ -200,6 +202,9 @@
+ static gboolean close_msg (gpointer data)
+ {
+     gtk_widget_destroy (GTK_WIDGET (msg_dlg));
++    if (setting_failed) info ("The setting could not be applied. Check authentication and try again.");
++    else if (locale_changed) info ("Log out and log in again to use the selected language.");
++    locale_changed = FALSE;
+     return FALSE;
+ }
+ 
+@@ -244,7 +249,7 @@
+     gtk_cell_layout_add_attribute (GTK_CELL_LAYOUT (locchar_cb), col, "text", LOC_NAME);
+ 
+     // get the current locale setting and save as init_locale
+-    init_locale = get_string ("grep LANG= /etc/default/locale | cut -d = -f 2");
++    init_locale = get_string ("rpd-localisation get-locale");
+     if (init_locale == NULL) init_locale = g_strdup ("en_GB.UTF-8");
+ 
+     // filter and sort the master database
+@@ -289,7 +294,7 @@
+             g_thread_new (NULL, locale_thread, NULL);
+ 
+             // set reboot flag
+-            needs_reboot = TRUE;
++            needs_reboot = FALSE; /* A new login loads the language; no device reboot. */
+         }
+         g_free (buffer);
+     }
+@@ -313,7 +318,7 @@
+     // populate the locale database
+     buffer = NULL;
+     len = 0;
+-    fp = fopen ("/usr/share/i18n/SUPPORTED", "rb");
++    fp = fopen ("/usr/share/rpd-localisation/SUPPORTED", "rb");
+     if (!fp) return;
+     while (getline (&buffer, &len, fp) > 0)
+     {
+@@ -328,8 +333,8 @@
+             strtok (lang, ".");
+ 
+             // lang now holds locale file name - read names from locale file
+-            cname = get_quoted_param ("/usr/share/i18n/locales", lang, "territory");
+-            lname = get_quoted_param ("/usr/share/i18n/locales", lang, "language");
++            cname = get_quoted_param ("/usr/share/rpd-localisation/locales", lang, "territory");
++            lname = get_quoted_param ("/usr/share/rpd-localisation/locales", lang, "language");
+             if (!lname && !cname)
+             {
+                 g_free (lang);
+@@ -499,7 +504,8 @@
+ 
+ static gpointer locale_thread (gpointer data)
+ {
+-    vsystem (SET_LOCALE, gbuffer);
++    setting_failed = vsystem (SET_LOCALE, gbuffer) != 0;
++    locale_changed = !setting_failed;
+     g_idle_add (close_msg, NULL);
+     return NULL;
+ }
+@@ -539,7 +545,7 @@
+     gtk_cell_layout_add_attribute (GTK_CELL_LAYOUT (tzloc_cb), col, "text", TZ_NAME);
+ 
+     // read the current time zone
+-    init_tz = get_string ("cat /etc/timezone");
++    init_tz = get_string ("timedatectl show --property=Timezone --value");
+     if (init_tz == NULL) init_tz = g_strdup ("Europe/London");
+ 
+     // filter and sort the master database
+@@ -732,7 +738,7 @@
+ 
+ static gpointer timezone_thread (gpointer data)
+ {
+-    vsystem (SET_TIMEZONE, gbuffer);
++    setting_failed = vsystem (SET_TIMEZONE, gbuffer) != 0;
+     g_idle_add (close_msg, NULL);
+     return NULL;
+ }
+@@ -812,16 +818,16 @@
+     gtk_cell_layout_add_attribute (GTK_CELL_LAYOUT (keyled_cb), col, "text", KEY_NAME);
+ 
+     // get the current keyboard settings
+-    init_model = get_string ("grep XKBMODEL /etc/default/keyboard | cut -d = -f 2 | tr -d '\"'");
++    init_model = get_string ("rpd-localisation get-keyboard model");
+     if (init_model == NULL) init_model = g_strdup ("pc105");
+ 
+-    init_layout = get_string ("grep XKBLAYOUT /etc/default/keyboard | cut -d = -f 2 | tr -d '\"'");
++    init_layout = get_string ("rpd-localisation get-keyboard layout");
+     if (init_layout == NULL) init_layout = g_strdup ("gb");
+ 
+-    init_variant = get_string ("grep XKBVARIANT /etc/default/keyboard | cut -d = -f 2 | tr -d '\"'");
++    init_variant = get_string ("rpd-localisation get-keyboard variant");
+     if (init_variant == NULL) init_variant = g_strdup ("");
+ 
+-    init_options = get_string ("grep XKBOPTIONS /etc/default/keyboard | cut -d = -f 2 | tr -d '\"'");
++    init_options = get_string ("rpd-localisation get-keyboard options");
+     if (init_options == NULL) init_options = g_strdup ("");
+ 
+     alt_keys = FALSE;
+@@ -976,7 +982,7 @@
+     // loop through lines in KeyboardNames file
+     cptr = NULL;
+     in_list = 0;
+-    fp = fopen ("/usr/share/console-setup/KeyboardNames.pl", "rb");
++    fp = fopen ("/usr/share/rpd-localisation/KeyboardNames.pl", "rb");
+     if (!fp) return;
+     while (getline (&cptr, &siz, fp) > 0)
+     {
+@@ -1142,7 +1148,7 @@
+     // parse the database file to find variants for this layout
+     cptr = NULL;
+     in_list = 0;
+-    fp = fopen ("/usr/share/console-setup/KeyboardNames.pl", "rb");
++    fp = fopen ("/usr/share/rpd-localisation/KeyboardNames.pl", "rb");
+     if (!fp) return;
+     while (getline (&cptr, &siz, fp) > 0)
+     {
+@@ -1188,7 +1194,7 @@
+ 
+ static gpointer keyboard_thread (gpointer ptr)
+ {
+-    vsystem (SET_KEYBOARD, gbuffer);
++    setting_failed = vsystem (SET_KEYBOARD, gbuffer) != 0;
+     g_idle_add (close_msg, NULL);
+     return NULL;
+ }
+@@ -1276,7 +1282,10 @@
+     g_signal_connect (keyboard_btn, "clicked", G_CALLBACK (on_set_keyboard), NULL);
+ 
+     wifi_btn = gtk_builder_get_object (builder, "button_wifi");
+-    g_signal_connect (wifi_btn, "clicked", G_CALLBACK (on_set_wifi), NULL);
++    /* Country selection requires a board-specific regulatory backend. */
++    GtkWidget *wifi_row = gtk_widget_get_parent (GTK_WIDGET (wifi_btn));
++    gtk_widget_set_no_show_all (wifi_row, TRUE);
++    gtk_widget_hide (wifi_row);
+ }
+ 
+ /* End of file */
+--- a/src/rc_gui.h
++++ b/src/rc_gui.h
+@@ -123,11 +123,11 @@
+ #define CHECK_UNAME     GET_PREFIX "is_uname_current"
+ 
+ /* localisation tab */
+-#define SET_LOCALE      SET_PREFIX "do_change_locale_rc_gui %s"
+-#define SET_TIMEZONE    SET_PREFIX "do_change_timezone_rc_gui %s"
+-#define SET_KEYBOARD    SET_PREFIX "do_change_keyboard_rc_gui %s"
+-#define GET_WIFI_CTRY   GET_PREFIX "get_wifi_country"
+-#define SET_WIFI_CTRY   SET_PREFIX "do_wifi_country %s"
++#define SET_LOCALE "rpd-localisation set-locale %s"
++#define SET_TIMEZONE "rpd-localisation set-timezone %s"
++#define SET_KEYBOARD "rpd-localisation set-keyboard %s"
++#define GET_WIFI_CTRY "printf 00"
++#define SET_WIFI_CTRY "false %s"
+ #define WLAN_INTERFACES GET_PREFIX "list_wlan_interfaces"
+ 
+ #define CONFIG_SWITCH(wid,name,var,cmd) wid = gtk_builder_get_object (builder, name); \

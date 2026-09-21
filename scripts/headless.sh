@@ -20,15 +20,23 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 mkdir -p "$HOME/.config/autostart"
+cat > "$XDG_RUNTIME_DIR/capture-display" <<'SCRIPT'
+#!/bin/sh
+printf '%s' "$DISPLAY" > "$HOME/rpd-display"
+touch "$HOME/autostart-passed"
+SCRIPT
+chmod +x "$XDG_RUNTIME_DIR/capture-display"
 cat > "$HOME/.config/autostart/rpd-smoke.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Session smoke marker
-Exec=touch $HOME/autostart-passed
+Exec=$XDG_RUNTIME_DIR/capture-display
 EOF
 rpd-session > /tmp/rpd-headless.log 2>&1 &
 session_pid=$!
 export WAYLAND_DISPLAY=wayland-0
+export QT_QPA_PLATFORMTHEME=gtk2
+export XDG_DATA_DIRS=/usr/share/raspi-ui-overrides:/usr/local/share:/usr/share
 export XDG_CONFIG_DIRS=/etc/xdg/rpd:/etc/xdg XDG_MENU_PREFIX=rpd- XDG_CURRENT_DESKTOP=labwc
 for attempt in $(seq 1 30); do
     [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && break
@@ -44,6 +52,7 @@ for name in labwc wf-panel-pi pcmanfm squeekboard; do
     ps -eo stat,comm | awk -v name="$name" '$2 == name && $1 !~ /^Z/ { found=1 } END { exit !found }' || { cat /tmp/rpd-headless.log; echo "Missing running process: $name" >&2; exit 1; }
 done
 test -f "$HOME/autostart-passed"
+export DISPLAY=$(cat "$HOME/rpd-display")
 for directory in DESKTOP DOWNLOAD DOCUMENTS MUSIC PICTURES VIDEOS; do
     location=$(xdg-user-dir "$directory")
     [ "$location" != "$HOME" ] && [ -d "$location" ]
@@ -74,6 +83,21 @@ for app in lxtask galculator gui-runcmd; do
     kill "$app_pid"
     wait "$app_pid" || :
 done
+# Populate the real upstream locale/timezone/keyboard dialogs without applying changes.
+cc $(pkg-config --cflags gtk+-3.0) scripts/localisation-probe.c -o "$XDG_RUNTIME_DIR/localisation-probe" $(pkg-config --libs gtk+-3.0) -ldl -Wl,--export-dynamic
+"$XDG_RUNTIME_DIR/localisation-probe"
+rpd-localisation set-locale it_IT.UTF-8
+test "$(rpd-localisation get-locale)" = it_IT.UTF-8
+rpd-localisation set-keyboard pc105 it '' ''
+test "$(rpd-localisation get-keyboard layout)" = it
+gsettings get org.gnome.desktop.input-sources sources | grep -q "'it'"
+vlc --no-one-instance --no-qt-privacy-ask --no-metadata-network-access > /tmp/rpd-vlc.log 2>&1 &
+vlc_pid=$!
+sleep 2
+kill -0 "$vlc_pid"
+grim /tmp/rpd-vlc.png
+kill "$vlc_pid"
+wait "$vlc_pid" || :
 # Exercise the shipped applications without invoking any power actions.
 pcmanfm "$(xdg-user-dir DOCUMENTS)" &
 sleep 2

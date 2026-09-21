@@ -6,13 +6,13 @@ pkgdesc="Portable Raspberry Pi Desktop: pipanel"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="BSD-3-Clause"
-depends="rpd-control-center procps-ng grep"
+depends="rpd-control-center procps-ng grep rpd-settings-backend"
 makedepends="meson samurai pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev"
 options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="https://archive.raspberrypi.com/debian/pool/main/p/pipanel/pipanel_2.20.tar.xz"
 builddir="$srcdir/appset"
-source="$source patches/0001-portable.patch"
+source="$source patches/0001-portable.patch patches/0002-greeter-settings.patch"
 
 build() {
     abuild-meson -Db_lto=false . output
@@ -27,4 +27,5 @@ package() {
 sha512sums="
 baed374612fdbc93b07f33fe0c77fc5632116c90dd2d52fdb50197ffb8091507f29fc708d5f9c5d133cf52ff209f4fae3e473cfcb5284bd05aeab6dd2ce4f422  pipanel_2.20.tar.xz
 fff59b345b4365748db86a2f7cb3a7592b7e937718f464e94b2ac29e6b015f770dced63e36c5ebb35582ab1aa71f788912e91a73cde0b509dcc91d72cea8ec13  0001-portable.patch
+8ad44cae0d490a9360f1174b5d6c6bcecd0cec6393d75a2f2cce61544d1053dd9827b47e0fff884a110f397f510aeff8c125da91d865abbb542415907259e03c  0002-greeter-settings.patch
 "

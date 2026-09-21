@@ -1,0 +1,10 @@
+#!/usr/bin/python3
+import configparser,json,os,pathlib,subprocess,sys
+config=pathlib.Path(os.environ.get('XDG_CONFIG_HOME',str(pathlib.Path.home()/'.config')))
+if sys.argv[1:]==['appearance']:
+ c=configparser.ConfigParser(interpolation=None);c.read('/tmp/pi-greeter.conf')
+ request={'action':'appearance','theme':c['greeter']['gtk-theme-name'],'font':c['greeter']['gtk-font-name']}
+elif sys.argv[1:]==['displays']:
+ request={'action':'displays','kanshi':(config/'kanshi/config').read_text(),'touch':(config/'labwc/rcgreeter.xml').read_text()}
+else:raise SystemExit('Unknown greeter setting')
+raise SystemExit(subprocess.run(['pkexec','/usr/libexec/rpd-greeter-settings'],input=json.dumps(request),text=True).returncode)

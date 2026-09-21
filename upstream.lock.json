@@ -238,5 +238,69 @@
     "filename": "rasputin_1.10.tar.xz",
     "directory": "rasputin",
     "pkgrel": 3
+  },
+  "raindrop": {
+    "version": "1.21",
+    "source_version": "1.21",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/raindrop/raindrop_1.21.tar.xz",
+    "sha256": "a24ec24f4b1d80736f317cc2a3abbea14c5de0874fa920db7a65b8080e9f93c7",
+    "sha512": "4d305b0a7fe1e7a82a8935a3c08f1ad4a7c0bfdf7742df202c9d0c1b734d62c608ad012c2f1a55008e4b0106386d353edf2ec5074d0f0187bd5947dc8c8f063c",
+    "filename": "raindrop_1.21.tar.xz",
+    "directory": "raindrop",
+    "pkgrel": 0
+  },
+  "rpinters": {
+    "version": "1.10",
+    "source_version": "1.10",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rpinters/rpinters_1.10.tar.xz",
+    "sha256": "62a91abed6660f3b0ecca50280fce0fb6513cec3723d3181f42b27edade5180c",
+    "sha512": "425cc9b7bef0eaceae1cce311dd16132246a2de2c9b62d4a7307238eb14c9401da55427faaabb0e6cd1bd8e359d46aea91f43dd6fb01226be7b532bbdb06b689",
+    "filename": "rpinters_1.10.tar.xz",
+    "directory": "rpinters",
+    "pkgrel": 0
+  },
+  "rp-bookshelf": {
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rp-bookshelf/rp-bookshelf_1.10.tar.xz",
+    "version": "1.10",
+    "sha256": "430ad5ac43f17930ce09890d9491f66014a4e46ccf12f9ec60a8fb9a7eb4d275",
+    "sha512": "eef0be3b73620f0c82b51a8ab39a99b11013fd321207cb115acca0fadb997b202a160daa62e1ebadca5c9d5730277aa6339899d8d98e9c73e428a9b46d5f5d33",
+    "filename": "rp-bookshelf_1.10.tar.xz",
+    "directory": "bookshelf",
+    "pkgrel": 0
+  },
+  "rc-gui": {
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rc-gui/rc-gui_2.20.tar.xz",
+    "version": "2.20",
+    "sha256": "721c467deb6fa9f19e4aa1206760de2f05c9a72d3c8cba3b12d635a1e2d33880",
+    "sha512": "3386fd44bddb3a4259a6886f2aa11c0a21e5edbe1e9ea0e41b45d7cc169a3446520fc33405eb3243a224914fc03ccfe220fca3f2dc7cca41a9e365d7b568c257",
+    "filename": "rc-gui_2.20.tar.xz",
+    "directory": "rc_gui",
+    "pkgrel": 0
+  },
+  "gtk2-engines-pixflat": {
+    "version": "0.5",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/g/gtk2-engines-pixflat/gtk2-engines-pixflat_0.5.tar.xz",
+    "sha256": "9f1d7df6a00c94fe37bba822f8a66e042e6301222273b946be265f1fae3a229c",
+    "sha512": "81c3acdbd16e8f43817a55be90f18c6766734d4f8e0fc93dc9c1ef3f9c4b7379fe5bb98dde7470560840db5545675c0c9b934c9b6f9bce9be0875cb9d60fa9dc",
+    "filename": "gtk2-engines-pixflat_0.5.tar.xz",
+    "directory": "gtk2-engines-pixflat",
+    "pkgrel": 0
+  },
+  "qtstyleplugins-src": {
+    "url": "https://archive.raspberrypi.com/debian/pool/main/q/qtstyleplugins-src/qtstyleplugins-src_5.0.0+git23.g335dbec.orig.tar.xz",
+    "sha256": "e3d55d64002d4b8308075bdda3665ba7b0330774ab78ad35d68ed1002394ff4a",
+    "sha512": "5cd005ccf49ec884f75efa6e34543f6a191d66a3a8706513147c0dbaac3272a55d03c4f29cbdc45779f773712944d2cbec37199ef30235393084094a8fef5582",
+    "filename": "qtstyleplugins-src_5.0.0+git23.g335dbec.orig.tar.xz",
+    "directory": "qtstyleplugins-src-5.0.0+git23.g335dbec",
+    "version": "5.0.0_git23",
+    "source_version": "5.0.0+git23.g335dbec-6+rpt1",
+    "debian": {
+      "url": "https://archive.raspberrypi.com/debian/pool/main/q/qtstyleplugins-src/qtstyleplugins-src_5.0.0+git23.g335dbec-6+rpt1.debian.tar.xz",
+      "sha256": "3ef562ae6933ac101007cc923404dec64a58c88f8c1b9a83dd50e810c012a4b8",
+      "sha512": "f6fcdcd32ed8b33eb8dc53375350bc120b51077a3765d8b3f4bf7e99f96d951cfac7b97f6d45cc739831e2d6fefeb4e2220eb136015cd03fe19487f87343a190",
+      "filename": "qtstyleplugins-src_5.0.0+git23.g335dbec-6+rpt1.debian.tar.xz",
+      "directory": "debian"
+    },
+    "pkgrel": 0
   }
 }

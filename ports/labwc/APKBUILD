@@ -1,0 +1,55 @@
+# Contributor: Patrycja Rosa <alpine@ptrcnull.me>
+# Maintainer: Patrycja Rosa <alpine@ptrcnull.me>
+pkgname=labwc
+pkgver=0.20.2
+pkgrel=100
+pkgdesc="Wayland stacking compositor"
+url="https://github.com/labwc/labwc"
+arch="aarch64"
+license="GPL-2.0-only"
+depends="xwayland"
+makedepends="
+	cairo-dev
+	glib-dev
+	libinput-dev
+	libsfdo-dev
+	librsvg-dev
+	libxml2-dev
+	meson
+	pango-dev
+	scdoc
+	wayland-protocols
+	wlroots0.20-dev
+	xwayland-dev
+	"
+subpackages="$pkgname-doc $pkgname-lang"
+source="https://github.com/labwc/labwc/archive/$pkgver/labwc-$pkgver.tar.gz
+	two-finger-tap.patch rpd-two-finger.h test-two-finger.c
+	"
+
+prepare() {
+    default_prepare
+    cp "$srcdir/rpd-two-finger.h" include/input/
+}
+
+build() {
+	abuild-meson . output -Dman-pages=enabled
+	meson compile -C output
+}
+
+check() {
+	meson test --print-errorlogs -C output
+    cc -std=c11 -Wall -Wextra -Werror -I"$srcdir" "$srcdir/test-two-finger.c" -o output/test-two-finger
+    output/test-two-finger
+}
+
+package() {
+	DESTDIR="$pkgdir" meson install --no-rebuild -C output
+}
+
+sha512sums="
+68519170aa01c65e3be5ea115ebcb9173132f34febb2f3b7990ba067ea219819e2551847e91f548bf011fb3ceeae4802248153693a5e14914eb6cee889656b4d  labwc-0.20.2.tar.gz
+75aa2347a48f094e024b73874ad6a8032398b47dd62b793652d4b366cf79a12847b4288f415b889d22e34dd7cec6008fd6da900f96f9e9a82ef0015abf99b787  two-finger-tap.patch
+e54b422faae7ae848c4c435f3615d9cb546e59d2cb62b610965642fec553f92797ced8aced04444b4f7fdf6bbcd20cd0400b312765938c3d8dffc72c229ffe54  rpd-two-finger.h
+bed83dae4c9b9c783a2e4f0bf0b2218469f3385614621376fe0507b119bffacbcb61a63c0da2743a69089cce7f4fbc06b5a041568f24c329c640de2eb9b6ab91  test-two-finger.c
+"

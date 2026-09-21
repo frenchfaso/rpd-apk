@@ -1,0 +1,11 @@
+--- a/src/pipanel.c
++++ b/src/pipanel.c
+@@ -225,7 +225,7 @@
+ {
+     if (g_file_test (GREETER_TMP, G_FILE_TEST_IS_REGULAR))
+     {
+-        system (SUDO_PREFIX "cp " GREETER_TMP " /etc/lightdm/pi-greeter.conf");
++        system ("rpd-apply-greeter appearance");
+         remove (GREETER_TMP);
+     }
+ }

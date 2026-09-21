@@ -1,0 +1,23 @@
+pkgname=rpd-settings-backend
+pkgver=0.1.0
+pkgrel=0
+pkgdesc="Portable settings integration for Raspberry Pi Desktop"
+url="https://github.com/frenchfaso/rpd-apk"
+arch="noarch"
+license="MIT"
+depends="python3 polkit"
+source="rpd-apply-greeter rpd-greeter-settings org.rpd.greeter-settings.policy test-settings.py"
+check() {
+    python3 "$srcdir/test-settings.py" "$srcdir/rpd-greeter-settings"
+}
+package() {
+    install -Dm755 "$srcdir/rpd-apply-greeter" "$pkgdir/usr/bin/rpd-apply-greeter"
+    install -Dm755 "$srcdir/rpd-greeter-settings" "$pkgdir/usr/libexec/rpd-greeter-settings"
+    install -Dm644 "$srcdir/org.rpd.greeter-settings.policy" "$pkgdir/usr/share/polkit-1/actions/org.rpd.greeter-settings.policy"
+}
+sha512sums="
+0a207f51b2c187af90aca5679d8cd28edc1f878af7d7f9ce851183a1340c2f166507ba8ffd3eb090c8079d9ef6f21af9758ceaa97acbacfe3762bcd9de85c43a  rpd-apply-greeter
+99ab35b55165d75332a0a2e5f7e50cf49aa3a65a5b0d752900cd77d6e7627ad64f49071f94724698819e4413ad8d805bfd7ae6a59aee4c285f2664bf347152dd  rpd-greeter-settings
+88c903a09c6f703781b2d17504c06861c3fc632dd7197414a97af0ae5072367ed219ffedde345d9c3bcaaa4badc4c7c59cb3dc2275a8dd562901ec16d4bdf15b  org.rpd.greeter-settings.policy
+cc7c43016f00f14320ae2c66b70c3a3c108b641877dd0e6d324901a72cb8d2a57e7235c1317facc9a4a16b444384cf67baa8797f4ed4ea37a4826af5b006aae0  test-settings.py
+"

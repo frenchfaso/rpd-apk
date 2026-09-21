@@ -5,7 +5,7 @@ pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-desktop-lite"
+depends="rpd-desktop-lite labwc=0.20.2-r100"
 options="!check"
 source="61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
 
@@ -19,6 +19,6 @@ package() {
 sha512sums="
 fd593deae8923a3f2bd112b72d446603141bd2f98a7ab45cd58fd571c84822ee45acbb2fc0684af2f132a0a60ffa7d19fac02876234ac003528093ba287ca8aa  61-rpd-m10.conf
 52ff4f92db495f0c77a6f3f02aab42e696c92ca2102d46de1a5e9559c83e90361f5b835fb93a73cd39956ed32fb66dd022300ee9996578da45b27031860b6bb7  greeter-renderer.conf
-f03e82d63a989aa9a1b5d3b1839718ac9cc18362de437203fb31ebf3df9437c45e022eef4a7e7b1ac53c86d09955311c57ffc8a26e9cc1cee780b57b97d06879  rpd-session-m10
+0eb87698ca63ddc1ff007af4b5a6525faaf0f6bdfb7f927478479431369bdfaf0ea28df3de50cccc93c85297cac8865cdf7cb1c7cda3902303d06e2690c229c6  rpd-session-m10
 7faf90d4b415b6e4f66f1b76aa9a60997f380cb0202b3a28cf29ccd150aa10a2c624b6d19c01b97a605bb6ca77528ca787ee92f961d941afbb024bbbc58a972f  rpd-session-m10.desktop
 "

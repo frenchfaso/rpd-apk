@@ -6,7 +6,7 @@ pkgdesc="Portable Raspberry Pi Desktop: pixtrix-theme"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="GPL-2.0-or-later"
-depends=""
+depends="rpd-gtk2-engine"
 makedepends=""
 options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
@@ -16,7 +16,6 @@ builddir="$srcdir/pixtrix-theme"
 package() {
     mkdir -p "$pkgdir/usr/share"
     cp -a usr/share/themes "$pkgdir/usr/share/"
-    rm -rf "$pkgdir/usr/share/themes/PiXtrix/gtk-2.0"
     install -Dm644 debian/copyright "$pkgdir/usr/share/licenses/$pkgname/copyright"
 }
 

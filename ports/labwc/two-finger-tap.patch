@@ -1,0 +1,305 @@
+--- a/src/input/touch.c
++++ b/src/input/touch.c
+@@ -20,6 +20,7 @@
+ 
+ /* Holds layout -> surface offsets to report motion events in relative coords */
+ struct touch_point {
++	struct wlr_touch *device;
+ 	int32_t touch_id;
+ 	uint32_t x_offset;
+ 	uint32_t y_offset;
+@@ -139,6 +140,7 @@
+ 	double x_offset = 0.0, y_offset = 0.0;
+ 	touch_point->surface = touch_get_coords(seat, event->touch,
+ 			event->x, event->y, &x_offset, &y_offset);
++	touch_point->device = event->touch;
+ 	touch_point->touch_id = event->touch_id;
+ 	touch_point->x_offset = x_offset;
+ 	touch_point->y_offset = y_offset;
+@@ -216,6 +218,227 @@
+ 	}
+ }
+ 
++
++/* Optional touchscreen two-finger tap. Native touch is replayed unchanged on
++ * motion, timeout or additional contacts. Each device owns its pending queue;
++ * no pointers to destroyed devices or clients survive device removal. */
++#include "input/rpd-two-finger.h"
++#include <stdlib.h>
++#include <wlr/types/wlr_layer_shell_v1.h>
++
++struct rpd_queued_touch {
++    enum rpd_event type;
++    union {
++        struct wlr_touch_down_event down;
++        struct wlr_touch_motion_event motion;
++        struct wlr_touch_up_event up;
++    } event;
++};
++struct rpd_touch_context {
++    struct wl_list link;
++    struct wl_listener destroy;
++    struct wl_listener cancel;
++    struct seat *seat;
++    struct wlr_touch *device;
++    struct wl_event_source *timer;
++    struct rpd_tap tap;
++    struct rpd_queued_touch events[64];
++    unsigned length;
++    double first_x, first_y;
++};
++struct rpd_touch_gesture {
++    struct wl_list devices;
++};
++
++static void
++rpd_deliver(struct rpd_touch_context *ctx, struct rpd_queued_touch *q)
++{
++    switch (q->type) {
++    case RPD_DOWN:
++        handle_touch_down(&ctx->seat->touch_down, &q->event.down);
++        break;
++    case RPD_MOTION:
++        handle_touch_motion(&ctx->seat->touch_motion, &q->event.motion);
++        break;
++    case RPD_UP:
++        handle_touch_up(&ctx->seat->touch_up, &q->event.up);
++        break;
++    }
++    /* Replay each logical update as a complete frame. This also handles a
++     * down/up arriving in the same kernel report without losing the tap. */
++    wlr_seat_touch_notify_frame(ctx->seat->wlr_seat);
++}
++
++static void
++rpd_flush(struct rpd_touch_context *ctx)
++{
++    ctx->tap.pending = false;
++    wl_event_source_timer_update(ctx->timer, 0);
++    for (unsigned i = 0; i < ctx->length; ++i) {
++        rpd_deliver(ctx, &ctx->events[i]);
++    }
++    ctx->length = 0;
++}
++
++static int
++rpd_timeout(void *data)
++{
++    rpd_flush(data);
++    return 0;
++}
++
++static void
++rpd_cancel_device(struct wl_listener *listener, void *data)
++{
++    struct rpd_touch_context *ctx = wl_container_of(listener, ctx, cancel);
++    ctx->length = 0;
++    memset(&ctx->tap, 0, sizeof(ctx->tap));
++    wl_event_source_timer_update(ctx->timer, 0);
++    struct touch_point *point, *tmp;
++    wl_list_for_each_safe(point, tmp, &ctx->seat->touch_points, link) {
++        if (point->device != ctx->device) {
++            continue;
++        }
++        struct wlr_touch_point *wpoint =
++            wlr_seat_touch_get_point(ctx->seat->wlr_seat, point->touch_id);
++        if (wpoint) {
++            wlr_seat_touch_notify_cancel(ctx->seat->wlr_seat, wpoint->client);
++        } else if (!point->surface) {
++            cursor_emulate_button(ctx->seat, BTN_LEFT,
++                WL_POINTER_BUTTON_STATE_RELEASED, 0);
++        }
++        wl_list_remove(&point->link);
++        free(point);
++    }
++}
++
++static void
++rpd_device_destroy(struct wl_listener *listener, void *data)
++{
++    struct rpd_touch_context *ctx = wl_container_of(listener, ctx, destroy);
++    /* Pending events were never sent. Discard them, never replay a dead input. */
++    rpd_cancel_device(&ctx->cancel, NULL);
++    wl_list_remove(&ctx->cancel.link);
++    wl_event_source_remove(ctx->timer);
++    wl_list_remove(&ctx->destroy.link);
++    wl_list_remove(&ctx->link);
++    free(ctx);
++}
++
++static struct rpd_touch_context *
++rpd_context(struct seat *seat, struct wlr_touch *device)
++{
++    struct rpd_touch_context *ctx;
++    wl_list_for_each(ctx, &seat->touch_gesture->devices, link) {
++        if (ctx->device == device) {
++            return ctx;
++        }
++    }
++    ctx = znew(*ctx);
++    ctx->seat = seat;
++    ctx->device = device;
++    ctx->timer = wl_event_loop_add_timer(server.wl_event_loop, rpd_timeout, ctx);
++    if (!ctx->timer) {
++        free(ctx);
++        return NULL;
++    }
++    ctx->cancel.notify = rpd_cancel_device;
++    wl_signal_add(&device->events.cancel, &ctx->cancel);
++    ctx->destroy.notify = rpd_device_destroy;
++    wl_signal_add(&device->base.events.destroy, &ctx->destroy);
++    wl_list_insert(&seat->touch_gesture->devices, &ctx->link);
++    return ctx;
++}
++
++static bool
++rpd_process(struct seat *seat, struct wlr_touch *device,
++        struct rpd_queued_touch q, int32_t id, uint32_t time, double x, double y)
++{
++    if (!seat->touch_gesture) {
++        return false;
++    }
++    struct rpd_touch_context *ctx = rpd_context(seat, device);
++    if (!ctx) {
++        return false;
++    }
++    idle_manager_notify_activity(seat->wlr_seat);
++    bool keyboard_surface = false;
++    if (q.type == RPD_DOWN && !ctx->tap.active) {
++        double ox = 0, oy = 0;
++        struct wlr_surface *surface = touch_get_coords(seat, device, x, y, &ox, &oy);
++        struct wlr_layer_surface_v1 *layer = surface
++            ? wlr_layer_surface_v1_try_from_wlr_surface(wlr_surface_get_root_surface(surface)) : NULL;
++        keyboard_surface = layer && layer->namespace &&
++            (!strcmp(layer->namespace, "osk") || !strcmp(layer->namespace, "squeekboard"));
++        ctx->first_x = x;
++        ctx->first_y = y;
++        wl_event_source_timer_update(ctx->timer, 260);
++    }
++    double lx = 0, ly = 0;
++    if (q.type != RPD_UP) {
++        wlr_cursor_absolute_to_layout_coords(seat->cursor, &device->base,
++            x, y, &lx, &ly);
++    }
++    enum rpd_result result = rpd_tap_event(&ctx->tap, q.type, id, time, lx, ly);
++    /* Preserve immediate keys and multi-finger modifier chords on the OSK. */
++    if (keyboard_surface) {
++        ctx->tap.pending = false;
++        wl_event_source_timer_update(ctx->timer, 0);
++        result = RPD_PASS;
++    }
++    if (result == RPD_RIGHT) {
++        ctx->length = 0;
++        wl_event_source_timer_update(ctx->timer, 0);
++        cursor_emulate_move_absolute(seat, &device->base,
++            ctx->first_x, ctx->first_y, time);
++        cursor_emulate_button(seat, BTN_RIGHT, WL_POINTER_BUTTON_STATE_PRESSED, time);
++        cursor_emulate_button(seat, BTN_RIGHT, WL_POINTER_BUTTON_STATE_RELEASED, time);
++        wlr_seat_pointer_notify_frame(seat->wlr_seat);
++        return true;
++    }
++    if (result == RPD_PASS) {
++        return false;
++    }
++    ctx->events[ctx->length++] = q;
++    if (result == RPD_FLUSH || ctx->length == 64) {
++        rpd_flush(ctx);
++    }
++    return true;
++}
++
++static void
++rpd_touch_down(struct wl_listener *listener, void *data)
++{
++    struct seat *seat = wl_container_of(listener, seat, touch_down);
++    struct wlr_touch_down_event *e = data;
++    struct rpd_queued_touch q = { .type = RPD_DOWN, .event.down = *e };
++    if (!rpd_process(seat, e->touch, q, e->touch_id, e->time_msec, e->x, e->y)) {
++        handle_touch_down(listener, data);
++    }
++}
++
++static void
++rpd_touch_motion(struct wl_listener *listener, void *data)
++{
++    struct seat *seat = wl_container_of(listener, seat, touch_motion);
++    struct wlr_touch_motion_event *e = data;
++    struct rpd_queued_touch q = { .type = RPD_MOTION, .event.motion = *e };
++    if (!rpd_process(seat, e->touch, q, e->touch_id, e->time_msec, e->x, e->y)) {
++        handle_touch_motion(listener, data);
++    }
++}
++
++static void
++rpd_touch_up(struct wl_listener *listener, void *data)
++{
++    struct seat *seat = wl_container_of(listener, seat, touch_up);
++    struct wlr_touch_up_event *e = data;
++    struct rpd_queued_touch q = { .type = RPD_UP, .event.up = *e };
++    if (!rpd_process(seat, e->touch, q, e->touch_id, e->time_msec, 0, 0)) {
++        handle_touch_up(listener, data);
++    }
++}
++
+ void
+ touch_init(struct seat *seat)
+ {
+@@ -223,11 +446,27 @@
+ 	CONNECT_SIGNAL(seat->cursor, seat, touch_up);
+ 	CONNECT_SIGNAL(seat->cursor, seat, touch_motion);
+ 	CONNECT_SIGNAL(seat->cursor, seat, touch_frame);
++    const char *enabled = getenv("RPD_TWO_FINGER_RIGHT_CLICK");
++    if (enabled && strcmp(enabled, "1") == 0) {
++        seat->touch_gesture = znew(*seat->touch_gesture);
++        wl_list_init(&seat->touch_gesture->devices);
++        seat->touch_down.notify = rpd_touch_down;
++        seat->touch_motion.notify = rpd_touch_motion;
++        seat->touch_up.notify = rpd_touch_up;
++    }
+ }
+ 
+ void
+ touch_finish(struct seat *seat)
+ {
++    if (seat->touch_gesture) {
++        struct rpd_touch_context *ctx, *tmp;
++        wl_list_for_each_safe(ctx, tmp, &seat->touch_gesture->devices, link) {
++            rpd_device_destroy(&ctx->destroy, NULL);
++        }
++        free(seat->touch_gesture);
++        seat->touch_gesture = NULL;
++    }
+ 	wl_list_remove(&seat->touch_down.link);
+ 	wl_list_remove(&seat->touch_up.link);
+ 	wl_list_remove(&seat->touch_motion.link);
+--- a/include/labwc.h
++++ b/include/labwc.h
+@@ -26,6 +26,7 @@
+ 	struct wlr_seat *wlr_seat;
+ 	struct wlr_keyboard_group *keyboard_group;
+ 
++	struct rpd_touch_gesture *touch_gesture;
+ 	struct wl_list touch_points; /* struct touch_point.link */
+ 
+ 	/*
+--- a/src/seat.c
++++ b/src/seat.c
+@@ -1,5 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ #include <assert.h>
++#include <stdlib.h>
++#include <string.h>
+ #include <stdbool.h>
+ #include <strings.h>
+ #include <wlr/config.h>
+@@ -529,6 +531,10 @@
+ 			break;
+ 		case WLR_INPUT_DEVICE_TOUCH:
+ 			caps |= WL_SEAT_CAPABILITY_TOUCH;
++            const char *gesture = getenv("RPD_TWO_FINGER_RIGHT_CLICK");
++            if (gesture && strcmp(gesture, "1") == 0) {
++                caps |= WL_SEAT_CAPABILITY_POINTER;
++            }
+ 			break;
+ 		default:
+ 			break;

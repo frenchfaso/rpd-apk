@@ -2,9 +2,8 @@
 set -eu
 export XDG_CURRENT_DESKTOP=labwc
 export XDG_SESSION_TYPE=wayland
-export GTK_THEME=PiXtrix
 export XCURSOR_THEME=PiXtrix
-export XCURSOR_SIZE=32
+export XCURSOR_SIZE=24
 [ ! -f /etc/xdg/rpd/greeter-renderer.conf ] || . /etc/xdg/rpd/greeter-renderer.conf
 if [ "${RPD_SOFTWARE_RENDERING:-0}" = 1 ]; then
     export WLR_RENDERER=pixman LIBGL_ALWAYS_SOFTWARE=1

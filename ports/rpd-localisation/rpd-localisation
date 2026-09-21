@@ -1,0 +1,55 @@
+#!/usr/bin/python3
+"""Portable user settings backend for the original Raspberry localisation UI."""
+import os,pathlib,re,subprocess,sys,tempfile,xml.etree.ElementTree as ET
+config=pathlib.Path(os.environ.get('XDG_CONFIG_HOME',str(pathlib.Path.home()/'.config')))
+envfile=config/'labwc/environment.d/20-rpd-keyboard.env'
+localefile=config/'rpd/locale.conf'
+def readenv(path):
+ return dict(line.split('=',1) for line in path.read_text().splitlines() if '=' in line and not line.startswith('#')) if path.exists() else {}
+def write(path,data):
+ path.parent.mkdir(parents=True,exist_ok=True)
+ fd,tmp=tempfile.mkstemp(dir=path.parent,prefix='.'+path.name)
+ try:
+  with os.fdopen(fd,'w') as out:out.write(data)
+  os.replace(tmp,path)
+ finally:
+  if os.path.exists(tmp):os.unlink(tmp)
+def run(*args):subprocess.run(args,check=True)
+def main():
+ command,*args=sys.argv[1:]
+ if command=='get-locale':print(readenv(localefile).get('LANG',os.environ.get('LANG','en_GB.UTF-8')))
+ elif command=='set-locale':
+  value,=args
+  allowed={line.split()[0] for line in pathlib.Path('/usr/share/rpd-localisation/SUPPORTED').read_text().splitlines()}
+  if value not in allowed:raise ValueError('Unknown locale')
+  write(localefile,'LANG='+value+'\n')
+ elif command=='get-keyboard':
+  field,=args;defaults={'model':'pc105','layout':'us','variant':'','options':''}
+  if field not in defaults:raise ValueError('Unknown keyboard field')
+  key='XKB_DEFAULT_'+field.upper();print(readenv(envfile).get(key,os.environ.get(key,defaults[field])))
+ elif command=='set-keyboard':
+  model,layout,variant,options=args
+  if any(not re.fullmatch(r'[a-zA-Z0-9_:,()+-]*',v) for v in args):raise ValueError('Invalid keyboard setting')
+  db=ET.parse('/usr/share/X11/xkb/rules/evdev.xml')
+  models={n.text for n in db.findall('.//modelList/model/configItem/name')}
+  layouts={n.findtext('configItem/name'):{v.text for v in n.findall('variantList/variant/configItem/name')}|{''} for n in db.findall('.//layoutList/layout')}
+  if model not in models:raise ValueError('Unknown keyboard model')
+  pairs=list(zip(layout.split(','),variant.split(','),strict=True))
+  if not 1<=len(pairs)<=2 or any(l not in layouts or v not in layouts[l] for l,v in pairs):raise ValueError('Unknown layout/variant')
+  knownopts={n.text for n in db.findall('.//option/configItem/name')}
+  if any(o and o not in knownopts for o in options.split(',')):raise ValueError('Unknown keyboard option')
+  values=dict(zip(['MODEL','LAYOUT','VARIANT','OPTIONS'],args))
+  write(envfile,''.join('XKB_DEFAULT_'+k+'='+v+'\n' for k,v in values.items()))
+  sources=[('xkb',l+('+'+v if v else '')) for l,v in pairs]
+  run('gsettings','set','org.gnome.desktop.input-sources','sources',repr(sources))
+  run('labwc','--reconfigure')
+ elif command=='set-timezone':
+  zone,=args
+  if not re.fullmatch(r'[A-Za-z0-9_+/-]+',zone) or '..' in zone:raise ValueError('Invalid timezone')
+  if not (pathlib.Path('/usr/share/zoneinfo')/zone).is_file():raise ValueError('Unknown timezone')
+  run('timedatectl','set-timezone',zone)
+ else:raise ValueError('Unknown operation')
+if __name__=='__main__':
+ try:main()
+ except (ValueError,OSError,subprocess.SubprocessError) as e:
+  print('rpd-localisation:',e,file=sys.stderr);sys.exit(1)

@@ -1,0 +1,17 @@
+--- a/src/activate.c
++++ b/src/activate.c
+@@ -235,8 +235,12 @@
+         wl_display_roundtrip (display);
+         wl_registry_destroy (registry);
+ 
+-        wl_pointer_add_listener (wl_seat_get_pointer (seat), &pointer_listener, NULL);
+-        wl_keyboard_add_listener (wl_seat_get_keyboard (seat), &keyboard_listener, NULL);
++        GList *devices = gdk_seat_get_slaves (gdk_seat, GDK_SEAT_CAPABILITY_POINTER);
++        if (devices) wl_pointer_add_listener (wl_seat_get_pointer (seat), &pointer_listener, NULL);
++        g_list_free (devices);
++        devices = gdk_seat_get_slaves (gdk_seat, GDK_SEAT_CAPABILITY_KEYBOARD);
++        if (devices) wl_keyboard_add_listener (wl_seat_get_keyboard (seat), &keyboard_listener, NULL);
++        g_list_free (devices);
+     }
+ }
+ 

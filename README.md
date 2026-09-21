@@ -6,14 +6,14 @@ Do not treat a successful build as an M10 graphics qualification. The M10 curren
 
 ## Package selection
 
-- `rpd-desktop-lite`: labwc; Raspberry wf-panel-pi, clock, application menu, window list, eject/network/volume/battery plugins and Squeekboard button; Raspberry PCManFM fork; PiXtrix theme/icons; LXTerminal, Mousepad, Xarchiver, LXTask, Galculator, Eye of MATE, Evince, Raspberry Run and Screenshot; native Raspberry Control Centre modules for appearance, panel, menu editing, shortcuts and mouse/keyboard; NetworkManager GUI, MATE polkit agent, keyring, GVFS/UDisks automount, XDG session services, PipeWire/WirePlumber, portals, XWayland and software-capable Mesa.
-- `rpd-desktop-m10`: adds an explicit software-rendered session entry. It selects software rendering for desktop and greeter. LightDM and the Raspberry Pi greeter are configured. Host service presets may enable LightDM during installation (postmarketOS systemd does this). Stop Buffyboard before a graphical trial and verify service enablement before rebooting.
+- `rpd-desktop-lite`: labwc; Raspberry wf-panel-pi, clock, application menu, window list, eject/network/volume/battery plugins and Squeekboard button; Raspberry PCManFM fork; PiXtrix theme/icons; LXTerminal, Mousepad, Xarchiver, LXTask, Galculator, Eye of MATE, Evince, VLC, Bookshelf, Raspberry Run and Screenshot; native Raspberry Control Centre modules for appearance, panel, menu editing, shortcuts, mouse/keyboard, screens, printers and localisation; NetworkManager GUI, MATE polkit agent, keyring, GVFS/UDisks automount, XDG session services, PipeWire/WirePlumber, portals, XWayland and software-capable Mesa.
+- `rpd-desktop-m10`: adds an explicit software-rendered session entry and a tested, pinned labwc build for two-finger right taps. It selects software rendering for desktop and greeter. LightDM and the Raspberry Pi greeter are configured. Host service presets may enable LightDM during installation (postmarketOS systemd does this). Stop Buffyboard before a graphical trial and verify service enablement before rebooting.
 - `rpd-desktop-browser`: optional Firefox, kept outside the smallest installation.
 - Buffyboard remains the console keyboard. Squeekboard is the separate Wayland keyboard.
 
-Official Raspberry sources are tracked from the signed Trixie source index. Standard applications and labwc follow Alpine's packaging; they are not replaced by Debian binaries. Hardware plugins (GPU temperature, voltage/power warnings), Raspberry Connect, raspi-config, piwiz, cloning/imaging tools, APT updater and recommended educational suites are excluded. Audio and battery controls use the host services; physical hardware support remains dependent on the M10 kernel. The Raspberry Bluetooth panel plugin and BlueZ are included for mice, keyboards and other peripherals. No browser, office suite or IDE is pulled into the minimal profile.
+Official Raspberry sources are tracked from the signed Trixie source index. Standard applications follow Alpine's packaging; they are not replaced by Debian binaries. Hardware plugins (GPU temperature, voltage/power warnings), Raspberry Connect, raspi-config, piwiz, cloning/imaging tools, APT updater and recommended educational suites are excluded. Audio and battery controls use the host services; physical hardware support remains dependent on the M10 kernel. The Raspberry Bluetooth panel plugin and BlueZ are included for mice, keyboards and other peripherals. No browser, office suite or IDE is pulled into the minimal profile.
 
-The reference is **current Raspberry Pi OS Trixie ARM for Raspberry Pi boards**, not the separate PC/x86 Raspberry Pi Desktop image. The default panel uses the official classic `smenu`, separate launchers and window list, with shutdown inside the menu. Native RPCC preferences replace the earlier text-editor fallback. The legacy GTK2 theme engine is excluded. See [ARM Trixie mapping](docs/ARM-TRIXIE.md) and [desktop integration](docs/DESKTOP.md) for the upstream mapping, service lifecycle and hardware verification limits.
+The reference is **current Raspberry Pi OS Trixie ARM for Raspberry Pi boards**, not the separate PC/x86 Raspberry Pi Desktop image. The default panel uses the official classic `smenu`, separate launchers and window list, with shutdown inside the menu. Native RPCC preferences replace the earlier text-editor fallback. The original GTK2 theme engine and Qt/GTK style plugin are included for VLC. The M10 labwc extension is documented in [touch integration](docs/TOUCH.md). See [ARM Trixie mapping](docs/ARM-TRIXIE.md) and [desktop integration](docs/DESKTOP.md) for the upstream mapping, service lifecycle and hardware verification limits.
 
 ## Local build
 
@@ -45,6 +45,9 @@ that exact public-key hash and adds the repository once. Then:
 
 ```sh
 sudo apk add rpd-desktop-m10
+# On a systemd postmarketOS host, enable the native printing services:
+sudo apk add cups-systemd cups-filters-systemd
+sudo systemctl enable --now cups.socket
 # From a local logged-in TTY; first stop Buffyboard for that graphical trial:
 rpd-session-m10
 # Later package updates:

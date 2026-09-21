@@ -1,0 +1,75 @@
+#!/usr/bin/python3 -I
+"""Privileged, fixed-destination writer. Never copy arbitrary user files or XML."""
+import configparser,json,os,pathlib,re,sys,tempfile,xml.etree.ElementTree as ET
+
+def validate(request):
+ if request.get('action')=='appearance':
+  theme=request['theme'];font=request['font']
+  if theme not in {'PiXtrix','PiXonyx','PiXflat','PiXnoir'}:raise ValueError('Unsupported theme')
+  if not re.fullmatch(r'[\w .,-]{1,120}',font):raise ValueError('Invalid font')
+  return {'action':'appearance','theme':theme,'font':font}
+ if request.get('action')!='displays':raise ValueError('Unknown operation')
+ lines=[];inside=False;enabled=0;profiles=0
+ for line in request['kanshi'].splitlines():
+  line=line.strip()
+  if not line or line.startswith('#'):continue
+  if line=='profile {' and not inside:
+   inside=True;enabled=0;profiles+=1
+  elif line=='}' and inside:
+   if not enabled:raise ValueError('A display must remain enabled')
+   inside=False
+  elif inside:
+   m=re.fullmatch(r'output ([A-Za-z0-9_.:-]{1,128}) (disable|enable scale ([0-9.]+) mode (?:--custom )?([0-9]+)x([0-9]+)(?:@([0-9.]+))? position (-?[0-9]+),(-?[0-9]+) transform (normal|90|180|270))',line)
+   if not m:raise ValueError('Unsupported display directive')
+   if m[2]!='disable':
+    if not .25<=float(m[3])<=8 or not all(1<=int(m[i])<=16384 for i in [4,5]) or not all(abs(int(m[i]))<=32768 for i in [7,8]):raise ValueError('Invalid display geometry')
+    if m[6] and not 1<=float(m[6])<=1000:raise ValueError('Invalid refresh rate')
+    enabled+=1
+  else:raise ValueError('Unexpected display directive')
+  lines.append(line)
+ if inside or not 1<=profiles<=32:raise ValueError('Invalid display profiles')
+ xml=request['touch']
+ if '<!DOCTYPE' in xml or '<!ENTITY' in xml:raise ValueError('XML declarations are not allowed')
+ tree=ET.fromstring(xml);touch=[]
+ for node in tree:
+  if node.tag.split('}')[-1]!='touch':continue
+  values=dict(node.attrib)
+  for child in node:values[child.tag.split('}')[-1]]=child.text or ''
+  device=values.get('deviceName','');output=values.get('mapToOutput','');mode=values.get('mouseEmulation','yes')
+  if len(device)>128 or any(ord(c)<32 for c in device) or not re.fullmatch(r'[A-Za-z0-9_.:-]{0,128}',output) or mode not in {'yes','no','true','false'}:raise ValueError('Invalid touch mapping')
+  touch.append({'deviceName':device,'mapToOutput':output,'mouseEmulation':mode})
+ if len(touch)>16:raise ValueError('Too many touch mappings')
+ return {'action':'displays','kanshi':'\n'.join(lines)+'\n','touch':touch}
+
+def atomic(path,text):
+ path.parent.mkdir(parents=True,exist_ok=True)
+ fd,tmp=tempfile.mkstemp(prefix='.'+path.name,dir=path.parent)
+ try:
+  with os.fdopen(fd,'w') as f:f.write(text);os.fchmod(f.fileno(),0o644)
+  os.replace(tmp,path)
+ finally:
+  if os.path.exists(tmp):os.unlink(tmp)
+
+def apply(request):
+ if request['action']=='appearance':
+  path=pathlib.Path('/etc/lightdm/pi-greeter.conf');c=configparser.ConfigParser(interpolation=None);c.read(path)
+  if 'greeter' not in c:c['greeter']={}
+  c['greeter']['gtk-theme-name']=request['theme'];c['greeter']['gtk-font-name']=request['font']
+  import io
+  out=io.StringIO();c.write(out);atomic(path,out.getvalue())
+ else:
+  path=pathlib.Path('/etc/xdg/rpd/greeter/rc.xml');tree=ET.parse(path);root=tree.getroot()
+  for node in list(root):
+   if node.tag.split('}')[-1]=='touch':root.remove(node)
+  for mapping in request['touch']:ET.SubElement(root,'touch',mapping)
+  atomic(path,ET.tostring(root,encoding='unicode')+'\n')
+  atomic(path.parent/'config.kanshi',request['kanshi'])
+
+if __name__=='__main__':
+ try:
+  if os.geteuid()!=0:raise ValueError('Use the authenticated settings action')
+  data=sys.stdin.read(65537)
+  if len(data)>65536:raise ValueError('Settings request too large')
+  apply(validate(json.loads(data)))
+ except (ValueError,KeyError,TypeError,OSError,ET.ParseError) as e:
+  print('rpd-greeter-settings:',e,file=sys.stderr);sys.exit(1)

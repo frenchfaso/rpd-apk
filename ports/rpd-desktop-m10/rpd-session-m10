@@ -1,3 +1,4 @@
 #!/bin/sh
 export RPD_SOFTWARE_RENDERING=1
+export RPD_TWO_FINGER_RIGHT_CLICK=1
 exec rpd-session "$@"

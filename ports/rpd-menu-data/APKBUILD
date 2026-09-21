@@ -16,7 +16,10 @@ builddir="$srcdir/rpd-metas"
 package() {
     mkdir -p "$pkgdir/etc/xdg/rpd/menus" "$pkgdir/usr/share"
     cp common/etc/xdg/menus/rpd-applications.menu "$pkgdir/etc/xdg/rpd/menus/"
-    cp -a common/usr/share/desktop-directories "$pkgdir/usr/share/"
+    cp -a common/usr/share/desktop-directories common/usr/share/raspi-ui-overrides "$pkgdir/usr/share/"
+    mkdir -p "$pkgdir/etc/xdg/rpd"
+    cp -a common/etc/xdg/qt5ct common/etc/xdg/qt6ct "$pkgdir/etc/xdg/rpd/"
+    sed -i "/x-www-browser.desktop/d; /Thonny.desktop/d; /glade.desktop/d" "$pkgdir/usr/share/raspi-ui-overrides/applications/mimeapps.list"
     install -Dm644 debian/copyright "$pkgdir/usr/share/licenses/$pkgname/copyright"
 }
 

@@ -43,8 +43,12 @@ def main():
             version=source_version.split(':')[-1]
             quilt='debian' in previous
             if quilt:version=version.rsplit('-',1)[0]
-            if not re.fullmatch(r'\d+(?:\.\d+)*',version):raise ValueError('Version format requires review: '+version)
-            if tuple(map(int,version.split('.')))<tuple(map(int,previous['version'].split('.'))):
+            if name=='qtstyleplugins-src':
+                match=re.fullmatch(r'(\d+(?:\.\d+)*)\+git(\d+)\.g[0-9a-f]+',version)
+                if not match:raise ValueError('Qt style source version requires review')
+                version=match[1]+'_git'+match[2]
+            elif not re.fullmatch(r'\d+(?:\.\d+)*',version):raise ValueError('Version format requires review: '+version)
+            if tuple(map(int,re.findall(r'\d+',version)))<tuple(map(int,re.findall(r'\d+',previous['version']))):
                 raise ValueError('APK version would regress; epoch mapping requires review: '+name)
             entries=[x.split() for x in record['Checksums-Sha256'].splitlines() if '.tar.' in x]
             if len(entries)!=(2 if quilt else 1):raise ValueError('Source layout changed: '+name)

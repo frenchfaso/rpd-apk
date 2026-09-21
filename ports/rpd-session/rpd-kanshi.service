@@ -1,0 +1,8 @@
+[Unit]
+Description=Desktop output configuration
+PartOf=rpd-session.target
+ConditionPathExists=%h/.config/kanshi/config
+[Service]
+ExecStart=/usr/bin/kanshi
+Restart=on-failure
+RestartSec=2
