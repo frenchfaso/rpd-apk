@@ -1,6 +1,6 @@
 pkgname=rpd-desktop-lite
 pkgver=0.1.0
-pkgrel=20
+pkgrel=21
 pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-lite)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
