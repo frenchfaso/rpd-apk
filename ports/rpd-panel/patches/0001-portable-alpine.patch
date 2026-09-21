@@ -53,3 +53,14 @@
  }
  
  // Widget loading
+--- a/src/panel/plug_conf.c
++++ b/src/panel/plug_conf.c
+@@ -227,7 +227,7 @@
+     g_key_file_free (kf);
+ 
+     // read system default
+-    str = g_build_filename ("/etc/xdg/wf-panel-pi", wiz ? "wizard.ini" : "wf-panel-pi.ini", NULL);
++    str = g_build_filename ("/etc/xdg/rpd/wf-panel-pi", wiz ? "wizard.ini" : "wf-panel-pi.ini", NULL);
+     kf = g_key_file_new ();
+     g_key_file_load_from_file (kf, str, G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
+     g_free (str);

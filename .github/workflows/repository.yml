@@ -1,60 +1,99 @@
-name: Build and publish APK repository
+name: Build, verify and publish ARM64 APK repository
 on:
   push:
     branches: [main]
-  workflow_dispatch:
   schedule:
-    - cron: '17 4 * * *'
+    - cron: '23 5 * * *'
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: rpd-apk-publication
+  group: rpd-apk-production
   cancel-in-progress: false
 jobs:
-  build:
-    runs-on: ubuntu-24.04-arm
+  prepare:
+    runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      revision: ${{ steps.revision.outputs.sha }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Check published Raspberry releases
-        run: python3 scripts/update-upstream.py
-      - name: Build native ARM64 APKs and validate installation
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+      - name: Check signed upstream releases and allocate APK revision
+        run: |
+          python3 scripts/update-upstream.py
+          python3 scripts/bump-revision.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add upstream.lock.json ports/
+          git commit -m 'Update published upstream sources and APK build revisions'
+          git push origin HEAD:main
+      - id: revision
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  build:
+    needs: prepare
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+          persist-credentials: false
+      - name: Build and test with an ephemeral key
+        run: docker run --rm -v "$PWD:/work" -w /work alpine:edge sh scripts/build.sh
+      - name: Include exact packaging sources
+        run: git archive --format=tar.gz HEAD > out/sources/rpd-apk-packaging.tar.gz
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-test-build
+          path: out/
+          retention-days: 3
+  sign:
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verified-test-build
+          path: out/
+      - name: Prepare isolated signing container
+        run: |
+          docker create --name signer -v "$PWD:/work" -w /work alpine:edge sleep infinity
+          docker start signer
+          docker exec signer apk add --no-cache abuild python3 openssl
+      - name: Sign verified packages
         env:
           APK_SIGNING_KEY: ${{ secrets.APK_SIGNING_KEY }}
         run: |
           set -eu
           test -n "$APK_SIGNING_KEY"
-          keydir=$(mktemp -d)
-          trap 'rm -rf "$keydir"' EXIT
-          printf '%s\n' "$APK_SIGNING_KEY" > "$keydir/rpd-apk.rsa"
-          chmod 600 "$keydir/rpd-apk.rsa"
-          docker run --rm -v "$PWD:/work" -v "$keydir:/signing:ro" -w /work \
-            -e RPD_SIGNING_KEY=/signing/rpd-apk.rsa alpine:edge sh scripts/build.sh
-      - name: Record successfully built source versions
+          umask 077
+          keyfile="$RUNNER_TEMP/rpd-apk.rsa"
+          trap 'rm -f "$keyfile"; docker exec signer rm -f /tmp/rpd-apk.rsa' EXIT
+          printf '%s\n' "$APK_SIGNING_KEY" > "$keyfile"
+          docker cp "$keyfile" signer:/tmp/rpd-apk.rsa
+          docker exec signer python3 scripts/sign.py /tmp/rpd-apk.rsa
+      - name: Verify production signatures without the private key
+        run: docker exec signer sh scripts/verify-release.sh
+      - name: Prepare public archive
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add upstream.lock.json ports
-          if ! git diff --cached --quiet; then
-            git commit -m 'Update to published Raspberry desktop sources'
-            git push origin HEAD:main
-          fi
-      - name: Prepare repository website
-        run: |
-          cp keys/rpd-apk.rsa.pub out/
-          cp README.md out/
-          printf '<!doctype html><meta charset="utf-8"><title>RPD APK</title><h1>RPD APK</h1><p>Unofficial Raspberry Pi Desktop components for postmarketOS / Alpine edge aarch64.</p><p><a href="https://github.com/frenchfaso/rpd-apk">Installation and source</a></p><p><a href="rpd-apk.rsa.pub">Repository public key</a></p>' > out/index.html
+          cp README.md out/index.md
+          cp scripts/install-repository.sh out/
           touch out/.nojekyll
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rpd-apk-build
-          path: out/
-      - uses: actions/upload-pages-artifact@v3
+          test -z "$(find out -type f \( -name '*.rsa' -o -name '*.pem' \) -print)"
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: out/
+      - name: Remove signing container
+        if: always()
+        run: docker rm -f signer || true
   deploy:
-    needs: build
+    needs: sign
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -63,6 +102,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy signed repository
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

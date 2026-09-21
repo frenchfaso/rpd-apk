@@ -15,5 +15,11 @@ apk --root "$root" info -s > out/installed-sizes.txt
 apk --root "$root" info > out/installed-packages.txt
 # Version and shared-library load checks in the native clean root.
 chroot "$root" /usr/bin/labwc --version
-chroot "$root" /usr/bin/pcmanfm --version
+chroot "$root" /usr/bin/pcmanfm --help >/dev/null
 printf 'Clean-root dependency and executable checks passed\n' > out/validation.txt
+
+apk add rpd-desktop-m10 grim procps
+# Mesa/libseat do not permit root sessions; use the existing builder account.
+su builder -c "cd /home/builder/rpd-build && sh scripts/headless.sh"
+cp /tmp/rpd-headless.log /tmp/rpd-headless.png out/
+printf 'Native headless compositor test passed\n' >> out/validation.txt

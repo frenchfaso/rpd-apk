@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+case "${1:-}" in /*.desktop) ;; *) exit 2 ;; esac
+[ -f "$1" ] || exit 2
+folder=${XDG_DATA_HOME:-$HOME/.local/share}/applications
+mkdir -p "$folder"
+target=$folder/$(basename "$1")
+[ -f "$target" ] || cp "$1" "$target"
+exec mousepad "$target"
