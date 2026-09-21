@@ -1,0 +1,12 @@
+[Unit]
+Description=Lenovo M10 INX JD9365 firmware backlight
+After=systemd-modules-load.service systemd-udevd.service
+ConditionPathExists=/etc/rpd/m10-backlight-enabled
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/rpd-backlight-m10-load
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

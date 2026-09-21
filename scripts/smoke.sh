@@ -1,12 +1,13 @@
 #!/bin/sh
 set -eu
+sh scripts/configure-pmos-build-repo.sh
 # Dependency resolution and file conflicts are checked in a clean root, not the build root.
 root=$(mktemp -d)
 trap 'rm -rf "$root"' EXIT
 mkdir -p "$root/etc/apk/keys"
 cp /etc/apk/keys/*.pub "$root/etc/apk/keys/"
 cp /etc/apk/repositories "$root/etc/apk/repositories"
-apk --root "$root" --initdb --no-scripts add rpd-desktop-m10
+apk --root "$root" --initdb --no-scripts add linux-postmarketos-qcom-msm89x7@pmos rpd-desktop-m10
 ! apk --root "$root" info | grep -E '^(raspi-config|raspberrypi-bootloader|linux-rpi|rpi-eeprom|apt|dpkg)$'
 # The runtime theme must not pull GTK headers and their development toolchain.
 ! apk --root "$root" info | grep -E '^(rpd-gtk2-engine-dev|gtk\+2\.0-dev)$'
@@ -23,7 +24,7 @@ grep -q 'greeter-session=rpd-greeter-labwc' out/lightdm-config.txt
 grep -q 'user-session=rpd-session-m10' out/lightdm-config.txt
 printf 'Clean-root dependency and executable checks passed\n' > out/validation.txt
 
-apk add --upgrade rpd-desktop-m10 grim procps wlrctl gtk-layer-shell-rpd-test
+apk add --upgrade linux-postmarketos-qcom-msm89x7@pmos rpd-desktop-m10 grim procps wlrctl gtk-layer-shell-rpd-test
 # Provide a real system D-Bus for service activation in the disposable test.
 mkdir -p /run/dbus
 dbus-uuidgen --ensure

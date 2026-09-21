@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+expected=7.1.3-msm89x7
+if [ "$(uname -r)" != "$expected" ]; then
+    echo "M10 backlight needs a module rebuilt for $(uname -r); this package supports $expected" >&2
+    exit 1
+fi
+exec modprobe m10_firmware_backlight panel=inx-jd9365-800p initial_brightness=32

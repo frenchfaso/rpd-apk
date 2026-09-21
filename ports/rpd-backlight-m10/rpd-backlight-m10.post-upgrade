@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+release=7.1.3-msm89x7
+if [ -f "/lib/modules/$release/modules.order" ]; then
+    depmod "$release"
+fi
