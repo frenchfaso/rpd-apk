@@ -49,6 +49,9 @@ grep -q 'Prompt greeter with' /tmp/greeter-test.log
 pid=$(pgrep -n -x pi-greeter)
 address=$(su builder -c "cat /proc/$pid/environ" | tr '\0' '\n' | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p')
 [ -n "$address" ]
+# Hide any automatic focus-triggered keyboard, then prove tapping reopens it.
+su builder -c "DBUS_SESSION_BUS_ADDRESS='$address' gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method sm.puri.OSK0.SetVisible false"
+sleep 1
 su builder -c "DBUS_SESSION_BUS_ADDRESS='$address' gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method org.freedesktop.DBus.Properties.Get sm.puri.OSK0 Visible" | grep -q false
 # Real pointer events exercise GTK's release handler and normal focus behaviour.
 su builder -c 'export XDG_RUNTIME_DIR=/tmp/rpd-greeter-test/runtime WAYLAND_DISPLAY=wayland-0; wlrctl pointer move -2000 -2000; wlrctl pointer move 700 360; wlrctl pointer click left'
