@@ -1,0 +1,60 @@
+--- a/src/pcmanfm/desktop.c
++++ b/src/pcmanfm/desktop.c
+@@ -4752,6 +4752,7 @@
+         g_object_unref(self->dnd_src);
+         g_object_unref(self->dnd_dest);
+         g_object_unref(self->gesture);
++        g_object_unref(self->double_tap);
+     }
+ 
+     if (self->conf.configured)
+@@ -4792,6 +4793,27 @@
+     }
+ 
+     GTK_WIDGET_CLASS(fm_desktop_parent_class)->destroy(object);
++}
++
++/* Native Wayland touches are not GDK_2BUTTON_PRESS events. Let GTK count
++ * taps with its configured time/distance thresholds, for touch input only. */
++static void on_desktop_double_tap(GtkGestureMultiPress *gesture, gint n_press,
++                                  gdouble x, gdouble y, FmDesktop *self)
++{
++    GtkTreeIter it;
++    gboolean in_text;
++    FmDesktopItem *item;
++    GtkTreePath *path;
++
++    if (n_press != 2 || fm_config->single_click || !self->model)
++        return;
++    item = hit_test(self, &it, x, y, &in_text);
++    if (!item)
++        return;
++    path = gtk_tree_model_get_path(GTK_TREE_MODEL(self->model), &it);
++    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
++    fm_folder_view_item_clicked(FM_FOLDER_VIEW(self), path, FM_FV_ACTIVATED, 0, -1, -1);
++    gtk_tree_path_free(path);
+ }
+ 
+ static void on_desktop_gesture_pressed (GtkGestureLongPress *, gdouble x, gdouble y, FmDesktop *self)
+@@ -4913,6 +4935,11 @@
+     fm_dnd_dest_add_targets((GtkWidget*)self, dnd_targets, G_N_ELEMENTS(dnd_targets));
+ 
+     gtk_window_group_add_window(win_group, GTK_WINDOW(self));
++
++    self->double_tap = gtk_gesture_multi_press_new(GTK_WIDGET(self));
++    gtk_gesture_single_set_touch_only(GTK_GESTURE_SINGLE(self->double_tap), TRUE);
++    g_signal_connect(self->double_tap, "pressed", G_CALLBACK(on_desktop_double_tap), self);
++    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(self->double_tap), GTK_PHASE_TARGET);
+ 
+     self->gesture = gtk_gesture_long_press_new (GTK_WIDGET (self));
+     gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (self->gesture), fm_config->gestures_touch_only);
+--- a/src/pcmanfm/desktop.h
++++ b/src/pcmanfm/desktop.h
+@@ -94,6 +94,7 @@
+     /* desktop settings for this monitor */
+     FmDesktopConfig conf;
+     GtkGesture *gesture;
++    GtkGesture *double_tap;
+ };
+ 
+ struct _FmDesktopClass

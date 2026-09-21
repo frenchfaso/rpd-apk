@@ -13,7 +13,7 @@ options="!check"
 source="https://archive.raspberrypi.com/debian/pool/main/p/pcmanfm-pi/pcmanfm-pi_1.7.tar.xz"
 builddir="$srcdir/pcmanfm-pi"
 subpackages="$pkgname-doc"
-source="$source patches/0001-portable-defaults.patch"
+source="$source patches/0001-portable-defaults.patch patches/0002-desktop-double-tap.patch"
 
 build() {
     abuild-meson -Db_lto=false . output
@@ -28,4 +28,5 @@ package() {
 sha512sums="
 a465490ad67bfeaee0abc7aa2ef2acef376ecd48c6f1bab7a7e909a990662cdfa32db8f9162894836e5d5bb4105e02655bc11b737d593820007884f552f6f094  pcmanfm-pi_1.7.tar.xz
 f03c5a7ed3d2ea039705185e05d4d43bfeba5e1c01f572380c9b544c08ecbfcdc469bfc7dd1ce27de802386b47bdd885e66820e5c810376397e46f69d070afb6  0001-portable-defaults.patch
+42ccf64ccba6f9e137202732951ce2fc31b7e6e618184e6d51e4ec010566da9d1b091f7a8d328eb8e39b9f2005cec49404dda5a8134a89bc0c1a4201a76332cd  0002-desktop-double-tap.patch
 "
