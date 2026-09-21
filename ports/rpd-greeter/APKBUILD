@@ -12,7 +12,7 @@ options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="https://archive.raspberrypi.com/debian/pool/main/p/pi-greeter/pi-greeter_1.3.tar.xz"
 builddir="$srcdir/pi-greeter"
-source="$source patches/0001-portable-artwork.patch patches/0002-standard-autotools.patch"
+source="$source patches/0001-portable-artwork.patch patches/0002-standard-autotools.patch patches/0003-touch-keyboard.patch"
 
 prepare() {
     default_prepare
@@ -34,4 +34,5 @@ sha512sums="
 c7881278d13ac5c10355d29486a19f78ba4126d8eb0136b3d23d1fbb460fc28ac02985072efb00e90b892504b82f55959ba2faa98246e00c5943624d8d38312f  pi-greeter_1.3.tar.xz
 a9af01640da51eb3cea571ff79d0271115155ec6038c7d2418fa9338c83842a7def62aad13256c19645bd2750dac9f2fb2b36e0f4a3a45bff42ef2ed903cde4c  0001-portable-artwork.patch
 b7188656642d36a091f0c8e9d8d5944346283d1e0b02504331a3a19c3e8418b60dbe675c8ccd65060937c29b52142226e22028a86d5abaa1801c07154eb5bc1d  0002-standard-autotools.patch
+b26f2b70ee1c46b6afdf34e221bdd1f9e94aaa00f698acb55a5ea9d49bb5a3359f268c88e54f27ff09a0212ac42977a7204c2d809822d15e49421582aeacf1cd  0003-touch-keyboard.patch
 "

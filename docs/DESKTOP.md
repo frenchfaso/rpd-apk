@@ -85,8 +85,16 @@ input events from a physical Bluetooth mouse are not yet tested.
 
 The greeter configuration uses password login, with no stored password or
 automatic login. Authentication and automatic keyring unlock use LightDM's
-distribution PAM stack. Greeter compilation and configuration are checked in CI;
+distribution PAM stack. CI starts real LightDM in an isolated headless test, checks its greeter handshake,
+PAM password prompt and visible Squeekboard;
 physical login, keyboard entry and the return from logout require device testing.
 Before enabling LightDM at boot, perform one reversible on-device trial with SSH
 available and the Buffyboard console retained as recovery. BlueZ should be
 enabled through the host service manager during that deployment.
+
+Squeekboard comes from Alpine (the same keyboard project used by Raspberry Pi
+OS); the panel toggle is Raspberry's published `wfplug-squeek`. The greeter opens
+the keyboard when the password field is tapped/clicked and also has an explicit
+keyboard button. This
+small portability patch avoids depending on Raspberry-only keyboard helpers.
+Buffyboard is retained for text-console recovery, not used inside Wayland.

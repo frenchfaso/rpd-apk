@@ -16,12 +16,12 @@ apk --root "$root" info > out/installed-packages.txt
 # Version and shared-library load checks in the native clean root.
 chroot "$root" /usr/bin/labwc --version
 chroot "$root" /usr/bin/pcmanfm --help >/dev/null
-chroot "$root" /usr/bin/lightdm --show-config > out/lightdm-config.txt
+chroot "$root" /usr/bin/lightdm --show-config > out/lightdm-config.txt 2>&1
 grep -q 'greeter-session=rpd-greeter-labwc' out/lightdm-config.txt
 grep -q 'user-session=rpd-session-m10' out/lightdm-config.txt
 printf 'Clean-root dependency and executable checks passed\n' > out/validation.txt
 
-apk add --upgrade rpd-desktop-m10 grim procps
+apk add --upgrade rpd-desktop-m10 grim procps wlrctl
 # Provide a real system D-Bus for service activation in the disposable test.
 mkdir -p /run/dbus
 dbus-uuidgen --ensure
@@ -30,3 +30,5 @@ dbus-uuidgen --ensure
 su builder -c "cd /home/builder/rpd-build && sh scripts/headless.sh"
 cp /tmp/rpd-headless.log /tmp/rpd-headless.png /tmp/rpd-keyboard.png out/
 printf 'Native headless compositor test passed\n' >> out/validation.txt
+
+sh scripts/greeter-smoke.sh
