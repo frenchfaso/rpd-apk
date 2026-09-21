@@ -1,14 +1,15 @@
 pkgname=rpd-session
 pkgver=0.1.0
-pkgrel=10
+pkgrel=11
 pkgdesc="Portable Raspberry Pi Desktop session and defaults"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
 depends="gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard network-manager-applet mate-polkit polkit mousepad"
 options="!check"
-source="rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop rpd-network.desktop rpd-logout.desktop wf-panel-pi.ini rc.xml settings.ini"
+source="desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop rpd-network.desktop wf-panel-pi.ini rc.xml settings.ini"
 package() {
+    install -Dm644 "$srcdir/desktop-items-0.conf" "$pkgdir/etc/xdg/rpd/pcmanfm/default/desktop-items-0.conf"
     install -Dm644 "$srcdir/rpd-panel.service" "$pkgdir/usr/lib/systemd/user/rpd-panel.service"
     install -Dm644 "$srcdir/pipewire.desktop" "$pkgdir/etc/xdg/rpd/autostart/pipewire.desktop"
     install -Dm644 "$srcdir/rpd-session.target" "$pkgdir/usr/lib/systemd/user/rpd-session.target"
@@ -25,24 +26,23 @@ package() {
     install -Dm644 "$srcdir/wf-panel-pi.ini" "$pkgdir/etc/xdg/rpd/wf-panel-pi/wf-panel-pi.ini"
     install -Dm644 "$srcdir/rpd-session.desktop" "$pkgdir/usr/share/wayland-sessions/rpd-session.desktop"
     install -Dm644 "$srcdir/rpd-network.desktop" "$pkgdir/usr/share/applications/rpd-network.desktop"
-    install -Dm644 "$srcdir/rpd-logout.desktop" "$pkgdir/usr/share/applications/rpd-logout.desktop"
 }
 sha512sums="
+d2e94e9575567cb2c1404c6ba3f2d3bb3d5a6e2968b56904c28df23628de940bc3d5fdced1da6023f39e47ce70dae571d17a6fcb4fe923f3779da7c180046890  desktop-items-0.conf
 d7dab4c715e88bc1055a77630f29708077c0d1bc2603f6b64768b36cd88524ebb10dea640286080dde60cfd0eabe1e11cd00f13a386aa22d9c356a88c68b9c4b  rpd-panel.service
 b83e352e328585de21607fc8f2c719d543a475ce2c4ba1d63b7342f113ed873cd1e273843217aa9d9275c62458ceebd9d3978aca09fe73bddc6a677cf14bb9f1  pipewire.desktop
 c40744049233321c977b41b574c7e1e81ce8ce958bbb719e0fc96ed814f0a50e84e82807698154589584afb6f1aa1ac2e5c602f715661e85d19c29b1bf3a8212  rpd-session.target
-c6b77ba5e7b51fce3776c82adba9229331632fc26ca55d191a105bc41b3720439d7e59baf43ce26f0ed8dc737387e8a670d408d4a6e09d201ca0ebde99e978cc  xsettingsd.conf
+9e8fa452e1670e34e9e8a235b6457e3411b9d8cacc7275d96f6a80cae43e08d53d50baf1c14de85b031c00aeaa95920370a8378b8922562298f72ac0486ea93b  xsettingsd.conf
 e9f6ca6a9ced3181eaddac8753a5aaa6d7df181775717977574865133e56b84aac3c4148e6fac9818cea6c89f3a137fced6119216935c34d27b03411f4b94128  labwc-portals.conf
 4a69aeb9ff8f59c14e0c34e7459fa3fd8bf4f802bfae11076c77869858c8f17a2890a30942c058beec5c79e042f49db6ed5e5bb854bf81e0ec09c919b11a3dd6  nm-applet.desktop
 6c6098da54bfb088bf1bc8b9e9f53c0027bf5cda07c7fc5b195c66b9302b84101fdccbfd68697bb8391d2d397d07f1c0a76ae98570cb3c1d28425f106959127e  rpd-edit-launcher
-b5086d4d01cf03292743183f9b2067d2ea4fd714e6423f521aa8908b30127e56c0a1181d865897f5bcfb562180d8f54a710b8cc7c7264a20690aea07e85353d4  rpd-session
+75d6d6b699b3be50c027db67dac2cf0379e2c74b381d67fc99ae0519e9996e66cb318b964ada5e8ed465c653fb41df177543e7ce9fabb2843b80c9dd2477f0a9  rpd-session
 78d911838fe99ec420cc1b931a550f72c5b96138920d670dbdad32a15bbc4e73766881ec731a33edf3eeb8292b5afcf8084966f0064fa00f9c3ed4523da23ffa  rpd-autostart
-a8a71c5d3ed1a8fae82684df3dd29e3c51e5ce8848f4c1f1b91457ededcd4733c2767efc7b2e0a0788bbd95d0a08402a839239dd27fcd6bf6f7e0210c3165ec9  rpd-session-services
+d73342c5a68541f954f3b4a9e5ab7ee898e97c8e50cdd007a5eb2dcd9710db9bbec16512b7dbe12e83737b04c498315149bdda1686e12e83e02df6de1dbe0965  rpd-session-services
 e27b1eac94e89f723a1c7b910c60d9ccd2031ab978089d30a2091323eacded63bc85ed6b7fd5bc2473b1c9d36a5b1739475ec444e5988308c07c865d8a51a11f  rpd-panel-settings
 6087ca2bd85e15cc63782f67e684cc6d980481b153ff90608de92d5101702081bbd36398a98baeaefb36dce4521c302eab11ffad7cffb186a4d3e08dc6a2ba41  rpd-session.desktop
 21fc43b8e8530e50731c6180410da9fb33efb0ef458bb6e3ab40f5d4274416cabfca4296ffe76f6c0f22eb8187ad6ce4d31d126bc11a832abe8d116948167eea  rpd-network.desktop
-77e7dfb9a056f28274240814a0e3d5a2f4381defdd0c237a0fb9013cfbea362f0ce0052e8bb667bed31d521b65588dd997f19596613c8b9ada1d38128c16ec41  rpd-logout.desktop
-34b6ba9b87dddbc705d6d42b38fb7ec68ee3bb96b1ada349429544283099afe8e911ef4f87be26b8ff1d6b278ef098c01880dd6b4b0633fa62a41eafb7ff4d3e  wf-panel-pi.ini
-701fe02f24b70836553571ad1f1d1ab17bb31450e3bac1e32d5e8337384153e215fefb489f58ea1db35790fcc996f124aa02f0a63dd827085783276e45e3e861  rc.xml
-04bf9865bf7366bae7ccecd7e0168bb8b931b8fabb52f9dc521f4f497bdfaeab6b18b5f01a6eac7f5aada842acb34fc534d4ffb505d5ddfcd897f466e5ffb598  settings.ini
+dfb7949dd0466e0e6aaba691f7f583e5b7f088d747f190bf0bbb6e12c764d0a8d75f3de419612f245ce96966c91ce37486cfdb42e84887f0f38f92afa8886854  wf-panel-pi.ini
+a857eafd9470f3c15436557ef6baa52fc35690a32036cb2c9b4ac3ac931e36cae2c81b4b75ce192df25001936bba9a633c4167063f419de0672c2b987b736489  rc.xml
+d2a44727648c404424823a72b4c4ac4159559827403e7011b62ea975b195d1252605048f13941bbb693e9ce959382855caaf27a2e3d103b32468ff8f4ff384fd  settings.ini
 "

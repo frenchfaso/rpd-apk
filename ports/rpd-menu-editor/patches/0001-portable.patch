@@ -1,0 +1,11 @@
+--- a/src/menuedit.c
++++ b/src/menuedit.c
+@@ -966,7 +966,7 @@
+     dialog_reload = DIALOG_NOT_OPEN;
+ 
+     // read menu prefix and get system and local filenames
+-    sysmenufile = g_strdup_printf ("/etc/xdg/menus/%sapplications.menu", getenv ("XDG_MENU_PREFIX") ? getenv ("XDG_MENU_PREFIX") : "lxde-");
++    sysmenufile = g_strdup_printf ("/etc/xdg/rpd/menus/%sapplications.menu", getenv ("XDG_MENU_PREFIX") ? getenv ("XDG_MENU_PREFIX") : "lxde-");
+     usermenufile = g_strdup_printf ("%s/menus/%sapplications.menu", g_get_user_config_dir (), getenv ("XDG_MENU_PREFIX") ? getenv ("XDG_MENU_PREFIX") : "lxde-");
+ 
+     init_dirs = check_dirs ();

@@ -1,0 +1,139 @@
+--- a/src/desktop.c
++++ b/src/desktop.c
+@@ -119,7 +119,7 @@
+     if (cur_conf.common_bg)
+     {
+         fname = g_strdup_printf ("desktop-items-0.conf");
+-        buf = g_build_filename (global ? "/etc/xdg" : g_get_user_config_dir (), "pcmanfm", "default", fname, NULL);
++        buf = g_build_filename (global ? "/etc/xdg/rpd" : g_get_user_config_dir (), "pcmanfm", "default", fname, NULL);
+         g_free (fname);
+         return buf;
+     }
+@@ -132,7 +132,7 @@
+ #pragma GCC diagnostic pop
+         fname = g_strdup_printf ("desktop-items-%s.conf", buf);
+         g_free (buf);
+-        buf = g_build_filename (global ? "/etc/xdg" : g_get_user_config_dir (), "pcmanfm", "default", fname, NULL);
++        buf = g_build_filename (global ? "/etc/xdg/rpd" : g_get_user_config_dir (), "pcmanfm", "default", fname, NULL);
+         g_free (fname);
+         if (write || access (buf, F_OK) == 0) return buf;
+         else g_free (buf);
+@@ -140,14 +140,14 @@
+     }
+ 
+     fname = g_strdup_printf ("desktop-items-%u.conf", desktop);
+-    buf = g_build_filename (global ? "/etc/xdg" : g_get_user_config_dir (), "pcmanfm", "default", fname, NULL);
++    buf = g_build_filename (global ? "/etc/xdg/rpd" : g_get_user_config_dir (), "pcmanfm", "default", fname, NULL);
+     g_free (fname);
+     return buf;
+ }
+ 
+ char *pcmanfm_g_file (gboolean global)
+ {
+-    return g_build_filename (global ? "/etc/xdg" : g_get_user_config_dir (), "pcmanfm", "default", "pcmanfm.conf", NULL);
++    return g_build_filename (global ? "/etc/xdg/rpd" : g_get_user_config_dir (), "pcmanfm", "default", "pcmanfm.conf", NULL);
+ }
+ 
+ static void load_pcman_settings (int desktop)
+--- a/src/defaults.c
++++ b/src/defaults.c
+@@ -578,7 +578,7 @@
+         if (!g_file_test (user_config_file, G_FILE_TEST_IS_REGULAR))
+         {
+             check_directory (user_config_file);
+-            vsystem ("cp /etc/xsettingsd/xsettingsd.conf %s", user_config_file);
++            vsystem ("cp /etc/xdg/rpd/xsettingsd/xsettingsd.conf %s", user_config_file);
+         }
+     }
+     g_free (user_config_file);
+@@ -639,18 +639,18 @@
+     int i;
+     // defaults for controls
+ 
+-    // /etc/xdg/lxpanel-pi/panels/panel
++    // /etc/xdg/rpd/lxpanel-pi/panels/panel
+     if (wm == WM_OPENBOX) defaults_lxpanel ();
+     else defaults_wfpanel ();
+ 
+-    // /etc/xdg/lxsession/LXDE-pi/desktop.conf
++    // /etc/xdg/rpd/lxsession/LXDE-pi/desktop.conf
+     defaults_lxsession ();
+ 
+-    // /etc/xdg/pcmanfm/LXDE-pi/desktop-items-n.conf
++    // /etc/xdg/rpd/pcmanfm/LXDE-pi/desktop-items-n.conf
+     for (i = 0; i < ndesks; i++)
+         defaults_pcman (i);
+ 
+-    // /etc/xdg/pcmanfm/LXDE-pi/pcmanfm.conf
++    // /etc/xdg/rpd/pcmanfm/LXDE-pi/pcmanfm.conf
+     defaults_pcman_g ();
+ 
+     // GTK 3 theme defaults
+--- a/src/taskbar.c
++++ b/src/taskbar.c
+@@ -97,12 +97,12 @@
+ 
+ char *lxpanel_file (gboolean global)
+ {
+-    return g_build_filename (global ? "/etc/xdg" : g_get_user_config_dir (), "lxpanel-pi", "panels/panel", NULL);
++    return g_build_filename (global ? "/etc/xdg/rpd" : g_get_user_config_dir (), "lxpanel-pi", "panels/panel", NULL);
+ }
+ 
+ char *wfpanel_file (gboolean global)
+ {
+-    return g_build_filename (global ? "/etc/xdg" : g_get_user_config_dir (), "wf-panel-pi", "wf-panel-pi.ini", NULL);
++    return g_build_filename (global ? "/etc/xdg/rpd" : g_get_user_config_dir (), "wf-panel-pi", "wf-panel-pi.ini", NULL);
+ }
+ 
+ static void load_lxpanel_settings (void)
+@@ -412,7 +412,7 @@
+     {
+         // need a local copy to take the changes
+         check_directory (user_config_file);
+-        vsystem ("cp /etc/xdg/lxpanel-pi/panels/panel %s", user_config_file);
++        vsystem ("cp /etc/xdg/rpd/lxpanel-pi/panels/panel %s", user_config_file);
+     }
+ 
+     // use sed to write
+--- a/src/system.c
++++ b/src/system.c
+@@ -177,12 +177,12 @@
+ 
+ char *lxsession_file (gboolean global)
+ {
+-    return g_build_filename (global ? "/etc/xdg" : g_get_user_config_dir (), "lxsession", "rpd-x", "desktop.conf", NULL);
++    return g_build_filename (global ? "/etc/xdg/rpd" : g_get_user_config_dir (), "lxsession", "rpd-x", "desktop.conf", NULL);
+ }
+ 
+ char *xsettings_file (gboolean global)
+ {
+-    return g_build_filename (global ? "/etc" : g_get_user_config_dir (), "xsettingsd/xsettingsd.conf", NULL);
++    return g_build_filename (global ? "/etc/xdg/rpd" : g_get_user_config_dir (), "xsettingsd/xsettingsd.conf", NULL);
+ }
+ 
+ static char *openbox_file (void)
+@@ -858,7 +858,7 @@
+     {
+         // need a local copy to take the changes
+         check_directory (user_config_file);
+-        vsystem ("cp /etc/xsettingsd/xsettingsd.conf %s", user_config_file);
++        vsystem ("cp /etc/xdg/rpd/xsettingsd/xsettingsd.conf %s", user_config_file);
+     }
+ 
+     ctheme = rgba_to_gdk_color_string (&cur_conf.theme_colour[cur_conf.darkmode]);
+@@ -1052,13 +1052,13 @@
+         {
+             str = g_build_filename (g_get_user_config_dir (), "qt6ct/colors/", NULL);
+             g_mkdir_with_parents (str, S_IRUSR | S_IWUSR | S_IXUSR);
+-            vsystem ("cp /etc/xdg/qt6ct/colors/* %s/qt6ct/colors/", g_get_user_config_dir ());
++            vsystem ("cp /etc/xdg/rpd/qt6ct/colors/* %s/qt6ct/colors/", g_get_user_config_dir ());
+             g_free (str);
+         }
+ 
+         // read in data from file to a key file - read system defaults first for Qt6, as they aren't inherited...
+         kf = g_key_file_new ();
+-        if (index) g_key_file_load_from_file (kf, "/etc/xdg/qt6ct/qt6ct.conf", G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
++        if (index) g_key_file_load_from_file (kf, "/etc/xdg/rpd/qt6ct/qt6ct.conf", G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
+         g_key_file_load_from_file (kf, user_config_file, G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS, NULL);
+ 
+         // update changed values in the key file

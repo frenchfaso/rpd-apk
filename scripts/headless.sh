@@ -29,6 +29,7 @@ EOF
 rpd-session > /tmp/rpd-headless.log 2>&1 &
 session_pid=$!
 export WAYLAND_DISPLAY=wayland-0
+export XDG_CONFIG_DIRS=/etc/xdg/rpd:/etc/xdg XDG_MENU_PREFIX=rpd- XDG_CURRENT_DESKTOP=labwc
 for attempt in $(seq 1 30); do
     [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && break
     kill -0 "$session_pid"
@@ -53,6 +54,26 @@ test ! -e "$HOME/rpd-trash-smoke"
 test -f "$HOME/.local/share/Trash/files/rpd-trash-smoke"
 gio list trash:/// | grep -q rpd-trash-smoke
 gio trash --empty
+# Check the official classic menu and native settings, not just library files.
+wfpanelctl smenu menu
+sleep 1
+grim /tmp/rpd-classic-menu.png
+wfpanelctl smenu menu
+rpcc desktop > /tmp/rpd-control-center.log 2>&1 &
+settings_pid=$!
+sleep 3
+kill -0 "$settings_pid"
+grim /tmp/rpd-control-center.png
+kill "$settings_pid"
+wait "$settings_pid" || :
+for app in lxtask galculator gui-runcmd; do
+    "$app" > "/tmp/rpd-$app.log" 2>&1 &
+    app_pid=$!
+    sleep 1
+    kill -0 "$app_pid"
+    kill "$app_pid"
+    wait "$app_pid" || :
+done
 # Exercise the shipped applications without invoking any power actions.
 pcmanfm "$(xdg-user-dir DOCUMENTS)" &
 sleep 2

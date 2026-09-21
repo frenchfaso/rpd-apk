@@ -26,11 +26,14 @@
  desktop_fg=#ffffff
  desktop_shadow=#000000
  show_wm_menu=0
-@@ -35,7 +35,6 @@
- max_tab_chars=32
- sort=name;ascending;
- columns=name;size;mtime;
--prefs_app=rpcc desktop
- common_bg=0
+--- a/data/meson.build
++++ b/data/meson.build
+@@ -20,7 +20,7 @@
+ )
  
- [places]
+ install_data('pcmanfm.conf',
+-  install_dir : get_option('sysconfdir') / 'xdg' / 'pcmanfm' / 'default',
++  install_dir : get_option('sysconfdir') / 'xdg' / 'rpd' / 'pcmanfm' / 'default',
+ )
+ 
+ install_data('archivers.list', 'terminals.list',

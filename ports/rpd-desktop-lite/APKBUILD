@@ -1,11 +1,11 @@
 pkgname=rpd-desktop-lite
 pkgver=0.1.0
-pkgrel=10
+pkgrel=11
 pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-lite)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-login rpd-bluetooth bluez rpd-session rpd-ejecter rpd-network rpd-volume rpd-battery rpd-shutdown rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-menu-data rpd-file-manager rpd-theme rpd-icons lxterminal mousepad xarchiver gvfs gvfs-fuse gvfs-mtp gvfs-gphoto2 gvfs-smb gvfs-nfs gvfs-dav udisks2 dosfstools exfatprogs ntfs-3g xdg-utils xdg-user-dirs font-dejavu font-nunito font-liberation mesa-dri-gallium mesa-egl mesa-gles xwayland"
+depends="rpd-input-settings rpd-classic-menu rpd-control-center rpd-appearance rpd-run rpd-screenshot rpd-menu-editor rpd-shortcuts eom evince galculator rpd-task-manager rpd-login rpd-bluetooth bluez rpd-session rpd-ejecter rpd-network rpd-volume rpd-battery rpd-shutdown rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-menu-data rpd-file-manager rpd-theme rpd-icons lxterminal mousepad xarchiver gvfs gvfs-fuse gvfs-mtp gvfs-gphoto2 gvfs-smb gvfs-nfs gvfs-dav udisks2 dosfstools exfatprogs ntfs-3g xdg-utils xdg-user-dirs font-dejavu font-nunito font-liberation mesa-dri-gallium mesa-egl mesa-gles xwayland"
 options="!check"
 
 package() {

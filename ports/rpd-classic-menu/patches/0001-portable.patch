@@ -1,0 +1,39 @@
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -1,6 +1,5 @@
+ gtk = dependency('gtk+-3.0')
+ gtkmm = dependency('gtkmm-3.0', version: '>=3.24')
+-lxpanel = dependency('lxpanel-pi')
+ wfpanel = dependency('wf-panel-pi')
+ menu_cache = dependency('libmenu-cache')
+ 
+@@ -8,22 +7,6 @@
+   'smenu.c',
+   'gtk-launch.c',
+   'properties.c'
+-)
+-
+-lsources = files(
+-  'smenu_lxp.c'
+-)
+-
+-ldeps = [ gtk, lxpanel, menu_cache ]
+-
+-largs = [ '-DPACKAGE_DATA_DIR="' + lresource_dir + '"', '-DGETTEXT_PACKAGE="lpplug_' + meson.project_name() + '"', '-DUSES_MENUCACHE' ]
+-
+-shared_module(meson.project_name(), [ sources, lsources ],
+-        dependencies: ldeps,
+-        install: true,
+-        install_dir: get_option('libdir') / 'lxpanel-pi',
+-        c_args : largs,
+-        name_prefix: ''
+ )
+ 
+ wsources = files(
+--- a/data/meson.build
++++ b/data/meson.build
+@@ -1,4 +1,2 @@
+-lui_dir = join_paths(lresource_dir, 'ui')
+-install_data('properties.ui', install_dir: lui_dir)
+ wui_dir = join_paths(wresource_dir, 'ui')
+ install_data('properties.ui', install_dir: wui_dir)

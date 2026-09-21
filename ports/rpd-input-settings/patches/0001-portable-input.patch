@@ -1,0 +1,13 @@
+--- a/src/rasputin.c
++++ b/src/rasputin.c
+@@ -216,7 +216,9 @@
+     g_signal_connect (kb_interval, "button-release-event", G_CALLBACK (on_kb_range_changed), &interval);
+ 
+     kb_layout = (GtkWidget *) gtk_builder_get_object (builder, "keyboard_layout");
+-    g_signal_connect (kb_layout, "clicked", G_CALLBACK (on_set_keyboard_ext), NULL);
++    /* Keyboard layouts belong to the excluded raspi-config module. */
++    gtk_widget_set_no_show_all (kb_layout, TRUE);
++    gtk_widget_hide (kb_layout);
+ 
+     dclick_btn = (GtkWidget *) gtk_builder_get_object (builder, "dclick");
+     gesture = gtk_gesture_multi_press_new (dclick_btn);

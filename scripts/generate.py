@@ -5,21 +5,30 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 lock=json.loads((ROOT/'upstream.lock.json').read_text())
 COMMON='meson samurai pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev'
 NAMES={'wf-panel-pi':'rpd-panel','pplug-clock':'rpd-clock','wfplug-squeek':'rpd-keyboard-button','wfplug-wlist':'rpd-window-list','wfplug-imenu':'rpd-menu','pcmanfm-pi':'rpd-file-manager','pixtrix-theme':'rpd-theme','pixtrix-icons':'rpd-icons','rpd-metas':'rpd-menu-data','pplug-ejecter':'rpd-ejecter','pplug-netman':'rpd-network','pplug-volumepulse':'rpd-volume','pplug-batt':'rpd-battery','pishutdown':'rpd-shutdown','pi-greeter':'rpd-greeter','pplug-bluetooth':'rpd-bluetooth'}
+NAMES.update({'pplug-menu': 'rpd-classic-menu', 'rpcc': 'rpd-control-center', 'pipanel': 'rpd-appearance', 'gui-runcmd': 'rpd-run', 'gui-screenshot': 'rpd-screenshot', 'merp': 'rpd-menu-editor', 'pished': 'rpd-shortcuts'})
+NAMES['rasputin']='rpd-input-settings'
+NAMES['lxtask']='rpd-task-manager'
 for name,m in lock.items():
  pkg=NAMES[name];p=ROOT/'ports'/pkg;p.mkdir(parents=True,exist_ok=True)
  asset=name in ['pixtrix-theme','pixtrix-icons','rpd-metas']
- license='MIT' if name=='wf-panel-pi' else 'GPL-2.0-or-later' if asset or name in ['pcmanfm-pi','pplug-netman','pi-greeter'] else 'BSD-3-Clause'
+ license='MIT' if name=='wf-panel-pi' else 'GPL-2.0-or-later' if asset or name in ['pcmanfm-pi','pplug-netman','pi-greeter','lxtask'] else 'BSD-3-Clause'
+ if name in ['pplug-menu','gui-runcmd']:license='BSD-3-Clause AND GPL-2.0-or-later'
  depends='rpd-panel' if name.startswith('wfplug-') or name.startswith('pplug-') else ''
+ if name in ['pipanel','merp','pished','rasputin']:depends='rpd-control-center procps-ng grep'
+ if name=='gui-screenshot':depends='grim'
+ if name=='pplug-menu':depends+=' rpd-control-center rpd-menu-editor rpd-run rpd-shutdown'
  if name=='wf-panel-pi':depends='gtk-layer-shell>=0.10.1-r100'
  if name=='pplug-ejecter':depends+=' gvfs udisks2'
  if name=='pplug-netman':depends+=' networkmanager network-manager-applet gnome-keyring'
  if name=='pplug-volumepulse':depends+=' pipewire-pulse wireplumber'
  if name=='pplug-bluetooth':depends+=' bluez'
+ if name=='lxtask':depends='!lxtask'
  if name=='pi-greeter':depends='lightdm rpd-theme rpd-icons'
  if name=='pishutdown':depends='swaylock usbutils'
  if name=='pixtrix-icons':depends='adwaita-icon-theme'
  # The portable session uses GTK3; Raspberry's GTK2 pixflat engine is omitted.
  extra='\nsubpackages="$pkgname-dev"' if name=='wf-panel-pi' else ''
+ if name=='lxtask':extra+='\nsubpackages="$pkgname-doc"'
  if name=='pcmanfm-pi':
   depends='!pcmanfm wlr-randr'
   extra+='\nsubpackages="$pkgname-doc"'
@@ -32,7 +41,7 @@ url="https://github.com/frenchfaso/rpd-apk"
 arch="{'noarch' if asset else 'aarch64'}"
 license="{license}"
 depends="{depends}"
-makedepends="{'' if asset else COMMON + {'pplug-netman':' networkmanager-dev libnma-dev libsecret-dev','pplug-volumepulse':' pulseaudio-dev','pi-greeter':' lightdm-dev autoconf automake libtool intltool gobject-introspection-dev'}.get(name,'') + (' rpd-panel-dev' if depends.startswith('rpd-panel') else '')}"
+makedepends="{'' if asset else COMMON + {'pplug-netman':' networkmanager-dev libnma-dev libsecret-dev','pplug-volumepulse':' pulseaudio-dev','lxtask':' autoconf automake libtool intltool','pi-greeter':' lightdm-dev autoconf automake libtool intltool gobject-introspection-dev'}.get(name,'') + (' rpd-panel-dev' if depends.startswith('rpd-panel') else '')}"
 options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="{m['url']}"
@@ -40,7 +49,23 @@ builddir="$srcdir/{m['directory']}"{extra}
 '''
  patches=sorted((p/'patches').glob('*.patch')) if (p/'patches').exists() else []
  if patches:text+='source="$source '+' '.join('patches/'+x.name for x in patches)+'"\n'
- if name=='pi-greeter':
+ if name=='lxtask':
+  text+='source="$source '+m['debian']['url']+'"\n'
+  text+='''
+prepare() {
+    default_prepare
+    # Raspberry's V3D-only GPU patch is deliberately excluded.
+    test "$(cat "$srcdir/debian/patches/series")" = "$(printf 'gtk3.patch\ngpustats.patch')"
+    patch -p1 < "$srcdir/debian/patches/gtk3.patch"
+    cp -a "$srcdir/debian" .
+    autoreconf -fi
+}
+build() {
+    ./configure --prefix=/usr --enable-gtk3
+    make
+}
+'''
+ elif name=='pi-greeter':
   text+='''
 prepare() {
     default_prepare
@@ -65,9 +90,10 @@ build() {
  'pixtrix-icons':'mkdir -p "$pkgdir/usr/share/icons"\n    cp -a PiXtrix "$pkgdir/usr/share/icons/"',
  'rpd-metas':'mkdir -p "$pkgdir/etc/xdg/rpd/menus" "$pkgdir/usr/share"\n    cp common/etc/xdg/menus/rpd-applications.menu "$pkgdir/etc/xdg/rpd/menus/"\n    cp -a common/usr/share/desktop-directories "$pkgdir/usr/share/"',
  }[name]
- if name=='pi-greeter':body='make DESTDIR="$pkgdir" install'
+ if name in ['pi-greeter','lxtask']:body='make DESTDIR="$pkgdir" install'
  text+='\npackage() {\n    '+body+'\n    install -Dm644 debian/copyright "$pkgdir/usr/share/licenses/$pkgname/copyright"\n}\n'
  sums=[f"{m['sha512']}  {m['filename']}"]+[hashlib.sha512(x.read_bytes()).hexdigest()+'  '+x.name for x in patches]
+ if 'debian' in m:sums.append(m['debian']['sha512']+'  '+m['debian']['filename'])
  # abuild strips directory components when fetching local sources.
  text+='\nsha512sums="\n'+'\n'.join(sums)+'\n"\n'
  (p/'APKBUILD').write_text(text)

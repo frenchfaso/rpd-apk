@@ -6,22 +6,22 @@ Do not treat a successful build as an M10 graphics qualification. The M10 curren
 
 ## Package selection
 
-- `rpd-desktop-lite`: labwc; Raspberry wf-panel-pi, clock, application menu, window list, eject/network/volume/battery plugins and Squeekboard button; Raspberry PCManFM fork; PiXtrix theme/icons; LXTerminal, Mousepad, Xarchiver; NetworkManager GUI, MATE polkit agent, keyring, GVFS/UDisks automount, XDG session services, PipeWire/WirePlumber, portals, XWayland and software-capable Mesa.
+- `rpd-desktop-lite`: labwc; Raspberry wf-panel-pi, clock, application menu, window list, eject/network/volume/battery plugins and Squeekboard button; Raspberry PCManFM fork; PiXtrix theme/icons; LXTerminal, Mousepad, Xarchiver, LXTask, Galculator, Eye of MATE, Evince, Raspberry Run and Screenshot; native Raspberry Control Centre modules for appearance, panel, menu editing, shortcuts and mouse/keyboard; NetworkManager GUI, MATE polkit agent, keyring, GVFS/UDisks automount, XDG session services, PipeWire/WirePlumber, portals, XWayland and software-capable Mesa.
 - `rpd-desktop-m10`: adds an explicit software-rendered session entry. It selects software rendering for desktop and greeter. LightDM and the Raspberry Pi greeter are configured. Host service presets may enable LightDM during installation (postmarketOS systemd does this). Stop Buffyboard before a graphical trial and verify service enablement before rebooting.
 - `rpd-desktop-browser`: optional Firefox, kept outside the smallest installation.
 - Buffyboard remains the console keyboard. Squeekboard is the separate Wayland keyboard.
 
 Official Raspberry sources are tracked from the signed Trixie source index. Standard applications and labwc follow Alpine's packaging; they are not replaced by Debian binaries. Hardware plugins (GPU temperature, voltage/power warnings), Raspberry Connect, raspi-config, piwiz, cloning/imaging tools, APT updater and recommended educational suites are excluded. Audio and battery controls use the host services; physical hardware support remains dependent on the M10 kernel. The Raspberry Bluetooth panel plugin and BlueZ are included for mice, keyboards and other peripherals. No browser, office suite or IDE is pulled into the minimal profile.
 
-The portable panel's preferences open its per-user configuration in Mousepad. The Raspberry Control Centre and the legacy GTK2 theme engine are excluded. Launcher edits create a per-user desktop entry and open it in Mousepad. See [desktop integration](docs/DESKTOP.md) for the upstream mapping, service lifecycle and hardware verification limits.
+The reference is **current Raspberry Pi OS Trixie ARM for Raspberry Pi boards**, not the separate PC/x86 Raspberry Pi Desktop image. The default panel uses the official classic `smenu`, separate launchers and window list, with shutdown inside the menu. Native RPCC preferences replace the earlier text-editor fallback. The legacy GTK2 theme engine is excluded. See [ARM Trixie mapping](docs/ARM-TRIXIE.md) and [desktop integration](docs/DESKTOP.md) for the upstream mapping, service lifecycle and hardware verification limits.
 
 ## Local build
 
 Run `scripts/build.sh` as root in a disposable **aarch64 Alpine edge** container. It creates an unprivileged builder and a throwaway build key, compiles individual APKs with abuild, then installs the complete M10 profile into a clean root for dependency/file checks. Output: `out/`.
 
-`upstream.lock.json` pins published tarballs and hashes. `scripts/generate.py` regenerates upstream APKBUILDs; local changes are ordinary patches under each port. Source archives and license notices must be retained with distributed binaries.
+`upstream.lock.json` pins published tarballs and hashes. The release tracker runs with Python 3, GnuPG and dpkg (for Debian version ordering), as provided by the Ubuntu prepare job. `scripts/generate.py` regenerates upstream APKBUILDs; local changes are ordinary patches under each port. Source archives and license notices must be retained with distributed binaries.
 
-Session configuration is in `/etc/xdg/rpd/`. `rpd-session` uses defaults directly so package upgrades update them. A custom `${XDG_CONFIG_HOME:-~/.config}/rpd/labwc` directory overrides compositor configuration; it is never overwritten. Panel customizations use `~/.config/wf-panel-pi/`. APK preserves modified `/etc` files with standard `.apk-new` handling.
+Session configuration is in `/etc/xdg/rpd/`. `rpd-session` initialises standard per-user `~/.config/labwc` files once, so native preference tools edit the compositor configuration actually in use. Those files are never overwritten on upgrade; new system defaults remain in `/etc/xdg/rpd/labwc`. Panel customizations use `~/.config/wf-panel-pi/`. APK preserves modified `/etc` files with standard `.apk-new` handling.
 
 ## Updates and publication
 

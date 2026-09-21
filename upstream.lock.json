@@ -6,7 +6,7 @@
     "sha512": "9ac647fc77401cb681dec22ac3d791668a01d2d1dad4fca1eb473f322d8f1a5d9d2b71dc762760149401aab5a66343958d8e0bfa99dc6109b63e3b14c9758cee",
     "filename": "wf-panel-pi_1.32.tar.xz",
     "directory": "wf-panel-pi",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "pplug-clock": {
     "version": "1.13",
@@ -15,7 +15,7 @@
     "sha512": "5c4850967af2d9105a8634aa3bcc7f1198b834f3be3e0d1e5ee7be04412028e588374b27882a9daab23cb0e6ddd37fd64611adf8f3592b3d37d148c703164e21",
     "filename": "pplug-clock_1.13.tar.xz",
     "directory": "pplug-clock",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "wfplug-squeek": {
     "version": "1.10",
@@ -24,7 +24,7 @@
     "sha512": "2acb54acc858d5266103767eb18fd0cdb55092424f78b47dc1ad53b3d75752ec34dda6cdf5e498e6e667feaeaeb01382ca10ecf283a3c264efd17a3af34f5aab",
     "filename": "wfplug-squeek_1.10.tar.xz",
     "directory": "wfplug-squeek",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "wfplug-wlist": {
     "version": "0.8",
@@ -33,7 +33,7 @@
     "sha512": "44698a57c4fb4fa9062309941423e889daa72c60a011b4c55beedd7dad130df285948fb29eca22f80697a1c14566c73faf43f9ec5c6374cb4e791db1c1756d8b",
     "filename": "wfplug-wlist_0.8.tar.xz",
     "directory": "wfplug-wlist",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "wfplug-imenu": {
     "version": "0.10",
@@ -42,7 +42,7 @@
     "sha512": "e4abb8c89ab09eda53eda88bc167fdecd72203f2374547790aa8a5a9758c1ec45556885dfe01fd3d2ccdb925d094c000474a50cac1099cb822041a972823e151",
     "filename": "wfplug-imenu_0.10.tar.xz",
     "directory": "wfplug-imenu",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "pcmanfm-pi": {
     "version": "1.7",
@@ -51,7 +51,7 @@
     "sha512": "a465490ad67bfeaee0abc7aa2ef2acef376ecd48c6f1bab7a7e909a990662cdfa32db8f9162894836e5d5bb4105e02655bc11b737d593820007884f552f6f094",
     "filename": "pcmanfm-pi_1.7.tar.xz",
     "directory": "pcmanfm-pi",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "pixtrix-theme": {
     "version": "0.6",
@@ -60,7 +60,7 @@
     "sha512": "0871a8c5838e60411c182e66a78bdc7dcdce3f8911eb330008641cd267de55a78cacc7350c57947a34f33bdcd17e0195987546d2111ad59b4c9d26bfcd749ff4",
     "filename": "pixtrix-theme_0.6.tar.xz",
     "directory": "pixtrix-theme",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "pixtrix-icons": {
     "version": "0.6",
@@ -69,7 +69,7 @@
     "sha512": "c01902125a71a712eb4b6875dce96b04ea4b6f460f193bbb29045327a064d889aac3f25042ad1b3b0b0f7f3eeec31bc74170a83fc3bcfa7e2f5a9189072d1906",
     "filename": "pixtrix-icons_0.6.tar.xz",
     "directory": "pixtrix-icons",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "rpd-metas": {
     "version": "1.30",
@@ -78,7 +78,7 @@
     "sha512": "a810f3dbbf75d9aa226c250b587ef323151b9cc12d3787defff306fe6172b9f06192792afcf93380fb14349093e786628edc8675371a4bfe37ee8305de0cbb7b",
     "filename": "rpd-metas_1.30.tar.xz",
     "directory": "rpd-metas",
-    "pkgrel": 10
+    "pkgrel": 11
   },
   "pplug-ejecter": {
     "version": "1.17",
@@ -87,7 +87,7 @@
     "sha512": "15e55c29ee592a52b3eba22349a328ec14c9ae02df7c8a5e2e6a5b1afe1d0fa498a35ce1a59eb43f512aae36d3952f6d397eb569c14ed36c233f4bc647d70aef",
     "filename": "pplug-ejecter_1.17.tar.xz",
     "directory": "pplug-ejecter",
-    "pkgrel": 9
+    "pkgrel": 10
   },
   "pplug-netman": {
     "version": "1.18",
@@ -96,7 +96,7 @@
     "sha512": "75f20c572c7a1f76a354f572e2e435a5f35bd65b429d01c4e08d6a1dc1982d0b315423068908e57423ec085f89a360885a94503223f0a45b589b32132a67fe08",
     "filename": "pplug-netman_1.18.tar.xz",
     "directory": "pplug-netman",
-    "pkgrel": 9
+    "pkgrel": 10
   },
   "pplug-volumepulse": {
     "version": "1.19",
@@ -105,7 +105,7 @@
     "sha512": "5d65f4771eb97f51216d304cff200c3f8ffb50d09632fc770210aa2069eaa7566c24808031d5763f18e114daf5ba1a5857673306bb3262acdd25e71f9cbc6eaf",
     "filename": "pplug-volumepulse_1.19.tar.xz",
     "directory": "pplug-volumepulse",
-    "pkgrel": 9
+    "pkgrel": 10
   },
   "pplug-batt": {
     "version": "1.10",
@@ -114,7 +114,7 @@
     "sha512": "230aa13156c1a38ef6805b85141118c848633ec4a165eab4e5b0331e2335b1c0194076542dc1c8972be5f46b757e028b4de36e2b5dd496e8633231ff88ebc5e2",
     "filename": "pplug-batt_1.10.tar.xz",
     "directory": "pplug-batt",
-    "pkgrel": 9
+    "pkgrel": 10
   },
   "pishutdown": {
     "version": "0.42",
@@ -123,7 +123,7 @@
     "sha512": "2ed46cd283909d55eb679a096c7296cd30cc6afe17ebb8baf4de20b921d5cfb70c9716b1038cc5a5ebe8740c9874bb0c4a5e03687837418466bcb83f59083c54",
     "filename": "pishutdown_0.42.tar.xz",
     "directory": "pishutdown",
-    "pkgrel": 9
+    "pkgrel": 10
   },
   "pi-greeter": {
     "version": "1.3",
@@ -132,7 +132,7 @@
     "sha512": "c7881278d13ac5c10355d29486a19f78ba4126d8eb0136b3d23d1fbb460fc28ac02985072efb00e90b892504b82f55959ba2faa98246e00c5943624d8d38312f",
     "filename": "pi-greeter_1.3.tar.xz",
     "directory": "pi-greeter",
-    "pkgrel": 9
+    "pkgrel": 10
   },
   "pplug-bluetooth": {
     "version": "1.14",
@@ -141,6 +141,102 @@
     "sha512": "b6180cf45752f00824279836a4c99730691748d54efc24b0cae38a27d34a136ba0b001201d7b2a9e4d6edd7cc348e27ffaab90709e6c3f79252bd8fd831273ac",
     "filename": "pplug-bluetooth_1.14.tar.xz",
     "directory": "pplug-bluetooth",
-    "pkgrel": 9
+    "pkgrel": 10
+  },
+  "pplug-menu": {
+    "version": "1.25",
+    "source_version": "1.25",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-menu/pplug-menu_1.25.tar.xz",
+    "sha256": "aa7b514a76ce95b9e989bac5977c136bceb2565f31da82e7e9e7cf94097867fd",
+    "sha512": "7671a12bdb87ae051a894dc7fb988737cfa6dd05116ccf4930199b3cefc1dbb69bfc8120950121ca0a75e6c6db0e747123887221bc328c8b4294225b7d13915f",
+    "filename": "pplug-menu_1.25.tar.xz",
+    "directory": "pplug-menu",
+    "pkgrel": 1
+  },
+  "rpcc": {
+    "version": "0.18",
+    "source_version": "0.18",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rpcc/rpcc_0.18.tar.xz",
+    "sha256": "f3708eab6419bd4556310eabd56c596a4af70f5868bd99738e40c5b753676d4b",
+    "sha512": "d5e6cbcaa002c89b788ca7d6da82fc9a6ec70b60a7abe98f4468b777cafbaf78314fab7391b2080021d70653e7a7efd96296331b0a3de75b6b4c8540bad10ecd",
+    "filename": "rpcc_0.18.tar.xz",
+    "directory": "rpcc",
+    "pkgrel": 3
+  },
+  "pipanel": {
+    "version": "2.20",
+    "source_version": "1:2.20",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pipanel/pipanel_2.20.tar.xz",
+    "sha256": "601654bae4d6f07ba65f250800e60b9b89ab9eaca97f371592d676a16421a367",
+    "sha512": "baed374612fdbc93b07f33fe0c77fc5632116c90dd2d52fdb50197ffb8091507f29fc708d5f9c5d133cf52ff209f4fae3e473cfcb5284bd05aeab6dd2ce4f422",
+    "filename": "pipanel_2.20.tar.xz",
+    "directory": "appset",
+    "pkgrel": 1
+  },
+  "gui-runcmd": {
+    "version": "0.3",
+    "source_version": "0.3",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/g/gui-runcmd/gui-runcmd_0.3.tar.xz",
+    "sha256": "9872bb9c039913574f9cc81f0f898adab4b7846b3ae38fafbf6c636a7588ad0c",
+    "sha512": "5ee25e8685700ed5d2a44c0882f430dbe93b7477ccaf3cc06ed8e96a876e1d3805c7385bf420fb05b0b931422cc9738a663c85000f68200567e608245ff45209",
+    "filename": "gui-runcmd_0.3.tar.xz",
+    "directory": "gui-runcmd",
+    "pkgrel": 3
+  },
+  "gui-screenshot": {
+    "version": "0.2",
+    "source_version": "0.2",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/g/gui-screenshot/gui-screenshot_0.2.tar.xz",
+    "sha256": "993b473d3b354aa41f1d270f1fed3a498c7425589e73045b68aa21a51ef3efdb",
+    "sha512": "05da247454e8368b89accae65be2da11fc5d379ee3dc3d4552193e211c06343106a210a0867f390aae2da6dd1b37735469204d62af0d103c4e79cd6e26361cd5",
+    "filename": "gui-screenshot_0.2.tar.xz",
+    "directory": "gui-screenshot",
+    "pkgrel": 1
+  },
+  "merp": {
+    "version": "0.3",
+    "source_version": "0.3",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/m/merp/merp_0.3.tar.xz",
+    "sha256": "d60b5027d7f93c91f69e3a4fa4b30f73a3130a099b6c877b814bdd0a6627f10b",
+    "sha512": "b57577f4258303a4ae2380f3b961a13031c4d747e061b3cc13d3c3b11573ea697fc55dd07a66967d373320378bec0014fd33b871f3af72c2576490d9adef8bf9",
+    "filename": "merp_0.3.tar.xz",
+    "directory": "merp",
+    "pkgrel": 1
+  },
+  "pished": {
+    "version": "0.5",
+    "source_version": "0.5",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pished/pished_0.5.tar.xz",
+    "sha256": "3b1fdd49f180becf4694130f3e0797998ebb4ed38908ec334ac378203e8e9728",
+    "sha512": "1c6a98b9d544d3f4e8e3a30421c176b853c1b85c80376d3dc119d53581461953354814189805e9b2b23ec51632f6a87bd96fe308f9d4c0ce332b9379d75d8283",
+    "filename": "pished_0.5.tar.xz",
+    "directory": "pished",
+    "pkgrel": 1
+  },
+  "lxtask": {
+    "url": "https://archive.raspberrypi.com/debian/pool/main/l/lxtask/lxtask_0.1.12.orig.tar.gz",
+    "filename": "lxtask_0.1.12.orig.tar.gz",
+    "sha256": "f9d97ebdd8402fe7d9533b6173d0f553d5f9987f5c2885f7d2ee070e80300ab3",
+    "sha512": "4e9ea38eb63604624a7271a7a5bc78046717cf84850815335988689f640bb6c743eb5c8391f01d0d44f4da0d45e7da441da1cfe7cb1eaf27cf8797b1f81c90d0",
+    "version": "0.1.12",
+    "source_version": "0.1.12-1+rpt1",
+    "directory": "lxtask-0.1.12",
+    "pkgrel": 1,
+    "debian": {
+      "url": "https://archive.raspberrypi.com/debian/pool/main/l/lxtask/lxtask_0.1.12-1+rpt1.debian.tar.xz",
+      "filename": "lxtask_0.1.12-1+rpt1.debian.tar.xz",
+      "sha256": "8776060beb1acce5140d14695166e518c88cf39cfc7605ecc1491ba2c4603a9d",
+      "sha512": "c58b2c7072260342c29e687a80bec8a227c933e8502c8c47f1d962eb067276c1673a10199b00435e35756a57c05209c14f7d15d3865bf852bebeeaea3f8a1b15"
+    }
+  },
+  "rasputin": {
+    "version": "1.10",
+    "source_version": "1.10",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rasputin/rasputin_1.10.tar.xz",
+    "sha256": "25854f9202737085d80bd23a8f99cd711212d34bc2b7e94d334790d5d2f6c950",
+    "sha512": "62afc5139032bc21f964162b648a1b5a7f99620e249b02c7d764f06b19545f4660c553e3359b8a791074fbb383ee23079c69f638553df69fe3570360e022423c",
+    "filename": "rasputin_1.10.tar.xz",
+    "directory": "rasputin",
+    "pkgrel": 1
   }
 }

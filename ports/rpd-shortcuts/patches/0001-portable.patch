@@ -1,0 +1,20 @@
+--- a/src/shed.c
++++ b/src/shed.c
+@@ -564,7 +564,7 @@
+     gtk_list_store_clear (bindings);
+ 
+     user_file = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+-    read_xml ("/etc/xdg/labwc/rc.xml");
++    read_xml ("/etc/xdg/rpd/labwc/rc.xml");
+     read_xml (user_file);
+     g_free (user_file);
+ 
+@@ -1264,7 +1264,7 @@
+     gtk_tree_sortable_set_sort_column_id (GTK_TREE_SORTABLE (pre_sort), 0, GTK_SORT_ASCENDING);
+ 
+     user_file = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
+-    read_xml ("/etc/xdg/labwc/rc.xml");
++    read_xml ("/etc/xdg/rpd/labwc/rc.xml");
+     read_xml (user_file);
+     g_free (user_file);
+ }

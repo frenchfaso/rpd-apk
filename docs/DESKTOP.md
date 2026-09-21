@@ -6,7 +6,7 @@ installed with APK. The lock tracks published Raspberry archives, never Git HEAD
 
 | Desktop function | Raspberry Pi OS components retained | Alpine/postmarketOS integration |
 |---|---|---|
-| Compositor, panel, task list, menu | labwc, wf-panel-pi, wfplug-wlist, wfplug-imenu | Native Alpine labwc; Raspberry plugins built for musl |
+| Compositor, panel, task list, menu | labwc, wf-panel-pi, pplug-menu (smenu), built-in launchers/window-list | Native Alpine labwc; Raspberry plugins built for musl |
 | File manager, desktop, trash | pcmanfm-pi, GVFS, gvfs-fuse | Trash backend and desktop managed by PCManFM; no root file manager |
 | User folders | XDG user directories | `xdg-user-dirs-update` at session start; respects locale and user configuration |
 | USB storage | PCManFM automount, GVFS/UDisks, pplug-ejecter | `udisks2`, polkit; mount on insertion and session start, autorun disabled |
@@ -29,9 +29,8 @@ installed with APK. The lock tracks published Raspberry archives, never Git HEAD
 
 - No Raspberry firmware/kernel, boot options, GPIO tools, Pi voltage/temperature
   plugins, raspi-config, first-boot wizard, imaging/cloning utilities, Connect,
-  APT updater or Pi-specific control centre.
-- The portable panel preferences edit its user INI in Mousepad. Desktop
-  preferences use PCManFM's own dialog. Launcher editing makes a user copy.
+  APT updater or Pi-specific control-centre modules.
+- Native RPCC modules provide appearance, panel, menu, shortcuts and mouse/keyboard preferences. See [ARM Trixie mapping](ARM-TRIXIE.md) for exclusions.
 - The file manager starts with a plain background; large wallpaper collections,
   browser, office and education suites are outside the minimal profile.
 - Firefox is the separate `rpd-desktop-browser` metapackage.
@@ -39,7 +38,7 @@ installed with APK. The lock tracks published Raspberry archives, never Git HEAD
   battery reporting and audio still require working kernel/board support.
 - As in the upstream shutdown dialog, screen locking is offered only when a
   hardware keyboard is detected. Squeekboard is not a secure lock-screen keyboard.
-- LightDM with the Raspberry Pi greeter is installed/configured but not enabled automatically; no autologin is configured. A local logind login provides seat
+- LightDM with the Raspberry Pi greeter is installed/configured; host presets may enable it automatically; no autologin is configured. A local logind login provides seat
   permissions; a plain SSH shell is insufficient to qualify display/automount.
 
 ## Storage and session lifecycle

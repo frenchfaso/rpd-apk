@@ -34,23 +34,47 @@ def main():
         if len(packed)!=int(size) or hashlib.sha256(packed).hexdigest()!=expected:raise ValueError('Source index checksum mismatch')
         records={d['Package']:d for d in paragraphs(gzip.decompress(packed).decode())}
         for name,previous in old.items():
-            record=records[name];version=record['Version']
+            record=records[name];source_version=record['Version']
+            old_source=previous.get('source_version',previous['version'])
+            # Debian orders epochs and packaging revisions, including quilt sources.
+            comparison=subprocess.run(['dpkg','--compare-versions',source_version,'lt',old_source]).returncode
+            if comparison not in (0,1):raise ValueError('Invalid Debian version: '+name)
+            if comparison==0:raise ValueError('Upstream version regressed: '+name)
+            version=source_version.split(':')[-1]
+            quilt='debian' in previous
+            if quilt:version=version.rsplit('-',1)[0]
             if not re.fullmatch(r'\d+(?:\.\d+)*',version):raise ValueError('Version format requires review: '+version)
-            if tuple(map(int,version.split('.')))<tuple(map(int,previous['version'].split('.'))):raise ValueError('Upstream version regressed')
+            if tuple(map(int,version.split('.')))<tuple(map(int,previous['version'].split('.'))):
+                raise ValueError('APK version would regress; epoch mapping requires review: '+name)
             entries=[x.split() for x in record['Checksums-Sha256'].splitlines() if '.tar.' in x]
-            if len(entries)!=1:raise ValueError('Non-native source layout requires a packaging change')
-            sha,size,filename=entries[0]
-            if version==previous['version']:
-                if sha!=previous['sha256']:raise ValueError('Published archive changed without version bump: '+name)
+            if len(entries)!=(2 if quilt else 1):raise ValueError('Source layout changed: '+name)
+            if quilt:
+                orig=[x for x in entries if '.orig.tar.' in x[2]]
+                deb=[x for x in entries if '.debian.tar.' in x[2]]
+                if len(orig)!=1 or len(deb)!=1:raise ValueError('Quilt source layout changed')
+                entries=orig+deb
+            if source_version==old_source:
+                pinned=[previous,previous['debian']] if quilt else [previous]
+                for (sha,size,filename),saved in zip(entries,pinned):
+                    if sha!=saved['sha256'] or filename!=saved['filename']:
+                        raise ValueError('Published archive changed without version bump: '+name)
                 new[name]=previous;continue
-            directory=record['Directory']
-            if not re.fullmatch(r'pool/[a-z0-9/+-]+',directory) or '/' in filename:raise ValueError('Unsafe source path')
-            url=BASE+directory+'/'+filename;data=fetch(url)
-            if len(data)!=int(size) or hashlib.sha256(data).hexdigest()!=sha:raise ValueError('Archive checksum mismatch')
-            with tarfile.open(fileobj=io.BytesIO(data)) as archive:
-                roots={n.split('/')[0] for n in archive.getnames()}
-                if len(roots)!=1 or not re.fullmatch(r'[a-zA-Z0-9_.+-]+',next(iter(roots))):raise ValueError('Unexpected archive root')
-            new[name]=dict(version=version,url=url,sha256=sha,sha512=hashlib.sha512(data).hexdigest(),filename=filename,directory=next(iter(roots)),pkgrel=0)
+            directory=record['Directory'];downloaded=[]
+            if not re.fullmatch(r'pool/[a-z0-9/+-]+',directory):raise ValueError('Unsafe source path')
+            for sha,size,filename in entries:
+                if '/' in filename:raise ValueError('Unsafe source filename')
+                url=BASE+directory+'/'+filename;data=fetch(url)
+                if len(data)!=int(size) or hashlib.sha256(data).hexdigest()!=sha:raise ValueError('Archive checksum mismatch')
+                with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+                    roots={n.split('/')[0] for n in archive.getnames()}
+                    if len(roots)!=1 or not re.fullmatch(r'[a-zA-Z0-9_.+-]+',next(iter(roots))):raise ValueError('Unexpected archive root')
+                downloaded.append((dict(url=url,sha256=sha,sha512=hashlib.sha512(data).hexdigest(),filename=filename),next(iter(roots))))
+            metadata,root=downloaded[0]
+            new[name]=dict(metadata,version=version,source_version=source_version,directory=root,
+                           pkgrel=previous['pkgrel'] if version==previous['version'] else 0)
+            if quilt:
+                if downloaded[1][1]!='debian':raise ValueError('Unexpected Debian archive root')
+                new[name]['debian']=downloaded[1][0]
     changed=new!=old
     print('New published sources found' if changed else 'Published sources unchanged; signature verified')
     if changed and not args.check:

@@ -1,0 +1,11 @@
+--- a/src/gtk-run.c
++++ b/src/gtk-run.c
+@@ -218,7 +218,7 @@
+     /* might be symlink or absolute path - try canonicalizing and stripping */
+     if (!ret && (g_file_test (exec_path, G_FILE_TEST_IS_SYMLINK) || g_path_is_absolute (exec)))
+     {
+-        sympath = canonicalize_file_name (exec_path);
++        sympath = realpath (exec_path, NULL);
+         basename = g_path_get_basename (sympath);
+         locate = g_find_program_in_path (basename);
+         if (locate && !strcmp (locate, sympath))
