@@ -135,3 +135,9 @@ The locale backend records a per-user LANG value for the next login; keyboard la
 Display output profiles use a session-scoped kanshi service. Login-screen changes use a constrained, authenticated polkit helper which accepts only font/theme values, output geometry and touch mapping. Arbitrary commands, root destination paths and the rest of user XML are never imported.
 
 VLC uses Raspberry's published GTK2 engine and Qt GTK2 style/platform plugin, sharing the GTK settings. Chromium is now included by the M10 profile. On postmarketOS systemd install `cups-systemd cups-filters-systemd`, start the CUPS socket, and grant a printer administrator appropriate `lpadmin` membership. Printer hardware, Bluetooth/USB mouse and physical gesture tests are distinct from headless build validation.
+
+## Desktop audio policy
+
+The session installs `90-rpd-desktop-audio.conf` under its XDG_CONFIG_DIRS, disabling postmarketOS mobile role loopbacks only in this desktop session. Streams use WirePlumber's standard selected-output routing. On M10, VLC was waiting indefinitely for activation of the Multimedia role loopback despite connected A2DP headphones. Direct routing produced active stereo links to the Bluetooth sink; native pw-play and VLC with repeat disabled completed the four-second WAV. The user's repeat preference is not changed. Physical audibility confirmation remains separate.
+
+Configuration lookup: https://pipewire.pages.freedesktop.org/wireplumber/daemon/locations.html

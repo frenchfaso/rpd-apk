@@ -7,8 +7,9 @@ arch="noarch"
 license="MIT"
 depends="python3 wayvnc gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard network-manager-applet mate-polkit polkit mousepad"
 options="!check"
-source="rpd-idle rpd-idle.service rpd-reload-displays rpd-kanshi.service lxsession-default-apps.desktop rpd-polkit.service lxpolkit.desktop polkit-mate-authentication-agent-1.desktop desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop wf-panel-pi.ini rc.xml settings.ini"
+source="90-rpd-desktop-audio.conf rpd-idle rpd-idle.service rpd-reload-displays rpd-kanshi.service lxsession-default-apps.desktop rpd-polkit.service lxpolkit.desktop polkit-mate-authentication-agent-1.desktop desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop wf-panel-pi.ini rc.xml settings.ini"
 package() {
+    install -Dm644 "$srcdir/90-rpd-desktop-audio.conf" "$pkgdir/etc/xdg/rpd/wireplumber/wireplumber.conf.d/90-rpd-desktop-audio.conf"
     install -Dm755 "$srcdir/rpd-idle" "$pkgdir/usr/libexec/rpd-idle"
     install -Dm644 "$srcdir/rpd-idle.service" "$pkgdir/usr/lib/systemd/user/rpd-idle.service"
     install -Dm755 "$srcdir/rpd-reload-displays" "$pkgdir/usr/bin/rpd-reload-displays"
@@ -36,6 +37,7 @@ package() {
 }
 
 sha512sums="
+7f3b309d7f1c293eab628b129727081d6a619b3fe10ff382dbdb3faf76847e87d6c67332649bf85f18be7ad1f7e3fb0884ea88a8939934addbf4da45b9126d2f  90-rpd-desktop-audio.conf
 8a9ce637d76076b6b0bb922d7acecac4e70700cec21ee1d424f2601ce9aab025d1b294d071ab0db6ff7f514d75ba8a90dde2fede6e7d3ce2b82222fcdadce27f  rpd-idle
 cf7f4c759ee71d92245f054b76da82356e044f3d9046a9b722cc4d2b496c8407996efab1c040c808246bb6952dcd37e5254c5b9ed8ab8d3adf91b12bcb34d6fb  rpd-idle.service
 08809bf4bb41932685b81e20add29d1449a978d1bde0d3e4f090874e243f5b09ca67a838ab071b3f08e1743a9950b3ac2bd9643b3fedf9e410af0ddf3671b15e  rpd-reload-displays

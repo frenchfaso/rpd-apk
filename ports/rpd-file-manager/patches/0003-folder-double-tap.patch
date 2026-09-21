@@ -1,0 +1,87 @@
+--- a/src/libfm/gtk/fm-standard-view.c
++++ b/src/libfm/gtk/fm-standard-view.c
+@@ -99,6 +99,7 @@
+ 
+     GtkGesture *igesture;
+     GtkGesture *lgesture;
++    GtkGesture *double_tap;
+ };
+ 
+ struct _FmStandardViewClass
+@@ -409,6 +410,7 @@
+         self->show_full_names_handler = 0;
+     }
+ 
++    g_clear_object(&self->double_tap);
+     if (self->igesture)
+     {
+         g_object_unref (self->igesture);
+@@ -597,6 +599,44 @@
+     longpress = FALSE;
+ }
+ 
++/* Handle native touch independently from mouse double-click events. */
++static void on_view_double_tap(GtkGestureMultiPress *gesture, gint n_press,
++                               gdouble x, gdouble y, FmStandardView *fv)
++{
++    GtkTreePath *path = NULL;
++
++    if (n_press != 2 || fm_config->single_click || !fv->model)
++        return;
++    if (fv->mode == FM_FV_LIST_VIEW)
++    {
++        gint bx, by;
++        gtk_tree_view_convert_widget_to_bin_window_coords(GTK_TREE_VIEW(fv->view),
++                                                          x, y, &bx, &by);
++        gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(fv->view), bx, by,
++                                      &path, NULL, NULL, NULL);
++    }
++    else
++        path = exo_icon_view_get_path_at_pos(EXO_ICON_VIEW(fv->view), x, y);
++    if (!path)
++        return;
++    if (fv->mode == FM_FV_LIST_VIEW)
++        exo_tree_view_clear_rename(EXO_TREE_VIEW(fv->view));
++    else
++        exo_icon_view_clear_rename(EXO_ICON_VIEW(fv->view));
++    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
++    fm_folder_view_item_clicked(FM_FOLDER_VIEW(fv), path, FM_FV_ACTIVATED, 0, -1, -1);
++    gtk_tree_path_free(path);
++}
++
++static void setup_view_double_tap(FmStandardView *fv)
++{
++    fv->double_tap = gtk_gesture_multi_press_new(fv->view);
++    gtk_gesture_single_set_touch_only(GTK_GESTURE_SINGLE(fv->double_tap), TRUE);
++    g_signal_connect(fv->double_tap, "pressed", G_CALLBACK(on_view_double_tap), fv);
++    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(fv->double_tap),
++                                               GTK_PHASE_CAPTURE);
++}
++
+ static inline void create_icon_view(FmStandardView* fv, GList* sels)
+ {
+     GList *l;
+@@ -709,6 +749,7 @@
+     exo_icon_view_set_search_column((ExoIconView*)fv->view, FM_FOLDER_MODEL_COL_NAME);
+     g_signal_connect(fv->view, "item-activated", G_CALLBACK(on_icon_view_item_activated), fv);
+ 
++    setup_view_double_tap(fv);
+     if (!fv->igesture)
+     {
+         fv->igesture = gtk_gesture_long_press_new (fv->view);
+@@ -1133,6 +1174,7 @@
+     for(l = sels;l;l=l->next)
+         gtk_tree_selection_select_path(ts, (GtkTreePath*)l->data);
+ 
++    setup_view_double_tap(fv);
+     if (!fv->lgesture)
+     {
+         fv->lgesture = gtk_gesture_long_press_new (fv->view);
+@@ -1145,6 +1187,7 @@
+ 
+ static void unset_view(FmStandardView* fv)
+ {
++    g_clear_object(&fv->double_tap);
+     /* these signals connected by view creators */
+     if(fv->mode == FM_FV_LIST_VIEW)
+     {

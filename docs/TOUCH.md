@@ -7,3 +7,9 @@ Recognition: second finger within 150 ms; both released within 260 ms; displacem
 Tradeoff: quick single taps are delivered on release; a stationary held touch can be delayed up to 260 ms. Two-finger drags/pinches fall back to native touch once movement exceeds the threshold. Replay emits complete frames for each update. Tests cover single/right taps, both release orders, motion/pinch, third finger, late second contact, hold, timestamp wrap and passthrough recovery. Run them through the labwc APK check phase. Native headless smoke checks the whole session. Physical touchscreen and external-mouse checks are separate acceptance tests; synthetic recognition tests cannot prove hardware usability.
 
 Disable by removing the environment export from a personal session wrapper and logging in again. The generic `rpd-session` does not enable this patch. The package replaces Alpine's same-version labwc with a higher revision; the M10 profile pins it to avoid silently losing the extension during an unrelated upgrade. Sources and patches are published with the repository. Rebase deliberately when labwc/wlroots changes.
+
+## One-finger double taps in PCManFM
+
+The Raspberry Pi PCManFM fork activates desktop icons from mouse double-click events. Native Wayland touch does not generate those events on this stack. Touch-only GtkGestureMultiPress handlers now activate desktop items and internal folder items using GTK time/distance thresholds. The folder handler covers icon, compact and detailed-list views, accounts for the tree-view bin window, clears pending rename, and is released when the view changes or is disposed. Mouse behavior and single-click preference are preserved.
+
+M10: desktop physically confirmed. Native aarch64 build passed; synthetic uinput touch opened Music from Home in both icon and detailed-list views, including a live view switch. Physical finger confirmation for internal views remains pending.
