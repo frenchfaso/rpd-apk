@@ -43,7 +43,9 @@ jobs:
           ref: ${{ needs.prepare.outputs.revision }}
           persist-credentials: false
       - name: Build and test with an ephemeral key
-        run: docker run --rm -v "$PWD:/work" -w /work alpine:edge sh scripts/build.sh
+        run: |
+          docker run --rm -v "$PWD:/work" -w /work alpine:edge sh scripts/build.sh
+          sudo chown -R "$(id -u):$(id -g)" out
       - name: Include exact packaging sources
         run: git archive --format=tar.gz HEAD > out/sources/rpd-apk-packaging.tar.gz
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
