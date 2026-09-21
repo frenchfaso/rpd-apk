@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <theme><name>PiXtrix</name></theme>
+  <keyboard><numlock>off</numlock></keyboard>
+  <mouse><default/></mouse>
+  <touch deviceName="" mouseEmulation="yes"/>
+</labwc_config>

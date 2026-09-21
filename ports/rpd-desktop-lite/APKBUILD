@@ -5,7 +5,7 @@ pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-lite)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-session rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-menu-data rpd-file-manager rpd-theme rpd-icons lxterminal mousepad xarchiver gvfs gvfs-fuse xdg-utils xdg-user-dirs font-dejavu mesa-dri-gallium mesa-egl mesa-gles xwayland"
+depends="rpd-login rpd-bluetooth bluez rpd-session rpd-ejecter rpd-network rpd-volume rpd-battery rpd-shutdown rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-menu-data rpd-file-manager rpd-theme rpd-icons lxterminal mousepad xarchiver gvfs gvfs-fuse gvfs-mtp gvfs-gphoto2 gvfs-smb gvfs-nfs gvfs-dav udisks2 dosfstools exfatprogs ntfs-3g xdg-utils xdg-user-dirs font-dejavu font-nunito font-liberation mesa-dri-gallium mesa-egl mesa-gles xwayland"
 options="!check"
 
 package() {

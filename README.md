@@ -2,18 +2,18 @@
 
 Unofficial, minimal port of Raspberry Pi Desktop components to postmarketOS / Alpine edge aarch64. This installs a desktop on the existing OS, not the Debian-based Raspberry Pi OS distribution. No Raspberry board firmware, kernel, boot configuration, GPIO tools or APT integration is included.
 
-Initial packages are under construction; do not treat a successful build as an M10 graphics qualification. The M10 currently exposes simpledrm, not accelerated Adreno rendering.
+Do not treat a successful build as an M10 graphics qualification. The M10 currently exposes simpledrm, not accelerated Adreno rendering.
 
 ## Package selection
 
-- `rpd-desktop-lite`: labwc; Raspberry wf-panel-pi, clock, application menu, window list and Squeekboard button; Raspberry PCManFM fork; PiXtrix theme/icons; LXTerminal, Mousepad, Xarchiver; NetworkManager GUI, polkit agent, GVFS, XWayland and software-capable Mesa.
-- `rpd-desktop-m10`: adds an explicit software-rendered session entry. It does not replace the device kernel, modify boot or enable a display manager.
+- `rpd-desktop-lite`: labwc; Raspberry wf-panel-pi, clock, application menu, window list, eject/network/volume/battery plugins and Squeekboard button; Raspberry PCManFM fork; PiXtrix theme/icons; LXTerminal, Mousepad, Xarchiver; NetworkManager GUI, MATE polkit agent, keyring, GVFS/UDisks automount, XDG session services, PipeWire/WirePlumber, portals, XWayland and software-capable Mesa.
+- `rpd-desktop-m10`: adds an explicit software-rendered session entry. It selects software rendering for desktop and greeter. LightDM and the Raspberry Pi greeter are configured, but package installation does not enable the display-manager service.
 - `rpd-desktop-browser`: optional Firefox, kept outside the smallest installation.
 - Buffyboard remains the console keyboard. Squeekboard is the separate Wayland keyboard.
 
-Official Raspberry sources are tracked from the signed Trixie source index. Standard applications and labwc follow Alpine's packaging; they are not replaced by Debian binaries. Hardware plugins (GPU temperature, voltage/power warnings), Raspberry Connect, raspi-config, piwiz, cloning/imaging tools, APT updater and recommended educational suites are excluded. Audio/Bluetooth controls are excluded from the minimal profile because those devices are not qualified on M10. No browser, office suite or IDE is pulled into the minimal profile.
+Official Raspberry sources are tracked from the signed Trixie source index. Standard applications and labwc follow Alpine's packaging; they are not replaced by Debian binaries. Hardware plugins (GPU temperature, voltage/power warnings), Raspberry Connect, raspi-config, piwiz, cloning/imaging tools, APT updater and recommended educational suites are excluded. Audio and battery controls use the host services; physical hardware support remains dependent on the M10 kernel. The Raspberry Bluetooth panel plugin and BlueZ are included for mice, keyboards and other peripherals. No browser, office suite or IDE is pulled into the minimal profile.
 
-The portable panel's preferences open its per-user configuration in Mousepad. The Raspberry Control Centre and the legacy GTK2 theme engine are excluded. Launcher edits create a per-user desktop entry and open it in Mousepad. Upstream panel/keyboard/menu rendering needs graphical testing after package build.
+The portable panel's preferences open its per-user configuration in Mousepad. The Raspberry Control Centre and the legacy GTK2 theme engine are excluded. Launcher edits create a per-user desktop entry and open it in Mousepad. See [desktop integration](docs/DESKTOP.md) for the upstream mapping, service lifecycle and hardware verification limits.
 
 ## Local build
 
@@ -53,6 +53,6 @@ sudo apk update && sudo apk upgrade
 
 Do not launch the compositor over a plain SSH session. A working local logind
 session and access to the display/input devices are required. The package does
-not configure autologin, stop Buffyboard, replace its service, install a display
+not configure autologin, stop Buffyboard, replace its service, enable the display
 manager or change console login. These are separate deployment choices after
 physical-screen validation. Exit the desktop to return to the terminal.

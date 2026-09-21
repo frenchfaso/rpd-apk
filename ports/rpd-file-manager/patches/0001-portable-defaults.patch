@@ -1,0 +1,36 @@
+--- a/data/pcmanfm.conf
++++ b/data/pcmanfm.conf
+@@ -2,7 +2,7 @@
+ single_click=0
+ use_trash=1
+ confirm_del=1
+-terminal=x-terminal-emulator %s
++terminal=lxterminal %s
+ thumbnail_local=1
+ thumbnail_max=2048
+ cutdown_menus=1
+@@ -10,13 +10,13 @@
+ bm_open_method=0
+ 
+ [volume]
+-mount_on_startup=0
+-mount_removable=0
++mount_on_startup=1
++mount_removable=1
+ autorun=0
+ 
+ [desktop]
+ wallpaper_mode=0
+-desktop_bg=#000000
++desktop_bg=#263746
+ desktop_fg=#ffffff
+ desktop_shadow=#000000
+ show_wm_menu=0
+@@ -35,7 +35,6 @@
+ max_tab_chars=32
+ sort=name;ascending;
+ columns=name;size;mtime;
+-prefs_app=rpcc desktop
+ common_bg=0
+ 
+ [places]

@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Raspberry Pi greeter (portable Wayland)
+Exec=/usr/bin/rpd-greeter-session
+Type=Application
+X-LightDM-Session-Type=wayland

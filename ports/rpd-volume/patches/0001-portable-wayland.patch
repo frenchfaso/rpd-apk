@@ -1,0 +1,42 @@
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -1,6 +1,5 @@
+ gtk = dependency('gtk+-3.0')
+ gtkmm = dependency('gtkmm-3.0', version: '>=3.24')
+-lxpanel = dependency('lxpanel-pi')
+ wfpanel = dependency('wf-panel-pi')
+ libpulse = dependency('libpulse')
+ 
+@@ -9,22 +8,6 @@
+   'commongui.c',
+   'pulse.c',
+   'bluetooth.c'
+-)
+-
+-lsources = files(
+-  'volumepulse_lxp.c'
+-)
+-
+-ldeps = [ gtk, lxpanel, libpulse ]
+-
+-largs = [ '-DPACKAGE_DATA_DIR="' + lresource_dir + '"', '-DGETTEXT_PACKAGE="lpplug_' + meson.project_name() + '"' ]
+-
+-shared_module(meson.project_name(), [ sources, lsources ],
+-        dependencies: ldeps,
+-        install: true,
+-        install_dir: get_option('libdir') / 'lxpanel-pi',
+-        c_args : largs,
+-        name_prefix: ''
+ )
+ 
+ wsources = files(
+--- a/src/pulse.c
++++ b/src/pulse.c
+@@ -877,7 +877,6 @@
+                 const char *dev = pa_proplist_gets (i->proplist, "alsa.card");
+                 if (nam)
+                 {
+-                    if (!strcmp (nam, "bcm2835 Headphones") && vsystem ("raspi-config nonint has_analog")) return;
+                     DEBUG ("pa_cb_get_info_internal %s", dev);
+                     menu_add_item (vol, nam, dev, FALSE);
+                 }

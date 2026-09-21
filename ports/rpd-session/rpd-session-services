@@ -2,13 +2,50 @@
 set -u
 pids=""
 start() { "$@" & pids="$pids $!"; }
-cleanup() { trap - EXIT HUP INT TERM; [ -z "$pids" ] || kill $pids 2>/dev/null || :; }
+managed=0
+cleanup() {
+    trap - EXIT HUP INT TERM
+    [ "$managed" = 0 ] || systemctl --user stop rpd-session.target
+    [ -z "$pids" ] || kill $pids 2>/dev/null || :
+}
 trap cleanup EXIT HUP INT TERM
+compositor=${LABWC_PID:?labwc must export LABWC_PID}
+# Create locale-aware Desktop/Documents/Downloads/etc. without overwriting choices.
+xdg-user-dirs-update
+# D-Bus-activated GVFS, keyring and portals must inherit this Wayland session.
+activation_vars="XDG_RUNTIME_DIR WAYLAND_DISPLAY DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_CONFIG_DIRS XDG_MENU_PREFIX GTK_THEME LABWC_PID"
+if command -v systemctl >/dev/null && systemctl --user show-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd $activation_vars
+    managed=1
+    systemctl --user start rpd-session.target
+    systemctl --user start pipewire.socket pipewire-pulse.socket wireplumber.service
+else
+    dbus-update-activation-environment $activation_vars
+    [ -S "$XDG_RUNTIME_DIR/pipewire-0" ] || start pipewire
+    [ -S "$XDG_RUNTIME_DIR/pulse/native" ] || start pipewire-pulse
+    start wireplumber
+fi
+# Initialise appearance once; later user customisations are preserved.
+state=${XDG_STATE_HOME:-$HOME/.local/state}/rpd
+if [ ! -f "$state/appearance-initialised" ]; then
+    if gsettings set org.gnome.desktop.interface icon-theme PiXtrix &&
+       gsettings set org.gnome.desktop.interface cursor-theme PiXtrix &&
+       gsettings set org.gnome.desktop.interface cursor-size 32; then
+        mkdir -p "$state"
+        touch "$state/appearance-initialised"
+    fi
+fi
+start /usr/libexec/polkit-mate-authentication-agent-1
 start wf-panel-pi
 start pcmanfm --desktop
 start squeekboard
-start nm-applet --indicator
-start /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
-# Use labwc's exported PID: an intermediate autostart shell may exit first.
-compositor=${LABWC_PID:?labwc must export LABWC_PID}
+start xsettingsd -c /etc/xdg/rpd/xsettingsd/xsettingsd.conf
+if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/kanshi/config" ]; then start kanshi; fi
+# Same XDG autostart runner as Raspberry Pi OS; honours per-user overrides.
+if [ "$managed" = 1 ]; then
+    start systemd-run --user --scope --unit=rpd-autostart --property=PartOf=rpd-session.target lxsession-xdg-autostart
+else
+    start lxsession-xdg-autostart
+fi
+# The autostart shell may exit before the compositor, so use LABWC_PID.
 while kill -0 "$compositor" 2>/dev/null; do sleep 2; done

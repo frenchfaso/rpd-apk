@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=Log out
+Name=End session
 Name[it]=Termina sessione
-Exec=labwc --exit
+Exec=pishutdown
 Icon=system-log-out
 Type=Application
 Categories=System;

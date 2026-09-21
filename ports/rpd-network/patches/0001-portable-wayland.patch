@@ -1,0 +1,78 @@
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -1,6 +1,5 @@
+ gtk = dependency('gtk+-3.0')
+ gtkmm = dependency('gtkmm-3.0', version: '>=3.24')
+-lxpanel = dependency('lxpanel-pi')
+ wfpanel = dependency('wf-panel-pi')
+ netman = dependency('libnm')
+ nma = dependency('libnma')
+@@ -42,23 +41,6 @@
+   dependencies: resource_data
+ )
+ 
+-lsources = files(
+-  'netman_lxp.c'
+-)
+-
+-ldeps = [ gtk, lxpanel, netman, nma, secret ]
+-
+-largs = [ '-DPACKAGE_DATA_DIR="' + lresource_dir + '"', '-DGETTEXT_PACKAGE="lpplug_' + meson.project_name() + '"', '-DENABLE_GTK3', '-DVERSION=0.1', '-D___CONFIG_H__', '-DBINDIR="/usr/bin"', '-DG_DISABLE_ASSERT', '-DG_DISABLE_CHECKS', '-DG_DISABLE_CAST_CHECKS' ]
+-
+-shared_module(meson.project_name(), [ sources, lsources ],
+-        dependencies: ldeps,
+-        install: true,
+-        install_dir: get_option('libdir') / 'lxpanel-pi',
+-        c_args : largs,
+-        include_directories : incdirs,
+-        name_prefix: ''
+-)
+-
+ wsources = files(
+   'netman.cpp'
+ )
+--- a/src/netman.c
++++ b/src/netman.c
+@@ -58,16 +58,7 @@
+ 
+ static int wifi_country_set (void)
+ {
+-    FILE *fp;
+-
+-    // is this 5G-compatible hardware?
+-    fp = popen ("iw phy0 info | grep -q '\\*[ \\t]*5[0-9][0-9][0-9][ \\t]*MHz'", "r");
+-    if (pclose (fp)) return 1;
+-
+-    // is the country set?
+-    fp = popen ("raspi-config nonint get_wifi_country 1", "r");
+-    if (pclose (fp)) return 0;
+-
++    /* Regulatory policy belongs to the host kernel/NetworkManager, not raspi-config. */
+     return 1;
+ }
+ 
+--- a/src/applet.c
++++ b/src/applet.c
+@@ -194,8 +194,9 @@
+ {
+     if (fork () == 0)
+     {
+-        char *args[] = { "rpcc", "localisation", "on_set_wifi", NULL };
+-        execvp ("rpcc", args);
++        char *args[] = { "nm-connection-editor", NULL };
++        execvp (args[0], args);
++        _exit (127);
+     }
+ }
+ 
+--- a/src/applet-device-wifi.c
++++ b/src/applet-device-wifi.c
+@@ -242,7 +242,7 @@
+ 	GtkWidget *dialog;
+ 
+ #ifdef LXPANEL_PLUGIN
+-	dialog = nma_wifi_dialog_new_for_hotspot (applet->nm_client);
++	dialog = nma_wifi_dialog_new_for_create (applet->nm_client);
+ #else
+ 	dialog = nma_wifi_dialog_new_for_create (applet->nm_client);
+ #endif

@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 [ "$(uname -m)" = aarch64 ] || { echo 'Native aarch64 build required' >&2; exit 1; }
 apk add --no-cache alpine-sdk abuild-rootbld meson samurai python3 git sudo
 # Keep shared build dependencies installed between ports.
-apk add --no-cache pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev
+apk add --no-cache pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev networkmanager-dev libnma-dev libsecret-dev pulseaudio-dev
 adduser -D builder 2>/dev/null || true
 addgroup builder abuild 2>/dev/null || true
 printf 'builder ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/rpd-builder
@@ -25,7 +25,7 @@ mkdir -p /home/builder/rpd-build
 cp -a . /home/builder/rpd-build/
 chown -R builder:builder /home/builder/rpd-build /home/builder/packages
 printf '\n/home/builder/packages/ports\n' >> /etc/apk/repositories
-for pkg in rpd-theme rpd-icons rpd-menu-data rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-file-manager rpd-session rpd-desktop-lite rpd-desktop-m10 rpd-desktop-browser; do
+for pkg in rpd-theme rpd-icons rpd-menu-data rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-file-manager rpd-ejecter rpd-network rpd-volume rpd-battery rpd-shutdown rpd-bluetooth rpd-greeter rpd-session rpd-login rpd-desktop-lite rpd-desktop-m10 rpd-desktop-browser; do
     su builder -c "cd /home/builder/rpd-build/ports/$pkg && abuild -r"
     apk update
     # The next plugin needs the panel's exported headers and pkg-config file.

@@ -79,5 +79,68 @@
     "filename": "rpd-metas_1.30.tar.xz",
     "directory": "rpd-metas",
     "pkgrel": 1
+  },
+  "pplug-ejecter": {
+    "version": "1.17",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-ejecter/pplug-ejecter_1.17.tar.xz",
+    "sha256": "4a3366af90ec61e836b61bfdfb784032c8021fc648090f7f3de2c6f6acfc08c9",
+    "sha512": "15e55c29ee592a52b3eba22349a328ec14c9ae02df7c8a5e2e6a5b1afe1d0fa498a35ce1a59eb43f512aae36d3952f6d397eb569c14ed36c233f4bc647d70aef",
+    "filename": "pplug-ejecter_1.17.tar.xz",
+    "directory": "pplug-ejecter",
+    "pkgrel": 0
+  },
+  "pplug-netman": {
+    "version": "1.18",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-netman/pplug-netman_1.18.tar.xz",
+    "sha256": "983bf0a7d8d815d7f9e76c408b2a45177ee924235e82a8699dff7011355ecd81",
+    "sha512": "75f20c572c7a1f76a354f572e2e435a5f35bd65b429d01c4e08d6a1dc1982d0b315423068908e57423ec085f89a360885a94503223f0a45b589b32132a67fe08",
+    "filename": "pplug-netman_1.18.tar.xz",
+    "directory": "pplug-netman",
+    "pkgrel": 0
+  },
+  "pplug-volumepulse": {
+    "version": "1.19",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-volumepulse/pplug-volumepulse_1.19.tar.xz",
+    "sha256": "2030aaaeca2c144bfac32a35e2152df17ad1b58f9e50e1c359ff01348a62a80c",
+    "sha512": "5d65f4771eb97f51216d304cff200c3f8ffb50d09632fc770210aa2069eaa7566c24808031d5763f18e114daf5ba1a5857673306bb3262acdd25e71f9cbc6eaf",
+    "filename": "pplug-volumepulse_1.19.tar.xz",
+    "directory": "pplug-volumepulse",
+    "pkgrel": 0
+  },
+  "pplug-batt": {
+    "version": "1.10",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-batt/pplug-batt_1.10.tar.xz",
+    "sha256": "085971ef0a45af9b1e1b52fdd0b709835f92826e2be73eb19cbceb3794ac3846",
+    "sha512": "230aa13156c1a38ef6805b85141118c848633ec4a165eab4e5b0331e2335b1c0194076542dc1c8972be5f46b757e028b4de36e2b5dd496e8633231ff88ebc5e2",
+    "filename": "pplug-batt_1.10.tar.xz",
+    "directory": "pplug-batt",
+    "pkgrel": 0
+  },
+  "pishutdown": {
+    "version": "0.42",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pishutdown/pishutdown_0.42.tar.xz",
+    "sha256": "c9ab2ba72bc21f5f3d32ec679b971fdf87c0d743f29ad317021733a35380e7ee",
+    "sha512": "2ed46cd283909d55eb679a096c7296cd30cc6afe17ebb8baf4de20b921d5cfb70c9716b1038cc5a5ebe8740c9874bb0c4a5e03687837418466bcb83f59083c54",
+    "filename": "pishutdown_0.42.tar.xz",
+    "directory": "pishutdown",
+    "pkgrel": 0
+  },
+  "pi-greeter": {
+    "version": "1.3",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pi-greeter/pi-greeter_1.3.tar.xz",
+    "sha256": "9d8b3a81f20ea1dfc7960056cdd783e1ac77da0f002deacb2d50f214b3c50119",
+    "sha512": "c7881278d13ac5c10355d29486a19f78ba4126d8eb0136b3d23d1fbb460fc28ac02985072efb00e90b892504b82f55959ba2faa98246e00c5943624d8d38312f",
+    "filename": "pi-greeter_1.3.tar.xz",
+    "directory": "pi-greeter",
+    "pkgrel": 0
+  },
+  "pplug-bluetooth": {
+    "version": "1.14",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-bluetooth/pplug-bluetooth_1.14.tar.xz",
+    "sha256": "31b1d1279e115e35117a47cdc65349df2c654b787dc93921f340df69758fc841",
+    "sha512": "b6180cf45752f00824279836a4c99730691748d54efc24b0cae38a27d34a136ba0b001201d7b2a9e4d6edd7cc348e27ffaab90709e6c3f79252bd8fd831273ac",
+    "filename": "pplug-bluetooth_1.14.tar.xz",
+    "directory": "pplug-bluetooth",
+    "pkgrel": 0
   }
 }

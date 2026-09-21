@@ -7,14 +7,18 @@ arch="noarch"
 license="MIT"
 depends="rpd-desktop-lite"
 options="!check"
-source="rpd-session-m10 rpd-session-m10.desktop"
+source="61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
 
 package() {
+    install -Dm644 "$srcdir/61-rpd-m10.conf" "$pkgdir/etc/lightdm/lightdm.conf.d/61-rpd-m10.conf"
+    install -Dm644 "$srcdir/greeter-renderer.conf" "$pkgdir/etc/xdg/rpd/greeter-renderer.conf"
     install -Dm755 "$srcdir/rpd-session-m10" "$pkgdir/usr/bin/rpd-session-m10"
     install -Dm644 "$srcdir/rpd-session-m10.desktop" "$pkgdir/usr/share/wayland-sessions/rpd-session-m10.desktop"
 }
 
 sha512sums="
+fd593deae8923a3f2bd112b72d446603141bd2f98a7ab45cd58fd571c84822ee45acbb2fc0684af2f132a0a60ffa7d19fac02876234ac003528093ba287ca8aa  61-rpd-m10.conf
+52ff4f92db495f0c77a6f3f02aab42e696c92ca2102d46de1a5e9559c83e90361f5b835fb93a73cd39956ed32fb66dd022300ee9996578da45b27031860b6bb7  greeter-renderer.conf
 f03e82d63a989aa9a1b5d3b1839718ac9cc18362de437203fb31ebf3df9437c45e022eef4a7e7b1ac53c86d09955311c57ffc8a26e9cc1cee780b57b97d06879  rpd-session-m10
 7faf90d4b415b6e4f66f1b76aa9a60997f380cb0202b3a28cf29ccd150aa10a2c624b6d19c01b97a605bb6ca77528ca787ee92f961d941afbb024bbbc58a972f  rpd-session-m10.desktop
 "

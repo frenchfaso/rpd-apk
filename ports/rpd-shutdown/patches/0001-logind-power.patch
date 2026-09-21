@@ -1,0 +1,30 @@
+--- a/src/pishutdown.c
++++ b/src/pishutdown.c
+@@ -39,8 +39,8 @@
+ 
+ static void button_handler (GtkWidget *widget, gpointer data)
+ {
+-    if (!strcmp (data, "shutdown")) system ("/usr/bin/pkill orca;/sbin/shutdown -h now");
+-    if (!strcmp (data, "reboot")) system ("/usr/bin/pkill orca;/sbin/reboot");
++    if (!strcmp (data, "shutdown")) system ("gdbus call --system --dest org.freedesktop.login1 --object-path /org/freedesktop/login1 --method org.freedesktop.login1.Manager.PowerOff true");
++    if (!strcmp (data, "reboot")) system ("gdbus call --system --dest org.freedesktop.login1 --object-path /org/freedesktop/login1 --method org.freedesktop.login1.Manager.Reboot true");
+     if (!strcmp (data, "lock"))
+     {
+         system ("/usr/bin/swaylock -p");
+@@ -48,7 +48,6 @@
+     }
+     if (!strcmp (data, "exit"))
+     {
+-        system ("/usr/bin/pkill orca");
+ #ifdef USE_LOGIND
+         if (proxy && !system ("systemctl is-active lightdm | grep -qw active"))
+         {
+@@ -97,7 +96,7 @@
+     if (!system ("lsusb -v 2>/dev/null | grep -E 'bInterfaceClass|bInterfaceProtocol' | paste - - | grep -q 'Human Interface Device.*Keyboard'")) return TRUE;
+ 
+     // Bluetooth keyboards
+-    if (!system ("bluetoothctl devices Connected | cut -d ' ' -f 2 | xargs -I{} bluetoothctl info {} | grep -q 'Icon: input-keyboard'")) return TRUE;
++    if (!system ("bluetoothctl devices Connected 2>/dev/null | cut -d ' ' -f 2 | xargs -I{} bluetoothctl info {} | grep -q 'Icon: input-keyboard'")) return TRUE;
+ 
+     return FALSE;
+ }

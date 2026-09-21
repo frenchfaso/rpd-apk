@@ -1,0 +1,4 @@
+#!/bin/sh
+# This private greeter bus/session never runs the user's autostart applications.
+squeekboard &
+/usr/sbin/pi-greeter &

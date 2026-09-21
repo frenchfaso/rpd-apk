@@ -13,6 +13,7 @@ concurrency:
 jobs:
   prepare:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
     outputs:
@@ -35,6 +36,7 @@ jobs:
   build:
     needs: prepare
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -52,6 +54,7 @@ jobs:
   sign:
     needs: [prepare, build]
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -82,7 +85,9 @@ jobs:
         run: docker exec signer sh scripts/verify-release.sh
       - name: Prepare public archive
         run: |
-          cp README.md out/index.md
+          cp README.md out/README.md
+          cp -r docs out/
+          printf '%s\n' '<!doctype html><meta charset="utf-8"><title>RPD APK</title><h1>RPD APK</h1><p>Unofficial portable Raspberry Pi desktop for postmarketOS / Alpine aarch64.</p><ul><li><a href="https://github.com/frenchfaso/rpd-apk">Sources and setup instructions</a></li><li><a href="rpd-apk.rsa.pub">APK public signing key</a></li><li><a href="validation.txt">Build validation</a></li><li><a href="rpd-headless.png">Headless desktop test</a></li><li><a href="upstream.lock.json">Pinned upstream sources</a></li></ul>' > out/index.html
           cp scripts/install-repository.sh out/
           touch out/.nojekyll
           test -z "$(find out -type f \( -name '*.rsa' -o -name '*.pem' \) -print)"
@@ -95,6 +100,7 @@ jobs:
   deploy:
     needs: sign
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       pages: write
       id-token: write

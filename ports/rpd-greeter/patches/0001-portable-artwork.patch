@@ -1,0 +1,13 @@
+--- a/data/pi-greeter.conf
++++ b/data/pi-greeter.conf
+@@ -1,8 +1,6 @@
+ [greeter]
+-default-user-image=/usr/share/raspberrypi-artwork/raspberry-pi-logo.png
+-desktop_bg=#d6d6d3d3dede
+-wallpaper=/usr/share/rpd-wallpaper/RPiSystem.png
++desktop_bg=#263746
+ wallpaper_mode=crop
+ gtk-theme-name=PiXtrix
+ gtk-icon-theme-name=PiXtrix
+-gtk-font-name=Nunito Sans Light 12
++gtk-font-name=Sans 12
