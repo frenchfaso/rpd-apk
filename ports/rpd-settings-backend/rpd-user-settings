@@ -1,0 +1,36 @@
+#!/usr/bin/python3
+"""User browser/blanking settings and read-only system status for RPCC."""
+import configparser,os,pathlib,shutil,socket,subprocess,sys
+config=pathlib.Path(os.environ.get('XDG_CONFIG_HOME',str(pathlib.Path.home()/'.config')))
+def run(*args):return subprocess.run(args,check=True,text=True,stdout=subprocess.PIPE).stdout.strip()
+def main():
+    op,*args=sys.argv[1:]
+    if op=='hostname':print(socket.gethostname())
+    elif op=='get-browser':print(run('xdg-mime','query','default','x-scheme-handler/http'))
+    elif op=='browser':
+        browser,=args
+        if browser not in ('chromium','firefox') or not shutil.which(browser):raise ValueError('Browser is not installed')
+        for mime in ['text/html','application/xhtml+xml','x-scheme-handler/http','x-scheme-handler/https']:
+            run('xdg-mime','default',browser+'.desktop',mime)
+    elif op=='get-autologin':
+        parser=configparser.ConfigParser(strict=False)
+        parser.read([str(p) for directory in ('/usr/share/lightdm/lightdm.conf.d','/etc/lightdm/lightdm.conf.d') for p in sorted(pathlib.Path(directory).glob('*.conf'))]+['/etc/lightdm/lightdm.conf'])
+        print(int(parser.get('Seat:*','autologin-user',fallback='')==__import__('pwd').getpwuid(os.getuid()).pw_name))
+    elif op=='get-boot':
+        if pathlib.Path('/run/systemd/system').exists():print(int(run('systemctl','get-default')=='graphical.target'))
+        else:print(int(pathlib.Path('/etc/runlevels/default/lightdm').exists()))
+    elif op=='get-ssh':
+        if pathlib.Path('/run/systemd/system').exists():print(int(subprocess.run(['systemctl','is-enabled','--quiet','sshd']).returncode==0))
+        else:print(int(pathlib.Path('/etc/runlevels/default/sshd').exists()))
+    elif op in ('get-idle','get-remote'):print(int((config/('rpd/blanking-enabled' if op=='get-idle' else 'rpd/remote-enabled')).exists()))
+    elif op in ('idle','remote'):
+        value,=args
+        if value not in ('0','1'):raise ValueError('Expected 0 or 1')
+        dest=config/('rpd/blanking-enabled' if op=='idle' else 'rpd/remote-enabled');dest.parent.mkdir(parents=True,exist_ok=True)
+        if value=='1':dest.touch()
+        else:dest.unlink(missing_ok=True)
+        if pathlib.Path('/run/systemd/system').exists():run('systemctl','--user','restart','rpd-idle.service')
+    else:raise ValueError('Unknown setting')
+if __name__=='__main__':
+    try:main()
+    except (ValueError,OSError,subprocess.SubprocessError) as exc:print(str(exc),file=sys.stderr);sys.exit(1)

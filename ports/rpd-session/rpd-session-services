@@ -38,6 +38,8 @@ if [ ! -f "$state/appearance-initialised" ]; then
     fi
 fi
 if [ "$managed" = 1 ]; then systemctl --user start rpd-polkit.service; else start /usr/libexec/polkit-mate-authentication-agent-1; fi
+[ ! -x /usr/libexec/rpd-browser-init ] || /usr/libexec/rpd-browser-init
+if [ "$managed" = 1 ]; then systemctl --user start rpd-idle.service; else start /usr/libexec/rpd-idle; fi
 if [ "$managed" = 1 ]; then systemctl --user start rpd-panel.service; else start wf-panel-pi; fi
 start pcmanfm --desktop
 start squeekboard

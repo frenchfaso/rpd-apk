@@ -43,11 +43,16 @@ def main():
   sources=[('xkb',l+('+'+v if v else '')) for l,v in pairs]
   run('gsettings','set','org.gnome.desktop.input-sources','sources',repr(sources))
   run('labwc','--reconfigure')
+ elif command=='get-timezone':
+  target=pathlib.Path('/etc/localtime').resolve()
+  prefix='/usr/share/zoneinfo/'
+  print(str(target)[len(prefix):] if str(target).startswith(prefix) else (pathlib.Path('/etc/timezone').read_text().strip() if pathlib.Path('/etc/timezone').exists() else 'Etc/UTC'))
  elif command=='set-timezone':
   zone,=args
   if not re.fullmatch(r'[A-Za-z0-9_+/-]+',zone) or '..' in zone:raise ValueError('Invalid timezone')
   if not (pathlib.Path('/usr/share/zoneinfo')/zone).is_file():raise ValueError('Unknown timezone')
-  run('timedatectl','set-timezone',zone)
+  if pathlib.Path('/run/systemd/system').exists():run('timedatectl','set-timezone',zone)
+  else:subprocess.run(['pkexec','/usr/libexec/rpd-system-settings','timezone'],input=zone,text=True,check=True)
  else:raise ValueError('Unknown operation')
 if __name__=='__main__':
  try:main()

@@ -1,0 +1,8 @@
+#!/usr/bin/python3
+"""Enumerate udev metadata, without opening input event devices."""
+import pathlib,subprocess
+for node in sorted(pathlib.Path('/sys/class/input').glob('event*')):
+    result=subprocess.run(['udevadm','info','--query=property','--path='+str(node)],text=True,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
+    if 'ID_INPUT_TOUCHSCREEN=1' in result.stdout.splitlines():
+        try:print((node/'device/name').read_text().strip())
+        except OSError:pass

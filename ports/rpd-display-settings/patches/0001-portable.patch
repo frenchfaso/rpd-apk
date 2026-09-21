@@ -48,3 +48,8 @@
  
      infile = g_build_filename (g_get_user_config_dir (), "labwc/rc.xml", NULL);
      read_touchscreen_xml (infile);
+--- a/src/raindrop.c
++++ b/src/raindrop.c
+@@ -770 +770 @@
+-    fp = popen ("libinput list-devices | tr \\\\n @ | sed 's/@@/\\\n/g' | grep \"Capabilities:.*touch\" | sed 's/Device:[ \\\t]*//' | cut -d @ -f 1", "r");
++    fp = popen ("rpd-list-touchscreens", "r");

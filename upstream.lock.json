@@ -315,5 +315,15 @@
       "directory": "debian"
     },
     "pkgrel": 5
+  },
+  "rpi-chromium-mods": {
+    "version": "20260211",
+    "source_version": "20260211",
+    "pkgrel": 0,
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rpi-chromium-mods/rpi-chromium-mods_20260211.tar.xz",
+    "sha256": "f093f055105fb97dd8d987e19aac4ff3e0162fcef70c6ce2ebeda42325e30f33",
+    "sha512": "7bddb2dd77c88c5e734812b5caa869fce0cf80b6e2b1905e48066cdd1031ede3fd7929cd368f568f963f7434cee0e90d9012204e3b004fe3cdfd37f1174ef13b",
+    "filename": "rpi-chromium-mods_20260211.tar.xz",
+    "directory": "rpi-chromium-mods"
   }
 }

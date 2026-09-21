@@ -1,0 +1,15 @@
+#!/usr/bin/python3
+"""Add the browser launcher once; preserve later user customisations."""
+import configparser,os,pathlib
+home=pathlib.Path.home()
+state=pathlib.Path(os.environ.get('XDG_STATE_HOME',str(home/'.local/state')))/'rpd/browser-initialised'
+if not state.exists():
+    path=pathlib.Path(os.environ.get('XDG_CONFIG_HOME',str(home/'.config')))/'wf-panel-pi/wf-panel-pi.ini'
+    parser=configparser.ConfigParser();parser.read(path if path.exists() else '/etc/xdg/rpd/wf-panel-pi/wf-panel-pi.ini')
+    if not parser.has_section('panel'):parser.add_section('panel')
+    launchers=parser.get('panel','launchers',fallback='pcmanfm lxterminal').split()
+    if 'rpd-browser' not in launchers:launchers.insert(0,'rpd-browser')
+    parser.set('panel','launchers',' '.join(launchers))
+    path.parent.mkdir(parents=True,exist_ok=True)
+    with path.open('w') as f:parser.write(f)
+    state.parent.mkdir(parents=True,exist_ok=True);state.touch()

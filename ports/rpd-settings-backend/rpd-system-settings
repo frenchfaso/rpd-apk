@@ -1,0 +1,60 @@
+#!/usr/bin/python3 -I
+"""Authenticated, fixed-operation host settings. Secrets only arrive on stdin."""
+import os,pathlib,pwd,re,subprocess,sys
+
+def validate(operation,value):
+    if operation=='hostname':
+        if not re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?',value):raise ValueError('Invalid hostname')
+    elif operation in ('autologin','boot','ssh'):
+        if value not in ('0','1'):raise ValueError('Expected 0 or 1')
+    elif operation=='timezone':
+        if not re.fullmatch(r'[A-Za-z0-9_+/-]+',value) or value.startswith('/') or '..' in value:raise ValueError('Invalid timezone')
+    elif operation=='password':
+        if not value or len(value)>1024 or any(c in value for c in '\n\r\0'):raise ValueError('Invalid password')
+    else:raise ValueError('Unknown setting')
+    return value
+
+def main():
+    if os.geteuid()!=0:raise ValueError('Authentication required')
+    uid=int(os.environ.get('PKEXEC_UID','-1'))
+    if uid<1000:raise ValueError('A regular calling user is required')
+    user=pwd.getpwuid(uid).pw_name
+    if not re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_-]*',user):raise ValueError('Unsupported account name')
+    operation,=sys.argv[1:]
+    value=sys.stdin.read(8193)
+    if len(value)>8192:raise ValueError('Input too long')
+    validate(operation,value)
+    os.environ.clear();os.environ.update(PATH='/usr/sbin:/usr/bin:/sbin:/bin',LANG='C.UTF-8')
+    systemd=pathlib.Path('/run/systemd/system').exists()
+    if operation=='password':
+        subprocess.run(['chpasswd'],input=user+':'+value+'\n',text=True,check=True)
+    elif operation=='timezone':
+        zone=pathlib.Path('/usr/share/zoneinfo')/value
+        if not zone.is_file():raise ValueError('Unknown timezone')
+        if systemd:subprocess.run(['timedatectl','set-timezone',value],check=True)
+        else:
+            dest=pathlib.Path('/etc/localtime.rpd-tmp')
+            dest.unlink(missing_ok=True);dest.symlink_to(zone);dest.replace('/etc/localtime')
+            pathlib.Path('/etc/timezone').write_text(value+'\n')
+    elif operation=='hostname':
+        if systemd:subprocess.run(['hostnamectl','set-hostname',value],check=True)
+        else:
+            pathlib.Path('/etc/hostname').write_text(value+'\n')
+            subprocess.run(['hostname',value],check=True)
+    elif operation=='autologin':
+        dest=pathlib.Path('/etc/lightdm/lightdm.conf.d/70-rpd-autologin.conf')
+        dest.parent.mkdir(parents=True,exist_ok=True)
+        dest.write_text('[Seat:*]\nautologin-user='+ (user if value=='1' else '')+'\nautologin-user-timeout=0\n')
+    elif operation=='boot':
+        if systemd:subprocess.run(['systemctl','set-default','graphical.target' if value=='1' else 'multi-user.target'],check=True)
+        else:subprocess.run(['rc-update','add' if value=='1' else 'del','lightdm','default'],check=True)
+    elif operation=='ssh':
+        if systemd:subprocess.run(['systemctl','enable' if value=='1' else 'disable','--now','sshd'],check=True)
+        else:
+            subprocess.run(['rc-update','add' if value=='1' else 'del','sshd','default'],check=True)
+            subprocess.run(['rc-service','sshd','start' if value=='1' else 'stop'],check=True)
+
+if __name__=='__main__':
+    try:main()
+    except (ValueError,OSError,KeyError,subprocess.SubprocessError) as exc:
+        print('Unable to apply system setting: '+str(exc),file=sys.stderr);sys.exit(1)

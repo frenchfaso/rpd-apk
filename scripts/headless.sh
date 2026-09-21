@@ -53,6 +53,7 @@ for name in labwc wf-panel-pi pcmanfm squeekboard; do
 done
 test -f "$HOME/autostart-passed"
 export DISPLAY=$(cat "$HOME/rpd-display")
+python3 scripts/desktop-integration-probe.py
 for directory in DESKTOP DOWNLOAD DOCUMENTS MUSIC PICTURES VIDEOS; do
     location=$(xdg-user-dir "$directory")
     [ "$location" != "$HOME" ] && [ -d "$location" ]

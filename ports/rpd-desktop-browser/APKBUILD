@@ -5,9 +5,22 @@ pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-browser)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-desktop-lite firefox"
+depends="rpd-desktop-lite chromium rpd-chromium-defaults"
 options="!check"
 
+source="rpd-browser rpd-browser-init rpd-browser.desktop mimeapps.list 90-rpd.conf"
 package() {
-    mkdir -p "$pkgdir"
+    install -Dm755 "$srcdir/rpd-browser" "$pkgdir/usr/bin/rpd-browser"
+    install -Dm755 "$srcdir/rpd-browser-init" "$pkgdir/usr/libexec/rpd-browser-init"
+    install -Dm644 "$srcdir/rpd-browser.desktop" "$pkgdir/usr/share/applications/rpd-browser.desktop"
+    install -Dm644 "$srcdir/mimeapps.list" "$pkgdir/etc/xdg/rpd/mimeapps.list"
+    install -Dm644 "$srcdir/90-rpd.conf" "$pkgdir/etc/chromium/90-rpd.conf"
 }
+
+sha512sums="
+a77fa0cd9ec458d8325869704a8dd5febd8432f3ef0467ab19b71ee38a769e63b88932b3b15ef17da8584493df91ad84dfd300c4f950d1efefe6869b47a5c378  rpd-browser
+72be96dda6a4d290dc31b9fb68f91886c926b720249d00f07418f5fe7394f45d20b04b263efaa266bd60d0724040f1517440655e3d87c9bdc791d878598498f0  rpd-browser-init
+a280b183c0a5396f8a527a4a28d24ea4810c95cae3f32947ef07f3a930113733b543c104490a1ac1b21d0c8240fd2b1d77d762ae44de88f3ea70a379ebea1871  rpd-browser.desktop
+aaa47725de9eab21fed20111f8dd71ba23adaa181365aa883fc414a0be7afa686fa70343c9add70a7489325a27b11392ff11d1f0fe440c457fd37a512e5757fd  mimeapps.list
+09aa4a0d140640927392c580396b86526af8cfd1acd6e5a868c8c24f788bc0ce9ddc818634eeef5326e21820284d7f9a46fc93ef7683186d002e4f6e77cef6b1  90-rpd.conf
+"

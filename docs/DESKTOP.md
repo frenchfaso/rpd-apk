@@ -33,7 +33,7 @@ installed with APK. The lock tracks published Raspberry archives, never Git HEAD
 - Native RPCC modules provide appearance, panel, menu, shortcuts and mouse/keyboard preferences. See [ARM Trixie mapping](ARM-TRIXIE.md) for exclusions.
 - The file manager starts with a plain background; large wallpaper collections,
   browser, office and education suites are outside the minimal profile.
-- Firefox is the separate `rpd-desktop-browser` metapackage.
+- Chromium is provided by `rpd-desktop-browser`, included on M10, with portable official ARM browser defaults.
 - The battery and audio plugins are included as desktop services, but physical
   battery reporting and audio still require working kernel/board support.
 - As in the upstream shutdown dialog, screen locking is offered only when a
@@ -130,8 +130,8 @@ second daemon from competing for the same socket.
 
 The profile includes raindrop (Screens), rpinters (Printers), Bookshelf, the rc-gui Localisation dialogs, and VLC. The original `raspi-ui-overrides` application directory takes precedence in `XDG_DATA_DIRS`, preserving the official names, categories and hidden entries. A duplicate local network launcher and unrelated LXSession preferences are hidden/removed. The supported input-layout button is restored.
 
-The locale backend records a per-user LANG value for the next login; keyboard layouts/variants/options are validated against current XKB data and applied to labwc and Squeekboard. Timezone changes use systemd timedated and its polkit authentication. Original locale and keyboard selection data are generated from Alpine's locale/XKB/ISO databases during the build. Unsupported Pi configuration pages and the board-specific Wi-Fi country setter are not exposed.
+The locale backend records a per-user LANG value for the next login; keyboard layouts/variants/options are validated against current XKB data and applied to labwc and Squeekboard. Timezone changes use systemd timedated and its polkit authentication, or the constrained polkit helper on OpenRC. Original locale and keyboard selection data are generated from Alpine's locale/XKB/ISO databases during the build. Unsupported Pi configuration pages and the board-specific Wi-Fi country setter are not exposed.
 
 Display output profiles use a session-scoped kanshi service. Login-screen changes use a constrained, authenticated polkit helper which accepts only font/theme values, output geometry and touch mapping. Arbitrary commands, root destination paths and the rest of user XML are never imported.
 
-VLC uses Raspberry's published GTK2 engine and Qt GTK2 style/platform plugin, sharing the GTK settings. Firefox remains optional, as requested. On postmarketOS systemd install `cups-systemd cups-filters-systemd`, start the CUPS socket, and grant a printer administrator appropriate `lpadmin` membership. Printer hardware, Bluetooth/USB mouse and physical gesture tests are distinct from headless build validation.
+VLC uses Raspberry's published GTK2 engine and Qt GTK2 style/platform plugin, sharing the GTK settings. Chromium is now included by the M10 profile. On postmarketOS systemd install `cups-systemd cups-filters-systemd`, start the CUPS socket, and grant a printer administrator appropriate `lpadmin` membership. Printer hardware, Bluetooth/USB mouse and physical gesture tests are distinct from headless build validation.

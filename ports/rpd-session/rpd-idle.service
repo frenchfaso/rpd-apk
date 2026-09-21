@@ -1,0 +1,6 @@
+[Unit]
+Description=Raspberry desktop screen blanking and remote desktop
+PartOf=rpd-session.target
+[Service]
+ExecStart=/usr/libexec/rpd-idle
+Restart=on-failure

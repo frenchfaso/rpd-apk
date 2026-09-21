@@ -7,7 +7,7 @@ url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="GPL-2.0-or-later"
 depends=""
-makedepends=""
+makedepends="desktop-file-utils"
 options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="https://archive.raspberrypi.com/debian/pool/main/r/rpd-metas/rpd-metas_1.31.tar.xz"
@@ -20,6 +20,7 @@ package() {
     mkdir -p "$pkgdir/etc/xdg/rpd"
     cp -a common/etc/xdg/qt5ct common/etc/xdg/qt6ct "$pkgdir/etc/xdg/rpd/"
     sed -i "/x-www-browser.desktop/d; /Thonny.desktop/d; /glade.desktop/d" "$pkgdir/usr/share/raspi-ui-overrides/applications/mimeapps.list"
+    update-desktop-database "$pkgdir/usr/share/raspi-ui-overrides/applications"
     install -Dm644 debian/copyright "$pkgdir/usr/share/licenses/$pkgname/copyright"
 }
 

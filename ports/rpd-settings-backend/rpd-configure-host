@@ -1,0 +1,24 @@
+#!/bin/sh
+# Explicit idempotent setup for a selected existing desktop user.
+set -eu
+[ "$(id -u)" = 0 ] || { echo 'Run with sudo' >&2; exit 1; }
+[ "$#" = 1 ] || { echo 'Usage: rpd-configure-host USER' >&2; exit 1; }
+desktop_user=$1
+id "$desktop_user" >/dev/null
+[ "$(id -u "$desktop_user")" -ge 1000 ] || exit 1
+if [ -d /run/systemd/system ]; then
+    apk add cups-systemd cups-filters-systemd
+    systemctl daemon-reload
+    systemctl enable lightdm NetworkManager bluetooth cups.socket
+    systemctl start NetworkManager bluetooth cups.socket
+    systemctl set-default graphical.target
+elif command -v rc-update >/dev/null; then
+    apk add dbus-openrc lightdm-openrc polkit-openrc networkmanager-openrc bluez-openrc cups-openrc elogind-openrc openssh-openrc
+    for service in dbus elogind polkit networkmanager bluetooth cupsd lightdm; do
+        rc-update add "$service" default
+    done
+else
+    echo 'Supported init systems: systemd and OpenRC' >&2; exit 1
+fi
+id -nG "$desktop_user" | tr " " "\n" | grep -qx lpadmin || addgroup "$desktop_user" lpadmin
+echo 'Desktop services configured. Start LightDM or reboot to enter the desktop.'

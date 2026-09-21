@@ -1,0 +1,25 @@
+#!/usr/bin/python3
+"""Own one idle client; disabling blanking restores the display immediately."""
+import os,pathlib,signal,subprocess,time
+config=pathlib.Path(os.environ.get('XDG_CONFIG_HOME',str(pathlib.Path.home()/'.config')))/'rpd'
+commands={'blanking-enabled':['swayidle','-w','timeout','600','wlopm --off "*"','resume','wlopm --on "*"'],
+          'remote-enabled':['wayvnc','127.0.0.1','5900']}
+children={};running=True
+def stop(*unused):
+    global running
+    running=False
+for sig in (signal.SIGTERM,signal.SIGINT):signal.signal(sig,stop)
+try:
+    while running:
+        for flag,command in commands.items():
+            child=children.get(flag)
+            if (config/flag).exists() and (child is None or child.poll() is not None):
+                children[flag]=subprocess.Popen(command)
+            elif not (config/flag).exists() and child is not None:
+                child.terminate();child.wait(timeout=5);del children[flag]
+                if flag=='blanking-enabled':subprocess.run(['wlopm','--on','*'],check=False)
+        time.sleep(3)
+finally:
+    for flag,child in children.items():
+        child.terminate();child.wait(timeout=5)
+        if flag=='blanking-enabled':subprocess.run(['wlopm','--on','*'],check=False)

@@ -5,17 +5,30 @@ pkgdesc="Portable settings integration for Raspberry Pi Desktop"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="python3 polkit"
-source="rpd-apply-greeter rpd-greeter-settings org.rpd.greeter-settings.policy test-settings.py"
+depends="python3 polkit openssh"
+source="rpd-configure-host rpd-list-touchscreens rpd-user-settings rpd-system-settings org.rpd.system-settings.policy test-system-settings.py rpd-apply-greeter rpd-greeter-settings org.rpd.greeter-settings.policy test-settings.py"
 check() {
+    python3 "$srcdir/test-system-settings.py" "$srcdir/rpd-system-settings"
     python3 "$srcdir/test-settings.py" "$srcdir/rpd-greeter-settings"
 }
 package() {
+    install -Dm755 "$srcdir/rpd-configure-host" "$pkgdir/usr/sbin/rpd-configure-host"
+    install -Dm755 "$srcdir/rpd-list-touchscreens" "$pkgdir/usr/bin/rpd-list-touchscreens"
+    install -Dm755 "$srcdir/rpd-user-settings" "$pkgdir/usr/bin/rpd-user-settings"
+    install -Dm755 "$srcdir/rpd-system-settings" "$pkgdir/usr/libexec/rpd-system-settings"
+    install -Dm644 "$srcdir/org.rpd.system-settings.policy" "$pkgdir/usr/share/polkit-1/actions/org.rpd.system-settings.policy"
     install -Dm755 "$srcdir/rpd-apply-greeter" "$pkgdir/usr/bin/rpd-apply-greeter"
     install -Dm755 "$srcdir/rpd-greeter-settings" "$pkgdir/usr/libexec/rpd-greeter-settings"
     install -Dm644 "$srcdir/org.rpd.greeter-settings.policy" "$pkgdir/usr/share/polkit-1/actions/org.rpd.greeter-settings.policy"
 }
+
 sha512sums="
+064e36ed00ed03772bfdb074f4e30abd48911ab6641bf8fb3a5896ab566d611865b682f2f72ea99b586089a4c3f26be6cfefcddb6668f2a571e24b6eb5e0e164  rpd-configure-host
+e413d330df4afd76378b78a600553ac73dba4f9835e198d5bd5f7eaf785e564bddba6486c43fbe497350c5655a8e914a0833361aaa3c812246d53ad61bddcb49  rpd-list-touchscreens
+fb3fea59e9ef71fe1534661e0cc9cc5e8f006d1a5796d0702eff6127376943183dfc88ad45c578809047f1b9e2f51989b1bc0fae3c8d229e453215276853bb23  rpd-user-settings
+2f77431a3372b49ce83ddd0a0ae837e018ccde03b40b9e0b2d8c5529a7ac0a1b7b52bec2dc71e5d745a1b86afcea659373ca3c0c11dc6b93f2f5e8daa670fc3e  rpd-system-settings
+3fe5c500e3f7057c039a76874f85bd83e75044e5a5ed9da9a076447d516ed4232792c545f856019d0a008526921751be187455bb87e4d854e09e67a1d63cb661  org.rpd.system-settings.policy
+bac37a5718c22c07064ddf9dbf7eec0caca9bfe91fa5cbdc5b861d98f09083bd00270c909e1f3195871f120d685c2bba174e2740f49fb5540d40640134f89b78  test-system-settings.py
 0a207f51b2c187af90aca5679d8cd28edc1f878af7d7f9ce851183a1340c2f166507ba8ffd3eb090c8079d9ef6f21af9758ceaa97acbacfe3762bcd9de85c43a  rpd-apply-greeter
 99ab35b55165d75332a0a2e5f7e50cf49aa3a65a5b0d752900cd77d6e7627ad64f49071f94724698819e4413ad8d805bfd7ae6a59aee4c285f2664bf347152dd  rpd-greeter-settings
 88c903a09c6f703781b2d17504c06861c3fc632dd7197414a97af0ae5072367ed219ffedde345d9c3bcaaa4badc4c7c59cb3dc2275a8dd562901ec16d4bdf15b  org.rpd.greeter-settings.policy

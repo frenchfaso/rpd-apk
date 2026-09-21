@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Web Browser
+Comment=Browse the web
+Exec=rpd-browser %U
+TryExec=rpd-browser
+Icon=web-browser
+Terminal=false
+NoDisplay=true
+Categories=Network;WebBrowser;

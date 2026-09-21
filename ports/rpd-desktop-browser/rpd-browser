@@ -1,0 +1,5 @@
+#!/usr/bin/python3
+import os,shutil,subprocess,sys
+default=subprocess.run(['xdg-mime','query','default','x-scheme-handler/http'],text=True,stdout=subprocess.PIPE).stdout.strip()
+browser='firefox' if default=='firefox.desktop' and shutil.which('firefox') else 'chromium'
+os.execvp(browser,[browser]+sys.argv[1:])

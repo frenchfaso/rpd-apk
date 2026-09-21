@@ -79,6 +79,22 @@ def main():
             if quilt:
                 if downloaded[1][1]!='debian':raise ValueError('Unexpected Debian archive root')
                 new[name]['debian']=downloaded[1][0]
+    # A new dependency is not automatically safe/portable merely because its
+    # containing metapackage has a newer version. Require explicit review.
+    meta=new['rpd-metas'];data=fetch(meta['url'])
+    if hashlib.sha256(data).hexdigest()!=meta['sha256']:raise ValueError('Metapackage checksum mismatch')
+    with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+        control=archive.extractfile(meta['directory']+'/debian/control').read().decode()
+    components={}
+    for record in paragraphs(control):
+        if 'Package' not in record:continue
+        names=[]
+        for item in re.split(r'[,|]',record.get('Depends','')+','+record.get('Recommends','')):
+            match=re.match(r'\s*([a-z0-9][a-z0-9+.-]*)',item)
+            if match:names.append(match[1])
+        components[record['Package']]=sorted(set(names))
+    reviewed=json.loads((ROOT/'upstream-desktop-components.json').read_text())
+    if components!=reviewed:raise ValueError('Official desktop component set changed; review upstream-desktop-components.json before release')
     changed=new!=old
     print('New published sources found' if changed else 'Published sources unchanged; signature verified')
     if changed and not args.check:

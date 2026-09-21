@@ -7,8 +7,8 @@ Do not treat a successful build as an M10 graphics qualification. The M10 curren
 ## Package selection
 
 - `rpd-desktop-lite`: labwc; Raspberry wf-panel-pi, clock, application menu, window list, eject/network/volume/battery plugins and Squeekboard button; Raspberry PCManFM fork; PiXtrix theme/icons; LXTerminal, Mousepad, Xarchiver, LXTask, Galculator, Eye of MATE, Evince, VLC, Bookshelf, Raspberry Run and Screenshot; native Raspberry Control Centre modules for appearance, panel, menu editing, shortcuts, mouse/keyboard, screens, printers and localisation; NetworkManager GUI, MATE polkit agent, keyring, GVFS/UDisks automount, XDG session services, PipeWire/WirePlumber, portals, XWayland and software-capable Mesa.
-- `rpd-desktop-m10`: adds an explicit software-rendered session entry and a tested, pinned labwc build for two-finger right taps. It selects software rendering for desktop and greeter. LightDM and the Raspberry Pi greeter are configured. Host service presets may enable LightDM during installation (postmarketOS systemd does this). Stop Buffyboard before a graphical trial and verify service enablement before rebooting.
-- `rpd-desktop-browser`: optional Firefox, kept outside the smallest installation.
+- `rpd-desktop-m10`: includes the Chromium browser profile and adds an explicit software-rendered session entry and a tested, pinned labwc build for two-finger right taps. It selects software rendering for desktop and greeter. LightDM and the Raspberry Pi greeter are configured. Host service presets may enable LightDM during installation (postmarketOS systemd does this). Stop Buffyboard before a graphical trial and verify service enablement before rebooting.
+- `rpd-desktop-browser`: Chromium with portable official Raspberry browser defaults, a panel launcher and HTTP/HTTPS/HTML associations. Included by the M10 profile; optional for the generic minimal profile.
 - Buffyboard remains the console keyboard. Squeekboard is the separate Wayland keyboard.
 
 Official Raspberry sources are tracked from the signed Trixie source index. Standard applications follow Alpine's packaging; they are not replaced by Debian binaries. Hardware plugins (GPU temperature, voltage/power warnings), Raspberry Connect, raspi-config, piwiz, cloning/imaging tools, APT updater and recommended educational suites are excluded. Audio and battery controls use the host services; physical hardware support remains dependent on the M10 kernel. The Raspberry Bluetooth panel plugin and BlueZ are included for mice, keyboards and other peripherals. No browser, office suite or IDE is pulled into the minimal profile.
@@ -29,7 +29,7 @@ GitHub Actions checks the signed official Trixie source index daily, selects our
 
 Every run allocates increasing package revisions in Git before building, so `apk upgrade` can install ABI rebuilds. Failed builds leave a skipped revision but do not deploy. Scheduled runs can be delayed or disabled by GitHub's inactivity policy; the Actions page shows their status. The workflow can also be started manually.
 
-This follows *published source packages*, not development commits. Unknown layouts, unsupported version formats, archive changes without version bumps, patch failures and failed tests stop publication. New Raspberry metapackage dependencies do not automatically enter the hardware-independent allowlist. A maintainer must adapt incompatible upstream changes. Headless tests do not qualify physical touch/GPU/display behavior.
+This follows *published source packages*, not development commits. Unknown layouts, unsupported version formats, archive changes without version bumps, patch failures and failed tests stop publication. Changes to the official desktop dependency/recommendation set stop publication until `upstream-desktop-components.json` is reviewed; they do not automatically enter the hardware-independent allowlist. A maintainer must adapt incompatible upstream changes. Headless tests do not qualify physical touch/GPU/display behavior.
 
 Public key: `keys/rpd-apk.rsa.pub`. The private counterpart is held as an encrypted GitHub Actions secret, with a local backup outside Git. Repository write access and workflow changes must therefore be trusted. Actions are pinned to commit IDs. Local builds use a throwaway key by default.
 
@@ -45,9 +45,8 @@ that exact public-key hash and adds the repository once. Then:
 
 ```sh
 sudo apk add rpd-desktop-m10
-# On a systemd postmarketOS host, enable the native printing services:
-sudo apk add cups-systemd cups-filters-systemd
-sudo systemctl enable --now cups.socket
+# Configure systemd/OpenRC services for your existing account:
+sudo rpd-configure-host frenchfaso
 # From a local logged-in TTY; first stop Buffyboard for that graphical trial:
 rpd-session-m10
 # Later package updates:
@@ -60,3 +59,5 @@ not configure autologin or stop Buffyboard. Host presets may enable the display
 manager automatically; check `systemctl is-enabled lightdm` after installation.
 On an M10 with Buffyboard, establish mutual exclusion and console recovery before
 enabling normal graphical boot. Exit the desktop to return to the terminal.
+
+The portable System, Display and Interfaces pages retain the original Control Centre widgets. See [browser and portable settings](docs/ALIGNMENT.md) for supported operations, default browser configuration and remaining differences.

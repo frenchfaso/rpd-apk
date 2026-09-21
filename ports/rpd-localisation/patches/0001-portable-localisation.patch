@@ -1,6 +1,6 @@
 --- a/src/rc_gui.c
 +++ b/src/rc_gui.c
-@@ -359,35 +359,8 @@
+@@ -359,35 +359,9 @@
  
  static void init_config (void)
  {
@@ -23,11 +23,12 @@
 -            GET_SQUEEK, GET_SQUEEKOUT, VKBD_INSTALLED, XSCR_INSTALLED);
 -    }
 -
--    load_system_tab (builder);
++    load_localisation_tab (builder);
+     load_system_tab (builder);
 -    load_display_tab (builder);
 -    load_interfacing_tab (builder);
 -    load_performance_tab (builder);
-     load_localisation_tab (builder);
+-    load_localisation_tab (builder);
 -
 -    if (get_status (GET_PI_TYPE) != -1) ispi = TRUE;
 -    else ispi = FALSE;
@@ -37,13 +38,13 @@
      needs_reboot = FALSE;
  }
  
-@@ -415,89 +388,33 @@
+@@ -415,89 +389,35 @@
  
  int plugin_tabs (void)
  {
 -    if (ispi) return 5;
 -    else return 4;
-+    return 1;
++    return 4;
  }
  
  const char *tab_name (int tab)
@@ -57,7 +58,7 @@
 -        case 4 : return C_("tab", "Performance");
 -        default : return _("No such tab");
 -    }
-+    return C_("tab", "Localisation");
++    return tab==3 ? C_("tab", "Interfaces") : tab==1 ? C_("tab", "System") : tab==2 ? C_("tab", "Display") : C_("tab", "Localisation");
  }
  
  const char *icon_name (int tab)
@@ -71,7 +72,7 @@
 -        case 4 : return "system-run";
 -        default : return NULL;
 -    }
-+    return "rc-gui-localisation";
++    return tab==3 ? "rc-gui-interfaces" : tab==1 ? "applications-system" : tab==2 ? "computer" : "rc-gui-localisation";
  }
  
  const char *tab_id (int tab)
@@ -81,7 +82,7 @@
 -        case 3 : return ("localisation");
 -        default : return NULL;
 -    }
-+    return "localisation";
++    return tab==3 ? "interfaces" : tab==1 ? "system" : tab==2 ? "display" : "localisation";
  }
  
  GtkWidget *get_tab (int tab)
@@ -116,8 +117,10 @@
 -
 -    gtk_container_remove (GTK_CONTAINER (window), plugin);
 -
-+    GtkWidget *plugin = GTK_WIDGET (gtk_builder_get_object (builder, "vbox40"));
-+    gtk_container_remove (GTK_CONTAINER (gtk_builder_get_object (builder, "localisation_window")), plugin);
++    const char *box=tab==3 ? "vbox20" : tab==1 ? "vbox10" : tab==2 ? "vbox50" : "vbox40";
++    const char *window=tab==3 ? "interface_window" : tab==1 ? "system_window" : tab==2 ? "display_window" : "localisation_window";
++    GtkWidget *plugin = GTK_WIDGET (gtk_builder_get_object (builder, box));
++    gtk_container_remove (GTK_CONTAINER (gtk_builder_get_object (builder, window)), plugin);
      return plugin;
  }
  
@@ -135,13 +138,14 @@
  
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -1,9 +1,5 @@
+@@ -1,9 +1,6 @@
  sources = files (
      'rc_gui.c',
 -    'system.c',
 -    'display.c',
 -    'interface.c',
 -    'perform.c',
++    'portable-system.c',
      'local.c'
  )
  
@@ -230,7 +234,7 @@
  
      // read the current time zone
 -    init_tz = get_string ("cat /etc/timezone");
-+    init_tz = get_string ("timedatectl show --property=Timezone --value");
++    init_tz = get_string ("rpd-localisation get-timezone");
      if (init_tz == NULL) init_tz = g_strdup ("Europe/London");
  
      // filter and sort the master database
@@ -303,22 +307,3 @@
  }
  
  /* End of file */
---- a/src/rc_gui.h
-+++ b/src/rc_gui.h
-@@ -117,11 +117,11 @@
- #define CHECK_UNAME     GET_PREFIX "is_uname_current"
- 
- /* localisation tab */
--#define SET_LOCALE      SET_PREFIX "do_change_locale_rc_gui %s"
--#define SET_TIMEZONE    SET_PREFIX "do_change_timezone_rc_gui %s"
--#define SET_KEYBOARD    SET_PREFIX "do_change_keyboard_rc_gui %s"
--#define GET_WIFI_CTRY   GET_PREFIX "get_wifi_country"
--#define SET_WIFI_CTRY   SET_PREFIX "do_wifi_country %s"
-+#define SET_LOCALE "rpd-localisation set-locale %s"
-+#define SET_TIMEZONE "rpd-localisation set-timezone %s"
-+#define SET_KEYBOARD "rpd-localisation set-keyboard %s"
-+#define GET_WIFI_CTRY "printf 00"
-+#define SET_WIFI_CTRY "false %s"
- #define WLAN_INTERFACES GET_PREFIX "list_wlan_interfaces"
- 
- #define CONFIG_SWITCH(wid,name,var,cmd) wid = gtk_builder_get_object (builder, name); \

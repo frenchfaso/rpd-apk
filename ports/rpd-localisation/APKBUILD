@@ -6,16 +6,17 @@ pkgdesc="Portable Raspberry Pi Desktop: rc-gui"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="BSD-3-Clause"
-depends="rpd-control-center python3 musl-locales musl-locales-lang xkeyboard-config tzdata"
+depends="rpd-control-center rpd-settings-backend python3 musl-locales musl-locales-lang xkeyboard-config tzdata"
 makedepends="meson samurai pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev python3 musl-locales musl-locales-lang iso-codes xkeyboard-config"
 options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="https://archive.raspberrypi.com/debian/pool/main/r/rc-gui/rc-gui_2.21.tar.xz"
 builddir="$srcdir/rc_gui"
 source="$source patches/0001-portable-localisation.patch"
-source="$source rpd-localisation generate-data.py"
+source="$source rpd-localisation generate-data.py portable-system.c"
 
 build() {
+    cp "$srcdir/portable-system.c" src/portable-system.c
     abuild-meson -Db_lto=false . output
     meson compile -C output
 }
@@ -29,7 +30,8 @@ package() {
 
 sha512sums="
 963499ab506dbd85eeb02bce20f9b260c2a662c064abbd20dce9ded99e4b010193247ba5eb681e954f612bcb148703467aa293b6e695dc5ba7f7e1a36de4efdb  rc-gui_2.21.tar.xz
-2a305ae406d8988b58b71610ae860f18c8173165112ecc3cb89f52dcdcd06d7b77f9a0dafd33a77bafa210a6eceb551f16f9c1b5f47c3821ab7470cf6bac9602  0001-portable-localisation.patch
-08fefb3742b0eaed06abe6038ade175b2140c2909a0e5248a6a1c8707ce6a9d929a17b12e4b77b7e81f66f815fd3f9c9cc4660cbce0d99db53c8183826d2eb38  rpd-localisation
+e010ed4ff9e989de5fed5fdf1038c56fec400b7eea66c5d539d56f539403a21c5f22f5082b3163d15e50ea0ed8e99c43eeb62ef17179ab857c75c65d7468bd0f  0001-portable-localisation.patch
+8810bd7d15421441e957f6389cc0a5069881aa50394d7ec81d2060bc7352b5c0761c137f5fe79a3abd03ad1b71bae703e6f8ab943e33fc4422607ab7eb197a24  rpd-localisation
 c9d2b83da92df8b413e3bd038a160467add6007f9ef54a24baed103c6a080d1f24a96d23785f8a553263571c4f5bf5e7fa2e4915927d5ba98c352723e37feb72  generate-data.py
+f72cf63fe6631fe3f7bab68cbf3ef237a10eab81cb22cab59edd40fa8b011484ee52855849e77285a7040915b73a2dc81c815a4509586f284da7814a5187bd31  portable-system.c
 "

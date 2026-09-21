@@ -5,7 +5,7 @@ pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-desktop-lite labwc=0.20.2-r105"
+depends="rpd-desktop-browser labwc=0.20.2-r105"
 options="!check"
 source="61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
 
