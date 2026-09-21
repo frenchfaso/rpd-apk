@@ -66,6 +66,13 @@ cp /tmp/rpd-greeter-test.png /work/out/
 fi
 kill "$manager" 2>/dev/null || :
 wait "$manager" || :
+sleep 1
+for name in pi-greeter squeekboard labwc; do
+    if ps -eo stat,comm | awk -v name="$name" '$2 == name && $1 !~ /^Z/ { found=1 } END { exit !found }'; then
+        echo "Greeter process survived session shutdown: $name" >&2
+        exit 1
+    fi
+done
 cleanup
 trap - EXIT INT TERM
 cp /tmp/greeter-test.log /work/out/lightdm-test.log

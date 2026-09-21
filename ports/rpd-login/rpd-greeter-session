@@ -9,4 +9,13 @@ export XCURSOR_SIZE=32
 if [ "${RPD_SOFTWARE_RENDERING:-0}" = 1 ]; then
     export WLR_RENDERER=pixman LIBGL_ALWAYS_SOFTWARE=1
 fi
-exec dbus-run-session -- labwc --config-dir /etc/xdg/rpd/greeter
+# LightDM stops this launcher at login. Terminate its entire private process
+# group so no greeter compositor, keyboard or session bus survives that handoff.
+setsid dbus-run-session -- labwc --config-dir /etc/xdg/rpd/greeter &
+session=$!
+cleanup() {
+    trap - EXIT HUP INT TERM
+    kill -TERM -- "-$session" 2>/dev/null || :
+}
+trap cleanup EXIT HUP INT TERM
+wait "$session"
