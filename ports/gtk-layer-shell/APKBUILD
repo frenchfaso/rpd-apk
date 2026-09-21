@@ -9,7 +9,7 @@ license="LGPL-3.0-or-later AND MIT"
 makedepends="gobject-introspection-dev gtk+3.0-dev meson samurai vala wayland-dev wayland-protocols"
 subpackages="$pkgname-dev $pkgname-rpd-test:rpd_test"
 options="!check" # Runtime seat ABI regression runs under labwc in repository smoke.
-source="$pkgname-$pkgver.tar.gz::https://github.com/wmww/gtk-layer-shell/archive/v$pkgver.tar.gz
+source="$pkgname-$pkgver.tar.gz::https://codeload.github.com/wmww/gtk-layer-shell/tar.gz/refs/tags/v$pkgver
     alpine-touch-seat.patch seat-abi-probe.c"
 build() {
     # Private ABI adaptation is reviewed against this GTK release, not guessed.
