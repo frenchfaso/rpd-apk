@@ -13,7 +13,7 @@ compositor=${LABWC_PID:?labwc must export LABWC_PID}
 # Create locale-aware Desktop/Documents/Downloads/etc. without overwriting choices.
 xdg-user-dirs-update
 # D-Bus-activated GVFS, keyring and portals must inherit this Wayland session.
-activation_vars="LANG MUSL_LOCPATH XDG_RUNTIME_DIR WAYLAND_DISPLAY DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_CONFIG_DIRS XDG_DATA_DIRS XDG_MENU_PREFIX LABWC_PID"
+activation_vars="LANG MUSL_LOCPATH QT_QPA_PLATFORMTHEME XDG_RUNTIME_DIR WAYLAND_DISPLAY DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_CONFIG_DIRS XDG_DATA_DIRS XDG_MENU_PREFIX LABWC_PID"
 if command -v systemctl >/dev/null && systemctl --user show-environment >/dev/null 2>&1; then
     dbus-update-activation-environment --systemd $activation_vars
     managed=1
