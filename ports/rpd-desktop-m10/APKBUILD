@@ -1,6 +1,6 @@
 pkgname=rpd-desktop-m10
 pkgver=0.1.0
-pkgrel=8
+pkgrel=9
 pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
