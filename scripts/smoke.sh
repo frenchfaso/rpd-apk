@@ -21,7 +21,7 @@ grep -q 'greeter-session=rpd-greeter-labwc' out/lightdm-config.txt
 grep -q 'user-session=rpd-session-m10' out/lightdm-config.txt
 printf 'Clean-root dependency and executable checks passed\n' > out/validation.txt
 
-apk add --upgrade rpd-desktop-m10 grim procps wlrctl
+apk add --upgrade rpd-desktop-m10 grim procps wlrctl gtk-layer-shell-rpd-test
 # Provide a real system D-Bus for service activation in the disposable test.
 mkdir -p /run/dbus
 dbus-uuidgen --ensure

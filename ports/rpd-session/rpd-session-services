@@ -36,7 +36,7 @@ if [ ! -f "$state/appearance-initialised" ]; then
     fi
 fi
 start /usr/libexec/polkit-mate-authentication-agent-1
-start wf-panel-pi
+if [ "$managed" = 1 ]; then systemctl --user start rpd-panel.service; else start wf-panel-pi; fi
 start pcmanfm --desktop
 start squeekboard
 start xsettingsd -c /etc/xdg/rpd/xsettingsd/xsettingsd.conf

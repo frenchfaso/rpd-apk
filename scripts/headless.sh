@@ -38,6 +38,7 @@ done
 compositor_pid=$session_pid
 export LABWC_PID=$compositor_pid
 sleep 5
+/usr/libexec/rpd-gtk-seat-probe
 for name in labwc wf-panel-pi pcmanfm squeekboard; do
     ps -eo stat,comm | awk -v name="$name" '$2 == name && $1 !~ /^Z/ { found=1 } END { exit !found }' || { cat /tmp/rpd-headless.log; echo "Missing running process: $name" >&2; exit 1; }
 done

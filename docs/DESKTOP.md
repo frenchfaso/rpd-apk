@@ -104,3 +104,24 @@ enable newly installed LightDM, BlueZ and UDisks2 units. This happens in the hos
 package trigger even though RPD APKs contain no service-enabling script. Check
 enablement before rebooting; stop Buffyboard for graphics and arrange a console
 recovery path when configuring permanent graphical boot.
+
+## Alpine GTK touch compatibility
+
+Alpine GTK 3.24.52 includes GNOME MR 5628, adding `last_touch_down_serial` inside
+GdkWaylandSeat. Upstream gtk-layer-shell 0.10.1 assumes unpatched GTK: after a
+touch it reads this serial as the tablet-list pointer and crashes popup menus.
+This repository carries gtk-layer-shell 0.10.1-r100+ with the matching private
+layout and completed-touch serial handling. The package build explicitly checks
+GTK 3.24.52; an Alpine GTK version change requires reviewing this adaptation.
+Official newer gtk-layer-shell releases should replace this compatibility build
+once they account for the Alpine patch. It is not a GPU or Wi-Fi driver patch.
+
+CI compares the expected seat size with the independently built GTK runtime and
+reproduces the completed-touch serial from the M10 crash. The probe segfaulted
+with the original library and passes with the compatibility build. It is shipped
+separately in gtk-layer-shell-rpd-test, not in the desktop profile.
+
+On systemd, rpd-panel.service restarts the panel after an unexpected exit (with a
+bounded retry limit) and stops with the graphical session. PipeWire XDG autostart
+is hidden because the session already starts the audio services, preventing a
+second daemon from competing for the same socket.

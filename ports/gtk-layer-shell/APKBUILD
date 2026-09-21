@@ -1,0 +1,33 @@
+# Alpine compatibility build: GTK 3.24.52 carries GNOME MR 5628.
+pkgname=gtk-layer-shell
+pkgver=0.10.1
+pkgrel=100
+pkgdesc="GTK Layer Shell with Alpine GTK touch-seat ABI compatibility"
+url="https://github.com/wmww/gtk-layer-shell"
+arch="aarch64"
+license="LGPL-3.0-or-later AND MIT"
+makedepends="gobject-introspection-dev gtk+3.0-dev meson samurai vala wayland-dev wayland-protocols"
+subpackages="$pkgname-dev $pkgname-rpd-test:rpd_test"
+options="!check" # Runtime seat ABI regression runs under labwc in repository smoke.
+source="$pkgname-$pkgver.tar.gz::https://github.com/wmww/gtk-layer-shell/archive/v$pkgver.tar.gz
+    alpine-touch-seat.patch seat-abi-probe.c"
+build() {
+    # Private ABI adaptation is reviewed against this GTK release, not guessed.
+    test "$(pkg-config --modversion gtk+-3.0)" = 3.24.52
+    abuild-meson -Db_lto=false -Dexamples=false -Ddocs=false -Dtests=false . output
+    meson compile -C output
+    cc -fvisibility=hidden -DGTK_LAYER_SHELL_MAJOR=0 -DGTK_LAYER_SHELL_MINOR=10 -DGTK_LAYER_SHELL_MICRO=1 "$srcdir/seat-abi-probe.c" -I src -I gtk-priv/h $(pkg-config --cflags --libs gtk+-3.0 wayland-client) -Loutput/src -lgtk-layer-shell -o output/seat-abi-probe
+}
+package() {
+    DESTDIR="$pkgdir" meson install --no-rebuild -C output
+    install -Dm755 output/seat-abi-probe "$pkgdir/usr/libexec/rpd-gtk-seat-probe"
+}
+rpd_test() {
+    pkgdesc="Regression probe for Alpine GTK touch-seat ABI"
+    amove usr/libexec/rpd-gtk-seat-probe
+}
+sha512sums="
+8366b6f11ab9c1a5361f3c858507369c35904662c2cb260a4ad87cc89b93fe8ad2b8789c9df6d4d43623346292faa9705f5fe6f73c8fdc325eb7ad2180f0d659  gtk-layer-shell-0.10.1.tar.gz
+337fd99609b0aaa58d7c6d48ea4c911fbc46730e04393d670c135186959feddb85bb964a304006e5201ef0c9874a285519ceaf874cb8d611fb7070e0a80b5d0a  alpine-touch-seat.patch
+0cf2f83297d90ac94d73c3eda480720046100296d3ce7fd58fff468dc73b72f87b1f96c7c5d4239d1afbdd9b3621c6d8cba4a2e5aa58953fcce5929161e7091c  seat-abi-probe.c
+"

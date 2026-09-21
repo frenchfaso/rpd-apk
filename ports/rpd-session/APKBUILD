@@ -7,8 +7,10 @@ arch="noarch"
 license="MIT"
 depends="gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard network-manager-applet mate-polkit polkit mousepad"
 options="!check"
-source="rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop rpd-network.desktop rpd-logout.desktop wf-panel-pi.ini rc.xml settings.ini"
+source="rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop rpd-network.desktop rpd-logout.desktop wf-panel-pi.ini rc.xml settings.ini"
 package() {
+    install -Dm644 "$srcdir/rpd-panel.service" "$pkgdir/usr/lib/systemd/user/rpd-panel.service"
+    install -Dm644 "$srcdir/pipewire.desktop" "$pkgdir/etc/xdg/rpd/autostart/pipewire.desktop"
     install -Dm644 "$srcdir/rpd-session.target" "$pkgdir/usr/lib/systemd/user/rpd-session.target"
     install -Dm644 "$srcdir/xsettingsd.conf" "$pkgdir/etc/xdg/rpd/xsettingsd/xsettingsd.conf"
     install -Dm644 "$srcdir/labwc-portals.conf" "$pkgdir/etc/xdg/rpd/xdg-desktop-portal/labwc-portals.conf"
@@ -26,6 +28,8 @@ package() {
     install -Dm644 "$srcdir/rpd-logout.desktop" "$pkgdir/usr/share/applications/rpd-logout.desktop"
 }
 sha512sums="
+d7dab4c715e88bc1055a77630f29708077c0d1bc2603f6b64768b36cd88524ebb10dea640286080dde60cfd0eabe1e11cd00f13a386aa22d9c356a88c68b9c4b  rpd-panel.service
+b83e352e328585de21607fc8f2c719d543a475ce2c4ba1d63b7342f113ed873cd1e273843217aa9d9275c62458ceebd9d3978aca09fe73bddc6a677cf14bb9f1  pipewire.desktop
 c40744049233321c977b41b574c7e1e81ce8ce958bbb719e0fc96ed814f0a50e84e82807698154589584afb6f1aa1ac2e5c602f715661e85d19c29b1bf3a8212  rpd-session.target
 c6b77ba5e7b51fce3776c82adba9229331632fc26ca55d191a105bc41b3720439d7e59baf43ce26f0ed8dc737387e8a670d408d4a6e09d201ca0ebde99e978cc  xsettingsd.conf
 e9f6ca6a9ced3181eaddac8753a5aaa6d7df181775717977574865133e56b84aac3c4148e6fac9818cea6c89f3a137fced6119216935c34d27b03411f4b94128  labwc-portals.conf
@@ -33,7 +37,7 @@ e9f6ca6a9ced3181eaddac8753a5aaa6d7df181775717977574865133e56b84aac3c4148e6fac981
 6c6098da54bfb088bf1bc8b9e9f53c0027bf5cda07c7fc5b195c66b9302b84101fdccbfd68697bb8391d2d397d07f1c0a76ae98570cb3c1d28425f106959127e  rpd-edit-launcher
 b5086d4d01cf03292743183f9b2067d2ea4fd714e6423f521aa8908b30127e56c0a1181d865897f5bcfb562180d8f54a710b8cc7c7264a20690aea07e85353d4  rpd-session
 78d911838fe99ec420cc1b931a550f72c5b96138920d670dbdad32a15bbc4e73766881ec731a33edf3eeb8292b5afcf8084966f0064fa00f9c3ed4523da23ffa  rpd-autostart
-9f862b33800befd7326b9d93e2300d38884fae72f306f6fa565de9d393a76456755fc48c98ac730cf63a60f7b5128e6edb7e40e85deb4aa7517e822ed8a8f4a3  rpd-session-services
+a8a71c5d3ed1a8fae82684df3dd29e3c51e5ce8848f4c1f1b91457ededcd4733c2767efc7b2e0a0788bbd95d0a08402a839239dd27fcd6bf6f7e0210c3165ec9  rpd-session-services
 e27b1eac94e89f723a1c7b910c60d9ccd2031ab978089d30a2091323eacded63bc85ed6b7fd5bc2473b1c9d36a5b1739475ec444e5988308c07c865d8a51a11f  rpd-panel-settings
 6087ca2bd85e15cc63782f67e684cc6d980481b153ff90608de92d5101702081bbd36398a98baeaefb36dce4521c302eab11ffad7cffb186a4d3e08dc6a2ba41  rpd-session.desktop
 21fc43b8e8530e50731c6180410da9fb33efb0ef458bb6e3ab40f5d4274416cabfca4296ffe76f6c0f22eb8187ad6ce4d31d126bc11a832abe8d116948167eea  rpd-network.desktop

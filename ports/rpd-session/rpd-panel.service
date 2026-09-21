@@ -1,0 +1,10 @@
+[Unit]
+Description=Raspberry desktop panel
+PartOf=rpd-session.target
+StartLimitIntervalSec=30
+StartLimitBurst=3
+
+[Service]
+ExecStart=/usr/bin/wf-panel-pi
+Restart=on-failure
+RestartSec=2

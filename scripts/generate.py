@@ -10,6 +10,7 @@ for name,m in lock.items():
  asset=name in ['pixtrix-theme','pixtrix-icons','rpd-metas']
  license='MIT' if name=='wf-panel-pi' else 'GPL-2.0-or-later' if asset or name in ['pcmanfm-pi','pplug-netman','pi-greeter'] else 'BSD-3-Clause'
  depends='rpd-panel' if name.startswith('wfplug-') or name.startswith('pplug-') else ''
+ if name=='wf-panel-pi':depends='gtk-layer-shell>=0.10.1-r100'
  if name=='pplug-ejecter':depends+=' gvfs udisks2'
  if name=='pplug-netman':depends+=' networkmanager network-manager-applet gnome-keyring'
  if name=='pplug-volumepulse':depends+=' pipewire-pulse wireplumber'
