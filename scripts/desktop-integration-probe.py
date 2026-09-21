@@ -17,6 +17,7 @@ with tempfile.TemporaryDirectory() as temp:
 prefs=json.loads(pathlib.Path('/usr/lib/chromium/initial_preferences').read_text())
 assert prefs['extensions']['theme']['use_system']
 assert 'initial_extensions' not in prefs
+assert prefs['distribution']['skip_first_run_ui']
 policy=json.loads(pathlib.Path('/etc/chromium/policies/recommended/rpd.json').read_text())
 assert policy['DefaultSearchProviderName']=='DuckDuckGo'
 assert pathlib.Path(prefs['distribution']['import_bookmarks_from_file']).is_file()

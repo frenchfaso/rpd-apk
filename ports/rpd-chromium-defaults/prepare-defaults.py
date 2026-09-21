@@ -4,6 +4,8 @@ import json,pathlib,shutil,sys
 source,dest=map(pathlib.Path,sys.argv[1:])
 prefs=json.loads((source/'armhf/initial_preferences').read_text())
 prefs.pop('initial_extensions',None)
+# Unbranded Alpine Chromium otherwise shows an empty additional-terms dialog.
+prefs['distribution']['skip_first_run_ui']=True
 prefs['distribution']['import_bookmarks_from_file']='/usr/share/rpd-chromium/bookmarks.html'
 for path in ['usr/lib/chromium','usr/share/rpd-chromium','etc/chromium/policies/recommended']:
     (dest/path).mkdir(parents=True,exist_ok=True)

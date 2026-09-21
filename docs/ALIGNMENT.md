@@ -19,7 +19,7 @@ The M10 profile now installs native Alpine Chromium. HTTP, HTTPS, HTML and XHTML
 
 `rpd-chromium-defaults` tracks the signed official ARM source of `rpi-chromium-mods`. It packages the original bookmarks and initial preferences, including system theme and the original first-run page, with the bookmarks path adapted to Alpine. Recommended policies select DuckDuckGo, disable search suggestions and show the bookmarks bar; users can override recommended settings. Initial preferences apply to newly created profiles, not existing user profiles.
 
-Only portable data is retained. Raspberry-patched Chromium binaries, hardware video flags and automatic extension downloads are omitted; codecs and sandboxing use Alpine Chromium. Labwc sessions enable native Wayland and Wayland IME for the touch keyboard. The Chromium sandbox is not disabled.
+The unbranded Chromium first-run dialog is suppressed because it displays an empty terms placeholder; first-run preferences and bookmark import remain enabled. Only portable data is retained. Raspberry-patched Chromium binaries, hardware video flags and automatic extension downloads are omitted; codecs and sandboxing use Alpine Chromium. Labwc sessions enable native Wayland and Wayland IME for the touch keyboard. The Chromium sandbox is not disabled.
 
 ## Update coverage and limits
 
