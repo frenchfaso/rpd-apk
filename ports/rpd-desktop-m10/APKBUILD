@@ -1,0 +1,20 @@
+pkgname=rpd-desktop-m10
+pkgver=0.1.0
+pkgrel=0
+pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
+url="https://github.com/frenchfaso/rpd-apk"
+arch="noarch"
+license="MIT"
+depends="rpd-desktop-lite"
+options="!check"
+source="rpd-session-m10 rpd-session-m10.desktop"
+
+package() {
+    install -Dm755 "$srcdir/rpd-session-m10" "$pkgdir/usr/bin/rpd-session-m10"
+    install -Dm644 "$srcdir/rpd-session-m10.desktop" "$pkgdir/usr/share/wayland-sessions/rpd-session-m10.desktop"
+}
+
+sha512sums="
+f03e82d63a989aa9a1b5d3b1839718ac9cc18362de437203fb31ebf3df9437c45e022eef4a7e7b1ac53c86d09955311c57ffc8a26e9cc1cee780b57b97d06879  rpd-session-m10
+7faf90d4b415b6e4f66f1b76aa9a60997f380cb0202b3a28cf29ccd150aa10a2c624b6d19c01b97a605bb6ca77528ca787ee92f961d941afbb024bbbc58a972f  rpd-session-m10.desktop
+"

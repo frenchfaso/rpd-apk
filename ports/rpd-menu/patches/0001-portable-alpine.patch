@@ -1,0 +1,13 @@
+--- a/src/properties.c
++++ b/src/properties.c
+@@ -114,8 +114,8 @@
+     {
+         MenuCacheItem *item = (MenuCacheItem *) data;
+ 
+-        char *args[] = { "rpcc", "main_menu", "on_menu_edit", (char *) menu_cache_item_get_file_basename (item), NULL };
+-        execvp ("rpcc", args);
++        char *args[] = { "alacarte", NULL };
++        execvp ("alacarte", args);
+     }
+     gtk_widget_destroy (dlg);
+ }

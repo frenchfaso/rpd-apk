@@ -1,0 +1,13 @@
+pkgname=rpd-desktop-browser
+pkgver=0.1.0
+pkgrel=0
+pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-browser)"
+url="https://github.com/frenchfaso/rpd-apk"
+arch="noarch"
+license="MIT"
+depends="rpd-desktop-lite firefox"
+options="!check"
+
+package() {
+    mkdir -p "$pkgdir"
+}

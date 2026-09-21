@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Log out
+Name[it]=Termina sessione
+Exec=labwc --exit
+Icon=system-log-out
+Type=Application
+Categories=System;

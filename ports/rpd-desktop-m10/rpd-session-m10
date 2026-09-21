@@ -1,0 +1,3 @@
+#!/bin/sh
+export RPD_SOFTWARE_RENDERING=1
+exec rpd-session "$@"

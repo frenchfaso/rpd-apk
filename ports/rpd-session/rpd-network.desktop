@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Network connections
+Name[it]=Connessioni di rete
+Exec=nm-connection-editor
+Icon=preferences-system-network
+Type=Application
+Categories=Settings;Network;

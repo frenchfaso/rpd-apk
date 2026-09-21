@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=RPD Lite
+Comment=Portable Raspberry Pi desktop components for postmarketOS
+Exec=rpd-session
+Type=Application
+DesktopNames=labwc

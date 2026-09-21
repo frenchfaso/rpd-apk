@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+config=${XDG_CONFIG_HOME:-$HOME/.config}/wf-panel-pi/wf-panel-pi.ini
+if [ ! -f "$config" ]; then
+    mkdir -p "$(dirname "$config")"
+    cp /etc/xdg/rpd/wf-panel-pi/wf-panel-pi.ini "$config"
+fi
+exec mousepad "$config"

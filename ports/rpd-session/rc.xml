@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <theme><name>PiXtrix</name><font place="ActiveWindow"><name>Sans</name><size>11</size></font></theme>
+  <keyboard><default/>
+    <keybind key="W-Return"><action name="Execute" command="lxterminal"/></keybind>
+    <keybind key="W-e"><action name="Execute" command="pcmanfm"/></keybind>
+    <keybind key="W-space"><action name="Execute" command="wfpanelctl nmenu menu"/></keybind>
+  </keyboard>
+  <mouse><default/></mouse>
+  <libinput><device category="touch"><tap>yes</tap></device></libinput>
+</labwc_config>

@@ -1,0 +1,55 @@
+--- a/meson.build
++++ b/meson.build
+@@ -2,7 +2,7 @@
+     'wf-panel-pi',
+     'c',
+     'cpp',
+-    version: run_command(['dpkg-parsechangelog', '--show-field', 'Version']).stdout().strip(),
++    version: run_command('head', '-n', '1', 'debian/changelog', check: true).stdout().split('(')[1].split(')')[0],
+     meson_version: '>=0.60.0',
+     default_options: [
+         'cpp_std=c++17',
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -4,4 +4,4 @@
+ 
+ subdir('panel')
+ subdir('widgets')
+-subdir('rpcc')
++# Raspberry control centre integration is excluded from this portable build.
+--- a/src/panel/panel.cpp
++++ b/src/panel/panel.cpp
+@@ -183,7 +183,7 @@
+ 
+     notif.set_label (_("Notifications..."));
+     notif.signal_activate ().connect (sigc::mem_fun (this, &Panel::do_notify_configure));
+-    menu.attach (notif, 0, 1, 3, 4);
++    // Notification preferences require the excluded Raspberry control centre.
+ 
+     appset.set_label (dock ? _("Dock Preferences...") : _("Taskbar Preferences..."));
+     appset.signal_activate ().connect (sigc::mem_fun (this, &Panel::do_appearance_set));
+@@ -427,19 +427,19 @@
+ 
+ void Panel::do_configure ()
+ {
+-    if (dock) system ("rpcc widgets set_dock &");
+-    else system ("rpcc widgets set_bar &");
++    if (dock) system ("rpd-panel-settings &");
++    else system ("rpd-panel-settings &");
+ }
+ 
+ void Panel::do_notify_configure ()
+ {
+-    system ("rpcc notifications &");
++    system ("rpd-panel-settings &");
+ }
+ 
+ void Panel::do_appearance_set ()
+ {
+-    if (dock) system ("rpcc dock &");
+-    else system ("rpcc taskbar &");
++    if (dock) system ("rpd-panel-settings &");
++    else system ("rpd-panel-settings &");
+ }
+ 
+ // Widget loading

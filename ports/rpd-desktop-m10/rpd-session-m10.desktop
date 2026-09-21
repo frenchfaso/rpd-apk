@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=RPD Lite (M10 software rendering)
+Comment=Portable Raspberry Pi desktop components for postmarketOS
+Exec=rpd-session-m10
+Type=Application
+DesktopNames=labwc

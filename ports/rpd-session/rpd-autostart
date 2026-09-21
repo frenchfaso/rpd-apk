@@ -1,0 +1,3 @@
+#!/bin/sh
+# Child services are scoped to this compositor's lifetime by the supervisor.
+exec /usr/libexec/rpd-session-services

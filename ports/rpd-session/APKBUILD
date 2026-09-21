@@ -1,0 +1,34 @@
+pkgname=rpd-session
+pkgver=0.1.0
+pkgrel=0
+pkgdesc="Portable Raspberry Pi Desktop session and defaults"
+url="https://github.com/frenchfaso/rpd-apk"
+arch="noarch"
+license="MIT"
+depends="labwc dbus squeekboard network-manager-applet polkit-gnome mousepad"
+options="!check"
+source="rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop rpd-network.desktop rpd-logout.desktop wf-panel-pi.ini rc.xml settings.ini"
+package() {
+    install -Dm755 "$srcdir/rpd-session" "$pkgdir/usr/bin/rpd-session"
+    install -Dm755 "$srcdir/rpd-panel-settings" "$pkgdir/usr/bin/rpd-panel-settings"
+    install -Dm755 "$srcdir/rpd-session-services" "$pkgdir/usr/libexec/rpd-session-services"
+    install -Dm755 "$srcdir/rpd-autostart" "$pkgdir/etc/xdg/rpd/labwc/autostart"
+    install -Dm644 "$srcdir/rc.xml" "$pkgdir/etc/xdg/rpd/labwc/rc.xml"
+    install -Dm644 "$srcdir/settings.ini" "$pkgdir/etc/xdg/rpd/gtk-3.0/settings.ini"
+    install -Dm644 "$srcdir/wf-panel-pi.ini" "$pkgdir/etc/xdg/rpd/wf-panel-pi/wf-panel-pi.ini"
+    install -Dm644 "$srcdir/rpd-session.desktop" "$pkgdir/usr/share/wayland-sessions/rpd-session.desktop"
+    install -Dm644 "$srcdir/rpd-network.desktop" "$pkgdir/usr/share/applications/rpd-network.desktop"
+    install -Dm644 "$srcdir/rpd-logout.desktop" "$pkgdir/usr/share/applications/rpd-logout.desktop"
+}
+sha512sums="
+b5086d4d01cf03292743183f9b2067d2ea4fd714e6423f521aa8908b30127e56c0a1181d865897f5bcfb562180d8f54a710b8cc7c7264a20690aea07e85353d4  rpd-session
+78d911838fe99ec420cc1b931a550f72c5b96138920d670dbdad32a15bbc4e73766881ec731a33edf3eeb8292b5afcf8084966f0064fa00f9c3ed4523da23ffa  rpd-autostart
+806d943752224fa9949b82444a25f8ca37c283fd10fb61197e72c4ec777a371077a99c534c6613eb42208b6cd0bd6218b773c2afe0bc722a42d2d093ef590f62  rpd-session-services
+e27b1eac94e89f723a1c7b910c60d9ccd2031ab978089d30a2091323eacded63bc85ed6b7fd5bc2473b1c9d36a5b1739475ec444e5988308c07c865d8a51a11f  rpd-panel-settings
+6087ca2bd85e15cc63782f67e684cc6d980481b153ff90608de92d5101702081bbd36398a98baeaefb36dce4521c302eab11ffad7cffb186a4d3e08dc6a2ba41  rpd-session.desktop
+21fc43b8e8530e50731c6180410da9fb33efb0ef458bb6e3ab40f5d4274416cabfca4296ffe76f6c0f22eb8187ad6ce4d31d126bc11a832abe8d116948167eea  rpd-network.desktop
+588d7573063d256436b8189a023d4ad52d2b5473568ff7152a10dce46f0d84a08006605623ad5eaea05a515e42aa847be2bf97abf85c5360414be17e5a37919b  rpd-logout.desktop
+7dc5aadd19075f5577fbc2053bbb5f0c7f75995f477e2566dd1af3878d725a425f6373b7cec68f80d25b5d48593462a3de41aa9cf97864450b7ca4b5bbaf20a2  wf-panel-pi.ini
+701fe02f24b70836553571ad1f1d1ab17bb31450e3bac1e32d5e8337384153e215fefb489f58ea1db35790fcc996f124aa02f0a63dd827085783276e45e3e861  rc.xml
+04bf9865bf7366bae7ccecd7e0168bb8b931b8fabb52f9dc521f4f497bdfaeab6b18b5f01a6eac7f5aada842acb34fc534d4ffb505d5ddfcd897f466e5ffb598  settings.ini
+"

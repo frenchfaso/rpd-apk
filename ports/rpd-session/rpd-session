@@ -1,0 +1,20 @@
+#!/bin/sh
+set -eu
+export XDG_CURRENT_DESKTOP=labwc
+export XDG_SESSION_TYPE=wayland
+export XDG_CONFIG_DIRS=/etc/xdg/rpd:${XDG_CONFIG_DIRS:-/etc/xdg}
+export XDG_MENU_PREFIX=rpd-
+export GTK_THEME=PiXtrix
+export XCURSOR_THEME=PiXtrix
+export XCURSOR_SIZE=32
+# Explicit opt-in software rendering; do not impose it on other hardware.
+if [ "${RPD_SOFTWARE_RENDERING:-0}" = 1 ]; then
+    export WLR_RENDERER=pixman
+    export LIBGL_ALWAYS_SOFTWARE=1
+fi
+config=${RPD_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/rpd/labwc}
+[ -d "$config" ] || config=/etc/xdg/rpd/labwc
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    exec dbus-run-session -- labwc --config-dir "$config" "$@"
+fi
+exec labwc --config-dir "$config" "$@"

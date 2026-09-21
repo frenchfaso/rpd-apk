@@ -1,0 +1,28 @@
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -1,6 +1,5 @@
+ gtk = dependency('gtk+-3.0')
+ gtkmm = dependency('gtkmm-3.0', version: '>=3.24')
+-lxpanel = dependency('lxpanel-pi')
+ wfpanel = dependency('wf-panel-pi')
+ 
+ sources = files(
+@@ -9,18 +8,6 @@
+ 
+ lsources = files(
+   'clock_lxp.c'
+-)
+-
+-ldeps = [ gtk, lxpanel ]
+-
+-largs = [ '-DPACKAGE_DATA_DIR="' + lresource_dir + '"', '-DGETTEXT_PACKAGE="lpplug_' + meson.project_name() + '"' ]
+-
+-shared_module(meson.project_name(), [ sources, lsources ],
+-        dependencies: ldeps,
+-        install: true,
+-        install_dir: get_option('libdir') / 'lxpanel-pi',
+-        c_args : largs,
+-        name_prefix: ''
+ )
+ 
+ wsources = files(

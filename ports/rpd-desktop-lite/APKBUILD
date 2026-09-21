@@ -1,0 +1,13 @@
+pkgname=rpd-desktop-lite
+pkgver=0.1.0
+pkgrel=0
+pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-lite)"
+url="https://github.com/frenchfaso/rpd-apk"
+arch="noarch"
+license="MIT"
+depends="rpd-session rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-menu-data rpd-file-manager rpd-theme rpd-icons lxterminal mousepad alacarte xarchiver gvfs gvfs-fuse xdg-utils xdg-user-dirs font-dejavu mesa-dri-gallium mesa-egl mesa-gles xwayland"
+options="!check"
+
+package() {
+    mkdir -p "$pkgdir"
+}

@@ -1,0 +1,68 @@
+name: Build and publish APK repository
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: rpd-apk-publication
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check published Raspberry releases
+        run: python3 scripts/update-upstream.py
+      - name: Build native ARM64 APKs and validate installation
+        env:
+          APK_SIGNING_KEY: ${{ secrets.APK_SIGNING_KEY }}
+        run: |
+          set -eu
+          test -n "$APK_SIGNING_KEY"
+          keydir=$(mktemp -d)
+          trap 'rm -rf "$keydir"' EXIT
+          printf '%s\n' "$APK_SIGNING_KEY" > "$keydir/rpd-apk.rsa"
+          chmod 600 "$keydir/rpd-apk.rsa"
+          docker run --rm -v "$PWD:/work" -v "$keydir:/signing:ro" -w /work \
+            -e RPD_SIGNING_KEY=/signing/rpd-apk.rsa alpine:edge sh scripts/build.sh
+      - name: Record successfully built source versions
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add upstream.lock.json ports
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update to published Raspberry desktop sources'
+            git push origin HEAD:main
+          fi
+      - name: Prepare repository website
+        run: |
+          cp keys/rpd-apk.rsa.pub out/
+          cp README.md out/
+          printf '<!doctype html><meta charset="utf-8"><title>RPD APK</title><h1>RPD APK</h1><p>Unofficial Raspberry Pi Desktop components for postmarketOS / Alpine edge aarch64.</p><p><a href="https://github.com/frenchfaso/rpd-apk">Installation and source</a></p><p><a href="rpd-apk.rsa.pub">Repository public key</a></p>' > out/index.html
+          touch out/.nojekyll
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpd-apk-build
+          path: out/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy signed repository
+        id: deployment
+        uses: actions/deploy-pages@v4
