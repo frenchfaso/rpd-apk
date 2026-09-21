@@ -12,6 +12,7 @@ options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="https://archive.raspberrypi.com/debian/pool/main/g/gtk2-engines-pixflat/gtk2-engines-pixflat_0.5.tar.xz"
 builddir="$srcdir/gtk2-engines-pixflat"
+subpackages="$pkgname-dev"
 
 prepare() {
     default_prepare

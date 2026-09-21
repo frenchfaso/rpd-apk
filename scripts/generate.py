@@ -41,6 +41,7 @@ for name,m in lock.items():
  if name=='pixtrix-icons':depends='adwaita-icon-theme'
  # Retain the original GTK2 engine for the Qt5 GTK style used by VLC.
  extra='\nsubpackages="$pkgname-dev"' if name=='wf-panel-pi' else ''
+ if name=='gtk2-engines-pixflat':extra+='\nsubpackages="$pkgname-dev"'
  if name=='lxtask':extra+='\nsubpackages="$pkgname-doc"'
  if name=='pcmanfm-pi':
   depends='!pcmanfm wlr-randr'
