@@ -98,3 +98,9 @@ the keyboard when the password field is tapped/clicked and also has an explicit
 keyboard button. This
 small portability patch avoids depending on Raspberry-only keyboard helpers.
 Buffyboard is retained for text-console recovery, not used inside Wayland.
+
+On-device installation confirmed that postmarketOS systemd presets automatically
+enable newly installed LightDM, BlueZ and UDisks2 units. This happens in the host's
+package trigger even though RPD APKs contain no service-enabling script. Check
+enablement before rebooting; stop Buffyboard for graphics and arrange a console
+recovery path when configuring permanent graphical boot.

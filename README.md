@@ -7,7 +7,7 @@ Do not treat a successful build as an M10 graphics qualification. The M10 curren
 ## Package selection
 
 - `rpd-desktop-lite`: labwc; Raspberry wf-panel-pi, clock, application menu, window list, eject/network/volume/battery plugins and Squeekboard button; Raspberry PCManFM fork; PiXtrix theme/icons; LXTerminal, Mousepad, Xarchiver; NetworkManager GUI, MATE polkit agent, keyring, GVFS/UDisks automount, XDG session services, PipeWire/WirePlumber, portals, XWayland and software-capable Mesa.
-- `rpd-desktop-m10`: adds an explicit software-rendered session entry. It selects software rendering for desktop and greeter. LightDM and the Raspberry Pi greeter are configured, but package installation does not enable the display-manager service.
+- `rpd-desktop-m10`: adds an explicit software-rendered session entry. It selects software rendering for desktop and greeter. LightDM and the Raspberry Pi greeter are configured. Host service presets may enable LightDM during installation (postmarketOS systemd does this). Stop Buffyboard before a graphical trial and verify service enablement before rebooting.
 - `rpd-desktop-browser`: optional Firefox, kept outside the smallest installation.
 - Buffyboard remains the console keyboard. Squeekboard is the separate Wayland keyboard.
 
@@ -53,6 +53,7 @@ sudo apk update && sudo apk upgrade
 
 Do not launch the compositor over a plain SSH session. A working local logind
 session and access to the display/input devices are required. The package does
-not configure autologin, stop Buffyboard, replace its service, enable the display
-manager or change console login. These are separate deployment choices after
-physical-screen validation. Exit the desktop to return to the terminal.
+not configure autologin or stop Buffyboard. Host presets may enable the display
+manager automatically; check `systemctl is-enabled lightdm` after installation.
+On an M10 with Buffyboard, establish mutual exclusion and console recovery before
+enabling normal graphical boot. Exit the desktop to return to the terminal.
