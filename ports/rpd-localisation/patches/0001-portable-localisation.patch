@@ -1,6 +1,6 @@
 --- a/src/rc_gui.c
 +++ b/src/rc_gui.c
-@@ -379,35 +379,8 @@
+@@ -359,35 +359,8 @@
  
  static void init_config (void)
  {
@@ -37,7 +37,7 @@
      needs_reboot = FALSE;
  }
  
-@@ -437,85 +410,33 @@
+@@ -415,89 +388,33 @@
  
  int plugin_tabs (void)
  {
@@ -88,22 +88,26 @@
  {
 -    GtkWidget *window, *plugin;
 -
--    window = (GtkWidget *) gtk_builder_get_object (builder, "notebook1");
 -    switch (tab)
 -    {
 -        case 0 :
+-            window = (GtkWidget *) gtk_builder_get_object (builder, "system_window");
 -            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox10");
 -            break;
 -        case 1 :
+-            window = (GtkWidget *) gtk_builder_get_object (builder, "display_window");
 -            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox50");
 -            break;
 -        case 2 :
+-            window = (GtkWidget *) gtk_builder_get_object (builder, "interface_window");
 -            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox20");
 -            break;
 -        case 3 :
+-            window = (GtkWidget *) gtk_builder_get_object (builder, "localisation_window");
 -            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox40");
 -            break;
 -        case 4 :
+-            window = (GtkWidget *) gtk_builder_get_object (builder, "performance_window");
 -            plugin = (GtkWidget *) gtk_builder_get_object (builder, "vbox30");
 -            break;
 -        default :
@@ -113,7 +117,7 @@
 -    gtk_container_remove (GTK_CONTAINER (window), plugin);
 -
 +    GtkWidget *plugin = GTK_WIDGET (gtk_builder_get_object (builder, "vbox40"));
-+    gtk_container_remove (GTK_CONTAINER (gtk_builder_get_object (builder, "notebook1")), plugin);
++    gtk_container_remove (GTK_CONTAINER (gtk_builder_get_object (builder, "localisation_window")), plugin);
      return plugin;
  }
  
@@ -143,7 +147,7 @@
  
 --- a/meson.build
 +++ b/meson.build
-@@ -14,7 +14,7 @@
+@@ -9,7 +9,7 @@
  i18n = import('i18n')
  
  add_project_arguments('-DPACKAGE_LOCALE_DIR="' + share_dir + '/locale"', language : 'c' )
@@ -301,7 +305,7 @@
  /* End of file */
 --- a/src/rc_gui.h
 +++ b/src/rc_gui.h
-@@ -123,11 +123,11 @@
+@@ -117,11 +117,11 @@
  #define CHECK_UNAME     GET_PREFIX "is_uname_current"
  
  /* localisation tab */
