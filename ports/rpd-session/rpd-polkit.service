@@ -1,0 +1,10 @@
+[Unit]
+Description=Desktop authentication agent
+PartOf=rpd-session.target
+StartLimitIntervalSec=30
+StartLimitBurst=3
+
+[Service]
+ExecStart=/usr/libexec/polkit-mate-authentication-agent-1
+Restart=on-failure
+RestartSec=2

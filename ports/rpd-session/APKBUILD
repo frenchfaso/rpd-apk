@@ -7,8 +7,11 @@ arch="noarch"
 license="MIT"
 depends="gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard network-manager-applet mate-polkit polkit mousepad"
 options="!check"
-source="desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop rpd-network.desktop wf-panel-pi.ini rc.xml settings.ini"
+source="rpd-polkit.service lxpolkit.desktop polkit-mate-authentication-agent-1.desktop desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop rpd-network.desktop wf-panel-pi.ini rc.xml settings.ini"
 package() {
+    install -Dm644 "$srcdir/rpd-polkit.service" "$pkgdir/usr/lib/systemd/user/rpd-polkit.service"
+    install -Dm644 "$srcdir/lxpolkit.desktop" "$pkgdir/etc/xdg/rpd/autostart/lxpolkit.desktop"
+    install -Dm644 "$srcdir/polkit-mate-authentication-agent-1.desktop" "$pkgdir/etc/xdg/rpd/autostart/polkit-mate-authentication-agent-1.desktop"
     install -Dm644 "$srcdir/desktop-items-0.conf" "$pkgdir/etc/xdg/rpd/pcmanfm/default/desktop-items-0.conf"
     install -Dm644 "$srcdir/rpd-panel.service" "$pkgdir/usr/lib/systemd/user/rpd-panel.service"
     install -Dm644 "$srcdir/pipewire.desktop" "$pkgdir/etc/xdg/rpd/autostart/pipewire.desktop"
@@ -28,6 +31,9 @@ package() {
     install -Dm644 "$srcdir/rpd-network.desktop" "$pkgdir/usr/share/applications/rpd-network.desktop"
 }
 sha512sums="
+683c7865bb67e2adc1436441841cb682c9118961954916fff8fef99c902d5feb7fbb22bd06aaba0988e69334c4138f73bec6dd04d267c92015fb72b7752173e5  rpd-polkit.service
+306988a411bdd68f8c42c8f081589714f558f7882f6c1ba8dfb890c871e4205a7fd5c82ed57992f281bf624b03475c16b77b1ed6f90e2280083fd31d8bdf8d7d  lxpolkit.desktop
+306988a411bdd68f8c42c8f081589714f558f7882f6c1ba8dfb890c871e4205a7fd5c82ed57992f281bf624b03475c16b77b1ed6f90e2280083fd31d8bdf8d7d  polkit-mate-authentication-agent-1.desktop
 d2e94e9575567cb2c1404c6ba3f2d3bb3d5a6e2968b56904c28df23628de940bc3d5fdced1da6023f39e47ce70dae571d17a6fcb4fe923f3779da7c180046890  desktop-items-0.conf
 d7dab4c715e88bc1055a77630f29708077c0d1bc2603f6b64768b36cd88524ebb10dea640286080dde60cfd0eabe1e11cd00f13a386aa22d9c356a88c68b9c4b  rpd-panel.service
 b83e352e328585de21607fc8f2c719d543a475ce2c4ba1d63b7342f113ed873cd1e273843217aa9d9275c62458ceebd9d3978aca09fe73bddc6a677cf14bb9f1  pipewire.desktop
@@ -38,7 +44,7 @@ e9f6ca6a9ced3181eaddac8753a5aaa6d7df181775717977574865133e56b84aac3c4148e6fac981
 6c6098da54bfb088bf1bc8b9e9f53c0027bf5cda07c7fc5b195c66b9302b84101fdccbfd68697bb8391d2d397d07f1c0a76ae98570cb3c1d28425f106959127e  rpd-edit-launcher
 75d6d6b699b3be50c027db67dac2cf0379e2c74b381d67fc99ae0519e9996e66cb318b964ada5e8ed465c653fb41df177543e7ce9fabb2843b80c9dd2477f0a9  rpd-session
 78d911838fe99ec420cc1b931a550f72c5b96138920d670dbdad32a15bbc4e73766881ec731a33edf3eeb8292b5afcf8084966f0064fa00f9c3ed4523da23ffa  rpd-autostart
-d73342c5a68541f954f3b4a9e5ab7ee898e97c8e50cdd007a5eb2dcd9710db9bbec16512b7dbe12e83737b04c498315149bdda1686e12e83e02df6de1dbe0965  rpd-session-services
+017707430e6aa8a30a2e2cf577aeea59b6007aadf7a0b8664f2f0bbf745d8b5a506cf073c91dd473610b2c1febdb83a2da2d865809d0aad0b61c9d4bcb056201  rpd-session-services
 e27b1eac94e89f723a1c7b910c60d9ccd2031ab978089d30a2091323eacded63bc85ed6b7fd5bc2473b1c9d36a5b1739475ec444e5988308c07c865d8a51a11f  rpd-panel-settings
 6087ca2bd85e15cc63782f67e684cc6d980481b153ff90608de92d5101702081bbd36398a98baeaefb36dce4521c302eab11ffad7cffb186a4d3e08dc6a2ba41  rpd-session.desktop
 21fc43b8e8530e50731c6180410da9fb33efb0ef458bb6e3ab40f5d4274416cabfca4296ffe76f6c0f22eb8187ad6ce4d31d126bc11a832abe8d116948167eea  rpd-network.desktop
