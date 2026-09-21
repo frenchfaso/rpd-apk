@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Automatic screen rotation
+Exec=/usr/libexec/rpd-autorotate-start
+OnlyShowIn=labwc;
+NoDisplay=true

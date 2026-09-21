@@ -25,7 +25,7 @@ mkdir -p /home/builder/rpd-build
 cp -a . /home/builder/rpd-build/
 chown -R builder:builder /home/builder/rpd-build /home/builder/packages
 printf '\n/home/builder/packages/ports\n' >> /etc/apk/repositories
-for pkg in rpd-settings-backend labwc gtk-layer-shell rpd-chromium-defaults rpd-gtk2-engine rpd-qt-gtk2 rpd-theme rpd-icons rpd-menu-data rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-file-manager rpd-ejecter rpd-network rpd-volume rpd-battery rpd-shutdown rpd-bluetooth rpd-greeter rpd-task-manager rpd-control-center rpd-appearance rpd-run rpd-screenshot rpd-menu-editor rpd-shortcuts rpd-localisation rpd-input-settings rpd-classic-menu rpd-display-settings rpd-printer-settings rpd-bookshelf rpd-session rpd-login rpd-desktop-lite rpd-desktop-browser rpd-desktop-m10; do
+for pkg in rpd-settings-backend rpd-autorotate labwc gtk-layer-shell rpd-chromium-defaults rpd-gtk2-engine rpd-qt-gtk2 rpd-theme rpd-icons rpd-menu-data rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-file-manager rpd-ejecter rpd-network rpd-volume rpd-battery rpd-shutdown rpd-bluetooth rpd-greeter rpd-task-manager rpd-control-center rpd-appearance rpd-run rpd-screenshot rpd-menu-editor rpd-shortcuts rpd-localisation rpd-input-settings rpd-classic-menu rpd-display-settings rpd-printer-settings rpd-bookshelf rpd-session rpd-login rpd-desktop-lite rpd-desktop-browser rpd-desktop-m10; do
     su builder -c "cd /home/builder/rpd-build/ports/$pkg && abuild -r"
     apk update
     if [ "$pkg" = gtk-layer-shell ]; then apk add --upgrade gtk-layer-shell gtk-layer-shell-dev; fi

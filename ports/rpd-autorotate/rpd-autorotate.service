@@ -1,0 +1,8 @@
+[Unit]
+Description=Automatic display rotation and convertible keyboard
+PartOf=rpd-session.target
+ConditionPathExists=/etc/xdg/rpd/autorotate.conf
+[Service]
+ExecStart=/usr/bin/rpd-autorotate
+Restart=on-failure
+RestartSec=5

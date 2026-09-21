@@ -27,6 +27,10 @@ mkdir -p "$config"
 for file in rc.xml autostart; do
     [ -f "$config/$file" ] || cp "/etc/xdg/rpd/labwc/$file" "$config/$file"
 done
+# Ensure touchscreen output mapping and base calibration before starting labwc.
+if [ -f /etc/xdg/rpd/autorotate.conf ] && command -v rpd-autorotate >/dev/null; then
+    RPD_CONFIG_DIR="$config" rpd-autorotate --reset-touch
+fi
 if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
     exec dbus-run-session -- labwc --config-dir "$config" "$@"
 fi

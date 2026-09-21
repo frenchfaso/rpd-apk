@@ -1,0 +1,6 @@
+#!/bin/sh
+[ -f /etc/xdg/rpd/autorotate.conf ] || exit 0
+if command -v systemctl >/dev/null && systemctl --user show-environment >/dev/null 2>&1; then
+    exec systemctl --user start rpd-autorotate.service
+fi
+exec rpd-autorotate
