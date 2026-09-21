@@ -1,11 +1,11 @@
 pkgname=rpd-desktop-m10
 pkgver=0.1.0
-pkgrel=21
+pkgrel=22
 pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-desktop-browser labwc=0.20.2-r108"
+depends="rpd-desktop-browser labwc=0.20.2-r109"
 options="!check"
 source="61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
 
