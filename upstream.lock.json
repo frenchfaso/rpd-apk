@@ -1,48 +1,53 @@
 {
   "wf-panel-pi": {
-    "version": "1.32",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/w/wf-panel-pi/wf-panel-pi_1.32.tar.xz",
-    "sha256": "3f7062a84f96b4f09a89084cbdbaf7316d9d6141b283edc730f9b926c81ecd29",
-    "sha512": "9ac647fc77401cb681dec22ac3d791668a01d2d1dad4fca1eb473f322d8f1a5d9d2b71dc762760149401aab5a66343958d8e0bfa99dc6109b63e3b14c9758cee",
-    "filename": "wf-panel-pi_1.32.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/w/wf-panel-pi/wf-panel-pi_1.33.tar.xz",
+    "sha256": "8546a21107fbeedcf809ddb351c1f3ea927be0948fe39db625556997d1501bfb",
+    "sha512": "c1fbada08341e261b267367791672df2b9b206ccade3f114685a1fb673685a381f7169dff284e96588a33f93880e769f5d1c409a56de0d45c5350206f7592c71",
+    "filename": "wf-panel-pi_1.33.tar.xz",
+    "version": "1.33",
+    "source_version": "1.33",
     "directory": "wf-panel-pi",
-    "pkgrel": 13
+    "pkgrel": 1
   },
   "pplug-clock": {
-    "version": "1.13",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-clock/pplug-clock_1.13.tar.xz",
-    "sha256": "633c79e42576ec1dee414079cc2ad3e9bd981bc9e93b5b2c444bd19af1e7fc45",
-    "sha512": "5c4850967af2d9105a8634aa3bcc7f1198b834f3be3e0d1e5ee7be04412028e588374b27882a9daab23cb0e6ddd37fd64611adf8f3592b3d37d148c703164e21",
-    "filename": "pplug-clock_1.13.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-clock/pplug-clock_1.14.tar.xz",
+    "sha256": "ba093b52d86e8d620eed9b95898d1b8e925f7ee81472b16db5b8564d6c14cf47",
+    "sha512": "d46a03a5fe2e8c5b823a5dfb3461a939e5f81842b21d3ba45ab5ee1b609e4e2581d9fb4d7e9aaf26a0729135ca31c9432a8696801da4751d05a9d62e4b0eada8",
+    "filename": "pplug-clock_1.14.tar.xz",
+    "version": "1.14",
+    "source_version": "1.14",
     "directory": "pplug-clock",
-    "pkgrel": 13
+    "pkgrel": 1
   },
   "wfplug-squeek": {
-    "version": "1.10",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/w/wfplug-squeek/wfplug-squeek_1.10.tar.xz",
-    "sha256": "3c1a811ab16e39cde24f1e3326fcb4bef819249e5a8118f8e8d1012eaabdf20e",
-    "sha512": "2acb54acc858d5266103767eb18fd0cdb55092424f78b47dc1ad53b3d75752ec34dda6cdf5e498e6e667feaeaeb01382ca10ecf283a3c264efd17a3af34f5aab",
-    "filename": "wfplug-squeek_1.10.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/w/wfplug-squeek/wfplug-squeek_1.11.tar.xz",
+    "sha256": "dd5818532a532e3f6ff5f7af4d2449ba89b1af7da6124641ff469196f2d8ee35",
+    "sha512": "3236dadf678aca45d85f5b514abc930350f7a6cdb75c3d8865d211f976cc9151981989b47e33181598b44ac52f52f864556399e864b5e994529e09674f850c83",
+    "filename": "wfplug-squeek_1.11.tar.xz",
+    "version": "1.11",
+    "source_version": "1.11",
     "directory": "wfplug-squeek",
-    "pkgrel": 13
+    "pkgrel": 1
   },
   "wfplug-wlist": {
-    "version": "0.8",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/w/wfplug-wlist/wfplug-wlist_0.8.tar.xz",
-    "sha256": "126d38d534c8e9f3dbd22528da10561b81eb30b4ed7d0909973082df2aae8caa",
-    "sha512": "44698a57c4fb4fa9062309941423e889daa72c60a011b4c55beedd7dad130df285948fb29eca22f80697a1c14566c73faf43f9ec5c6374cb4e791db1c1756d8b",
-    "filename": "wfplug-wlist_0.8.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/w/wfplug-wlist/wfplug-wlist_0.10.tar.xz",
+    "sha256": "fa20e7a79ae1d202acde5f2e91d13bfaade7df47274f2785063058bbb6ff10df",
+    "sha512": "833fceea9fda9c337b613b4431eb60ae57fe2a3a977e4b372fcae337f8aa0d5e4ed0680e52671f67da27564a95fc95695fa34f128e8212a6a2699265f4047820",
+    "filename": "wfplug-wlist_0.10.tar.xz",
+    "version": "0.10",
+    "source_version": "0.10",
     "directory": "wfplug-wlist",
-    "pkgrel": 13
+    "pkgrel": 1
   },
   "wfplug-imenu": {
-    "version": "0.10",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/w/wfplug-imenu/wfplug-imenu_0.10.tar.xz",
-    "sha256": "988f430e8e72e6b5836077cf3bafd2cf09058f3384ec68b809e52af32b056e8f",
-    "sha512": "e4abb8c89ab09eda53eda88bc167fdecd72203f2374547790aa8a5a9758c1ec45556885dfe01fd3d2ccdb925d094c000474a50cac1099cb822041a972823e151",
-    "filename": "wfplug-imenu_0.10.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/w/wfplug-imenu/wfplug-imenu_0.11.tar.xz",
+    "sha256": "7adaed4d7be4e4da1c1f1cb511560c75c425f47f62c6b56e36efbf093dc02eef",
+    "sha512": "be398252d907233c7c4bba2165faef3f61798b97dca5577330667fa8bffccbd2c994fc7ef415e27fa063cc60f595185d15bfad929ebc0ea7e0a81362e7bb7470",
+    "filename": "wfplug-imenu_0.11.tar.xz",
+    "version": "0.11",
+    "source_version": "0.11",
     "directory": "wfplug-imenu",
-    "pkgrel": 13
+    "pkgrel": 1
   },
   "pcmanfm-pi": {
     "version": "1.7",
@@ -51,16 +56,17 @@
     "sha512": "a465490ad67bfeaee0abc7aa2ef2acef376ecd48c6f1bab7a7e909a990662cdfa32db8f9162894836e5d5bb4105e02655bc11b737d593820007884f552f6f094",
     "filename": "pcmanfm-pi_1.7.tar.xz",
     "directory": "pcmanfm-pi",
-    "pkgrel": 13
+    "pkgrel": 14
   },
   "pixtrix-theme": {
-    "version": "0.6",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pixtrix-theme/pixtrix-theme_0.6.tar.xz",
-    "sha256": "65975668ffde317c3535e55dd98747346951ec9a43c8d79b1243a70d547334db",
-    "sha512": "0871a8c5838e60411c182e66a78bdc7dcdce3f8911eb330008641cd267de55a78cacc7350c57947a34f33bdcd17e0195987546d2111ad59b4c9d26bfcd749ff4",
-    "filename": "pixtrix-theme_0.6.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pixtrix-theme/pixtrix-theme_0.7.tar.xz",
+    "sha256": "7f167424968a5516a0d5146d0fc35d9030ff5621959f90877033f22c6a0a0291",
+    "sha512": "1595aaeff7d54802acfbba8fe391e8680440128bd3452087df5e2692a79f74d9aacc8704fe566eef4d758161f19c525b1a494122775b908ada1a6d2682c2c43a",
+    "filename": "pixtrix-theme_0.7.tar.xz",
+    "version": "0.7",
+    "source_version": "0.7",
     "directory": "pixtrix-theme",
-    "pkgrel": 13
+    "pkgrel": 1
   },
   "pixtrix-icons": {
     "version": "0.6",
@@ -69,52 +75,57 @@
     "sha512": "c01902125a71a712eb4b6875dce96b04ea4b6f460f193bbb29045327a064d889aac3f25042ad1b3b0b0f7f3eeec31bc74170a83fc3bcfa7e2f5a9189072d1906",
     "filename": "pixtrix-icons_0.6.tar.xz",
     "directory": "pixtrix-icons",
-    "pkgrel": 13
+    "pkgrel": 14
   },
   "rpd-metas": {
-    "version": "1.30",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rpd-metas/rpd-metas_1.30.tar.xz",
-    "sha256": "750a9606b534273b3bf4035b12ed36c602e110125567a238d2406983889ef63e",
-    "sha512": "a810f3dbbf75d9aa226c250b587ef323151b9cc12d3787defff306fe6172b9f06192792afcf93380fb14349093e786628edc8675371a4bfe37ee8305de0cbb7b",
-    "filename": "rpd-metas_1.30.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rpd-metas/rpd-metas_1.31.tar.xz",
+    "sha256": "7d5cc05874e4bdc10a5679be1825bb83971af2006aaf777a23364b1d90a248c0",
+    "sha512": "ac66f963da9df05d17364a06d3b46df8b1a1a41aff2dc221bdcedbf60c42f068851ef7fbe512f1b112c545640a46ed0c4a6f192b8134adc4f2541dbe86ab8b5c",
+    "filename": "rpd-metas_1.31.tar.xz",
+    "version": "1.31",
+    "source_version": "1.31",
     "directory": "rpd-metas",
-    "pkgrel": 13
+    "pkgrel": 1
   },
   "pplug-ejecter": {
-    "version": "1.17",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-ejecter/pplug-ejecter_1.17.tar.xz",
-    "sha256": "4a3366af90ec61e836b61bfdfb784032c8021fc648090f7f3de2c6f6acfc08c9",
-    "sha512": "15e55c29ee592a52b3eba22349a328ec14c9ae02df7c8a5e2e6a5b1afe1d0fa498a35ce1a59eb43f512aae36d3952f6d397eb569c14ed36c233f4bc647d70aef",
-    "filename": "pplug-ejecter_1.17.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-ejecter/pplug-ejecter_1.18.tar.xz",
+    "sha256": "809de9f3f88ef103136260ed6d908940b7e5535e083b8a0662fa508f04dfbac1",
+    "sha512": "908949d2b8bf3106d59c3c4840efae5fff78eab89b89120428ac1edfdf8316b21cb81c404af251076a0e3f4ef17c1c85b25577c7234c234b3c72ddf72a5137c7",
+    "filename": "pplug-ejecter_1.18.tar.xz",
+    "version": "1.18",
+    "source_version": "1.18",
     "directory": "pplug-ejecter",
-    "pkgrel": 12
+    "pkgrel": 1
   },
   "pplug-netman": {
-    "version": "1.18",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-netman/pplug-netman_1.18.tar.xz",
-    "sha256": "983bf0a7d8d815d7f9e76c408b2a45177ee924235e82a8699dff7011355ecd81",
-    "sha512": "75f20c572c7a1f76a354f572e2e435a5f35bd65b429d01c4e08d6a1dc1982d0b315423068908e57423ec085f89a360885a94503223f0a45b589b32132a67fe08",
-    "filename": "pplug-netman_1.18.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-netman/pplug-netman_1.19.tar.xz",
+    "sha256": "ffe13210a7c033451df23b42664cbff9bb1deca58bc9ed9410cf49420f9de7aa",
+    "sha512": "ca4d78d36b19cff2100f7780293ce6c7f636ffa2208cccda220869b2c455e16da409e4258a8e8d48ba1636321c603380f2b81987a9aeebb3b67282ef16b1509a",
+    "filename": "pplug-netman_1.19.tar.xz",
+    "version": "1.19",
+    "source_version": "1.19",
     "directory": "pplug-netman",
-    "pkgrel": 12
+    "pkgrel": 1
   },
   "pplug-volumepulse": {
-    "version": "1.19",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-volumepulse/pplug-volumepulse_1.19.tar.xz",
-    "sha256": "2030aaaeca2c144bfac32a35e2152df17ad1b58f9e50e1c359ff01348a62a80c",
-    "sha512": "5d65f4771eb97f51216d304cff200c3f8ffb50d09632fc770210aa2069eaa7566c24808031d5763f18e114daf5ba1a5857673306bb3262acdd25e71f9cbc6eaf",
-    "filename": "pplug-volumepulse_1.19.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-volumepulse/pplug-volumepulse_1.20.tar.xz",
+    "sha256": "4545c2372bbc36920da1691257f2935d68383cc0df1bd7f09e16a90bfa402f3e",
+    "sha512": "ea900ef0bb2476bc52808f1d2bef1dbc296d20d315f59406e32611f8deb49c153dfebc4f3558873ec7da21068ceb4d5e72daa7b05b74590a06b77e53278605c0",
+    "filename": "pplug-volumepulse_1.20.tar.xz",
+    "version": "1.20",
+    "source_version": "1.20",
     "directory": "pplug-volumepulse",
-    "pkgrel": 12
+    "pkgrel": 1
   },
   "pplug-batt": {
-    "version": "1.10",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-batt/pplug-batt_1.10.tar.xz",
-    "sha256": "085971ef0a45af9b1e1b52fdd0b709835f92826e2be73eb19cbceb3794ac3846",
-    "sha512": "230aa13156c1a38ef6805b85141118c848633ec4a165eab4e5b0331e2335b1c0194076542dc1c8972be5f46b757e028b4de36e2b5dd496e8633231ff88ebc5e2",
-    "filename": "pplug-batt_1.10.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-batt/pplug-batt_1.11.tar.xz",
+    "sha256": "72736457cb33f3e4bdceb749618bceb61cb28ca5d06c9e85277f713fbd1533f4",
+    "sha512": "d69030beff4faabfac01b5121cf56af966317c0069328f6a2521a7e24db56e3ab38a2ab3f871753af5a806fda0c00110f0d52faf11b7251b59b5b8cb8f59a366",
+    "filename": "pplug-batt_1.11.tar.xz",
+    "version": "1.11",
+    "source_version": "1.11",
     "directory": "pplug-batt",
-    "pkgrel": 12
+    "pkgrel": 1
   },
   "pishutdown": {
     "version": "0.42",
@@ -123,7 +134,7 @@
     "sha512": "2ed46cd283909d55eb679a096c7296cd30cc6afe17ebb8baf4de20b921d5cfb70c9716b1038cc5a5ebe8740c9874bb0c4a5e03687837418466bcb83f59083c54",
     "filename": "pishutdown_0.42.tar.xz",
     "directory": "pishutdown",
-    "pkgrel": 12
+    "pkgrel": 13
   },
   "pi-greeter": {
     "version": "1.3",
@@ -132,26 +143,27 @@
     "sha512": "c7881278d13ac5c10355d29486a19f78ba4126d8eb0136b3d23d1fbb460fc28ac02985072efb00e90b892504b82f55959ba2faa98246e00c5943624d8d38312f",
     "filename": "pi-greeter_1.3.tar.xz",
     "directory": "pi-greeter",
-    "pkgrel": 12
+    "pkgrel": 13
   },
   "pplug-bluetooth": {
-    "version": "1.14",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-bluetooth/pplug-bluetooth_1.14.tar.xz",
-    "sha256": "31b1d1279e115e35117a47cdc65349df2c654b787dc93921f340df69758fc841",
-    "sha512": "b6180cf45752f00824279836a4c99730691748d54efc24b0cae38a27d34a136ba0b001201d7b2a9e4d6edd7cc348e27ffaab90709e6c3f79252bd8fd831273ac",
-    "filename": "pplug-bluetooth_1.14.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-bluetooth/pplug-bluetooth_1.15.tar.xz",
+    "sha256": "63d73a1b9d713867913c0b13dde7e53790b1f834f2648ae063909dc0293e121b",
+    "sha512": "5c70d062ebbe3c1e7abbb3bd09396564dc2d8d103994b32dcfb24f1550ff4626d71cacb3c8f7ad06fad74afa78dfd89a7a22b6eebff142bf09bfff93a115d51d",
+    "filename": "pplug-bluetooth_1.15.tar.xz",
+    "version": "1.15",
+    "source_version": "1.15",
     "directory": "pplug-bluetooth",
-    "pkgrel": 12
+    "pkgrel": 1
   },
   "pplug-menu": {
-    "version": "1.25",
-    "source_version": "1.25",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-menu/pplug-menu_1.25.tar.xz",
-    "sha256": "aa7b514a76ce95b9e989bac5977c136bceb2565f31da82e7e9e7cf94097867fd",
-    "sha512": "7671a12bdb87ae051a894dc7fb988737cfa6dd05116ccf4930199b3cefc1dbb69bfc8120950121ca0a75e6c6db0e747123887221bc328c8b4294225b7d13915f",
-    "filename": "pplug-menu_1.25.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-menu/pplug-menu_1.26.tar.xz",
+    "sha256": "f957870e52e22f6e43d3933a11ca39bd84a6aa7482baaf951922223a4e64fc60",
+    "sha512": "7d83185a3f89d7e3d4c077ae3534047bef838a48ac7c3268809ebb17ed6f1f8e2cd3e95ebdf01fe7cb9d8a204a88671aaa075e6eefad3045c6f794d58d0ff086",
+    "filename": "pplug-menu_1.26.tar.xz",
+    "version": "1.26",
+    "source_version": "1.26",
     "directory": "pplug-menu",
-    "pkgrel": 3
+    "pkgrel": 1
   },
   "rpcc": {
     "version": "0.18",
@@ -161,17 +173,17 @@
     "sha512": "d5e6cbcaa002c89b788ca7d6da82fc9a6ec70b60a7abe98f4468b777cafbaf78314fab7391b2080021d70653e7a7efd96296331b0a3de75b6b4c8540bad10ecd",
     "filename": "rpcc_0.18.tar.xz",
     "directory": "rpcc",
-    "pkgrel": 5
+    "pkgrel": 6
   },
   "pipanel": {
-    "version": "2.20",
-    "source_version": "1:2.20",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pipanel/pipanel_2.20.tar.xz",
-    "sha256": "601654bae4d6f07ba65f250800e60b9b89ab9eaca97f371592d676a16421a367",
-    "sha512": "baed374612fdbc93b07f33fe0c77fc5632116c90dd2d52fdb50197ffb8091507f29fc708d5f9c5d133cf52ff209f4fae3e473cfcb5284bd05aeab6dd2ce4f422",
-    "filename": "pipanel_2.20.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pipanel/pipanel_2.21.tar.xz",
+    "sha256": "37fb2382567396b249980ee76a13bbfdd1d9c108085be1efa7bfc6e37e651702",
+    "sha512": "7fb0e052d7a06cd2ec5cf06418480d60c0a0d3409eaa5dd74acf0916b674a4ba728d8d6f6160f3f569308b52405edf892bc76dfeded8e2ad064631e23d5c7da5",
+    "filename": "pipanel_2.21.tar.xz",
+    "version": "2.21",
+    "source_version": "1:2.21",
     "directory": "appset",
-    "pkgrel": 3
+    "pkgrel": 1
   },
   "gui-runcmd": {
     "version": "0.3",
@@ -181,7 +193,7 @@
     "sha512": "5ee25e8685700ed5d2a44c0882f430dbe93b7477ccaf3cc06ed8e96a876e1d3805c7385bf420fb05b0b931422cc9738a663c85000f68200567e608245ff45209",
     "filename": "gui-runcmd_0.3.tar.xz",
     "directory": "gui-runcmd",
-    "pkgrel": 5
+    "pkgrel": 6
   },
   "gui-screenshot": {
     "version": "0.2",
@@ -191,27 +203,27 @@
     "sha512": "05da247454e8368b89accae65be2da11fc5d379ee3dc3d4552193e211c06343106a210a0867f390aae2da6dd1b37735469204d62af0d103c4e79cd6e26361cd5",
     "filename": "gui-screenshot_0.2.tar.xz",
     "directory": "gui-screenshot",
-    "pkgrel": 3
+    "pkgrel": 4
   },
   "merp": {
-    "version": "0.3",
-    "source_version": "0.3",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/m/merp/merp_0.3.tar.xz",
-    "sha256": "d60b5027d7f93c91f69e3a4fa4b30f73a3130a099b6c877b814bdd0a6627f10b",
-    "sha512": "b57577f4258303a4ae2380f3b961a13031c4d747e061b3cc13d3c3b11573ea697fc55dd07a66967d373320378bec0014fd33b871f3af72c2576490d9adef8bf9",
-    "filename": "merp_0.3.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/m/merp/merp_0.4.tar.xz",
+    "sha256": "70b257d16ed6c08058f045bd809a78c71f7ba25741fc9b4ab46fd9b119790fca",
+    "sha512": "c5870a29fe30097f732e6bd268d47df3c329a9ae07600010f83c28b13d9029086e797a9441a97e5a6680eba1fb17890d0fa5c3fb638368b27de80478117b794a",
+    "filename": "merp_0.4.tar.xz",
+    "version": "0.4",
+    "source_version": "0.4",
     "directory": "merp",
-    "pkgrel": 3
+    "pkgrel": 1
   },
   "pished": {
-    "version": "0.5",
-    "source_version": "0.5",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pished/pished_0.5.tar.xz",
-    "sha256": "3b1fdd49f180becf4694130f3e0797998ebb4ed38908ec334ac378203e8e9728",
-    "sha512": "1c6a98b9d544d3f4e8e3a30421c176b853c1b85c80376d3dc119d53581461953354814189805e9b2b23ec51632f6a87bd96fe308f9d4c0ce332b9379d75d8283",
-    "filename": "pished_0.5.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/p/pished/pished_0.6.tar.xz",
+    "sha256": "31e99b98396209873c66458dd0f140f353d8f49b6804696eab45624dca8f7784",
+    "sha512": "8270573c86d946a8d71b78cc9e5d31489044b0852c2642addb2ffe9b269cc5542c8f6be7e51b8cd6014f8de3d60bb811b75e1e6d8d8e022d86db9414c8971589",
+    "filename": "pished_0.6.tar.xz",
+    "version": "0.6",
+    "source_version": "0.6",
     "directory": "pished",
-    "pkgrel": 3
+    "pkgrel": 1
   },
   "lxtask": {
     "url": "https://archive.raspberrypi.com/debian/pool/main/l/lxtask/lxtask_0.1.12.orig.tar.gz",
@@ -221,7 +233,7 @@
     "version": "0.1.12",
     "source_version": "0.1.12-1+rpt1",
     "directory": "lxtask-0.1.12",
-    "pkgrel": 3,
+    "pkgrel": 4,
     "debian": {
       "url": "https://archive.raspberrypi.com/debian/pool/main/l/lxtask/lxtask_0.1.12-1+rpt1.debian.tar.xz",
       "filename": "lxtask_0.1.12-1+rpt1.debian.tar.xz",
@@ -230,34 +242,34 @@
     }
   },
   "rasputin": {
-    "version": "1.10",
-    "source_version": "1.10",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rasputin/rasputin_1.10.tar.xz",
-    "sha256": "25854f9202737085d80bd23a8f99cd711212d34bc2b7e94d334790d5d2f6c950",
-    "sha512": "62afc5139032bc21f964162b648a1b5a7f99620e249b02c7d764f06b19545f4660c553e3359b8a791074fbb383ee23079c69f638553df69fe3570360e022423c",
-    "filename": "rasputin_1.10.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rasputin/rasputin_1.11.tar.xz",
+    "sha256": "433b5e032ecd561d04b5f7095b5ddbd19b2283cebe95364e5411a4b17006969a",
+    "sha512": "e69ac67abf74031cbca2c8fa3b10d59092bc5de856d42aa0e502b6d492bf9fbc0bd979ade71b2e15736cf23fdc21d90637117d8f92e16ab3c15e6c400cc54d67",
+    "filename": "rasputin_1.11.tar.xz",
+    "version": "1.11",
+    "source_version": "1.11",
     "directory": "rasputin",
-    "pkgrel": 3
+    "pkgrel": 1
   },
   "raindrop": {
-    "version": "1.21",
-    "source_version": "1.21",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/r/raindrop/raindrop_1.21.tar.xz",
-    "sha256": "a24ec24f4b1d80736f317cc2a3abbea14c5de0874fa920db7a65b8080e9f93c7",
-    "sha512": "4d305b0a7fe1e7a82a8935a3c08f1ad4a7c0bfdf7742df202c9d0c1b734d62c608ad012c2f1a55008e4b0106386d353edf2ec5074d0f0187bd5947dc8c8f063c",
-    "filename": "raindrop_1.21.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/raindrop/raindrop_1.22.tar.xz",
+    "sha256": "93f3a5b82bfbc49b80fdda8340f752ea29215549394e410c823c78fe485c0082",
+    "sha512": "29cc3db16af01e85e25f5898bf6a867092f76b6ff4910eb3f7a2974262457ed4b354e077fbdf76d2beec6eab9c05233d786c15d05983beb435827834e37f4859",
+    "filename": "raindrop_1.22.tar.xz",
+    "version": "1.22",
+    "source_version": "1.22",
     "directory": "raindrop",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "rpinters": {
-    "version": "1.10",
-    "source_version": "1.10",
-    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rpinters/rpinters_1.10.tar.xz",
-    "sha256": "62a91abed6660f3b0ecca50280fce0fb6513cec3723d3181f42b27edade5180c",
-    "sha512": "425cc9b7bef0eaceae1cce311dd16132246a2de2c9b62d4a7307238eb14c9401da55427faaabb0e6cd1bd8e359d46aea91f43dd6fb01226be7b532bbdb06b689",
-    "filename": "rpinters_1.10.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rpinters/rpinters_1.11.tar.xz",
+    "sha256": "c87e96ff52a37c2157b2f06ef781fc9a72cdb6a97b81f8f84dd4449e9b3fa94e",
+    "sha512": "cce703242bd4a64f769b957381901789eb34b89e46480ac8b4cc9b93f9b0326cd432636472c03ddf5bed3b6f1008e0674aa1826eb42d43ffd603c78fab68a897",
+    "filename": "rpinters_1.11.tar.xz",
+    "version": "1.11",
+    "source_version": "1.11",
     "directory": "rpinters",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "rp-bookshelf": {
     "url": "https://archive.raspberrypi.com/debian/pool/main/r/rp-bookshelf/rp-bookshelf_1.10.tar.xz",
@@ -266,16 +278,17 @@
     "sha512": "eef0be3b73620f0c82b51a8ab39a99b11013fd321207cb115acca0fadb997b202a160daa62e1ebadca5c9d5730277aa6339899d8d98e9c73e428a9b46d5f5d33",
     "filename": "rp-bookshelf_1.10.tar.xz",
     "directory": "bookshelf",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "rc-gui": {
-    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rc-gui/rc-gui_2.20.tar.xz",
-    "version": "2.20",
-    "sha256": "721c467deb6fa9f19e4aa1206760de2f05c9a72d3c8cba3b12d635a1e2d33880",
-    "sha512": "3386fd44bddb3a4259a6886f2aa11c0a21e5edbe1e9ea0e41b45d7cc169a3446520fc33405eb3243a224914fc03ccfe220fca3f2dc7cca41a9e365d7b568c257",
-    "filename": "rc-gui_2.20.tar.xz",
+    "url": "https://archive.raspberrypi.com/debian/pool/main/r/rc-gui/rc-gui_2.21.tar.xz",
+    "sha256": "12e8b410c2bf1a5cd33025a152e34bad4ae77e4d304d5f335dbcd1f5ddc7d476",
+    "sha512": "963499ab506dbd85eeb02bce20f9b260c2a662c064abbd20dce9ded99e4b010193247ba5eb681e954f612bcb148703467aa293b6e695dc5ba7f7e1a36de4efdb",
+    "filename": "rc-gui_2.21.tar.xz",
+    "version": "2.21",
+    "source_version": "2.21",
     "directory": "rc_gui",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "gtk2-engines-pixflat": {
     "version": "0.5",
@@ -284,7 +297,7 @@
     "sha512": "81c3acdbd16e8f43817a55be90f18c6766734d4f8e0fc93dc9c1ef3f9c4b7379fe5bb98dde7470560840db5545675c0c9b934c9b6f9bce9be0875cb9d60fa9dc",
     "filename": "gtk2-engines-pixflat_0.5.tar.xz",
     "directory": "gtk2-engines-pixflat",
-    "pkgrel": 0
+    "pkgrel": 1
   },
   "qtstyleplugins-src": {
     "url": "https://archive.raspberrypi.com/debian/pool/main/q/qtstyleplugins-src/qtstyleplugins-src_5.0.0+git23.g335dbec.orig.tar.xz",
@@ -301,6 +314,6 @@
       "filename": "qtstyleplugins-src_5.0.0+git23.g335dbec-6+rpt1.debian.tar.xz",
       "directory": "debian"
     },
-    "pkgrel": 0
+    "pkgrel": 1
   }
 }
