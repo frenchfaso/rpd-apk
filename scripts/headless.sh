@@ -56,6 +56,10 @@ gio trash --empty
 pcmanfm "$(xdg-user-dir DOCUMENTS)" &
 sleep 2
 grim /tmp/rpd-headless.png
+gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method sm.puri.OSK0.SetVisible true
+gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method org.freedesktop.DBus.Properties.Get sm.puri.OSK0 Visible | grep -q true
+sleep 1
+grim /tmp/rpd-keyboard.png
 if grep -E 'error loading widget|symbol lookup error|Segmentation fault' /tmp/rpd-headless.log; then exit 1; fi
 labwc --exit
 wait "$session_pid"
