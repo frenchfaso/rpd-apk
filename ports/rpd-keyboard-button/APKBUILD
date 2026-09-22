@@ -6,12 +6,13 @@ pkgdesc="Portable Raspberry Pi Desktop: wfplug-squeek"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="BSD-3-Clause"
-depends="rpd-panel"
+depends="rpd-panel gsettings-desktop-schemas"
 makedepends="meson samurai pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev rpd-panel-dev"
 options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="https://archive.raspberrypi.com/debian/pool/main/w/wfplug-squeek/wfplug-squeek_1.11.tar.xz"
 builddir="$srcdir/wfplug-squeek"
+source="$source patches/0001-sync-keyboard-preference.patch"
 
 build() {
     abuild-meson -Db_lto=false . output
@@ -25,4 +26,5 @@ package() {
 
 sha512sums="
 3236dadf678aca45d85f5b514abc930350f7a6cdb75c3d8865d211f976cc9151981989b47e33181598b44ac52f52f864556399e864b5e994529e09674f850c83  wfplug-squeek_1.11.tar.xz
+3f0b58e67511cfc4fca59dbe8583ec1c96063f810d3a1ceb9249c2dc0e0e4f7fdbda6d6e960845a1604156855380369c8d46155a1443d6c871f368a8621e33f1  0001-sync-keyboard-preference.patch
 "

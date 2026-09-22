@@ -90,8 +90,9 @@ def apply():
         if transform in ('90', '270'): width, height = height, width
         keyboard = policy.committed(orientation, height > width)
         if keyboard is not None and not args.initial_only:
-            if args.greeter:
-                Gio.Settings.new('org.gnome.desktop.a11y.applications').set_boolean('screen-keyboard-enabled', keyboard)
+            # SetVisible alone is transient: native text-input clients (VTE)
+            # re-evaluate this preference on focus and can hide the keyboard.
+            Gio.Settings.new('org.gnome.desktop.a11y.applications').set_boolean('screen-keyboard-enabled', keyboard)
             bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
             bus.call_sync('sm.puri.OSK0', '/sm/puri/OSK0', 'sm.puri.OSK0', 'SetVisible',
                           GLib.Variant('(b)', (keyboard,)), None, Gio.DBusCallFlags.NONE, 3000, None)

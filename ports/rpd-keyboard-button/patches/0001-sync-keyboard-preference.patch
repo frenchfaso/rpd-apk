@@ -1,0 +1,22 @@
+--- a/src/squeek.cpp
++++ b/src/squeek.cpp
+@@ -54,10 +54,15 @@
+     g_variant_get (val, "b", &res);
+     g_variant_unref (val);
+ 
+-    val = g_variant_new ("(b)", !res);
+-    g_dbus_proxy_call_sync (proxy, "SetVisible", val, G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
+-    g_variant_unref (val);
+-    if (err) printf ("%s\n", err->message);
++    /* Native text-input clients consult this preference when taking focus.
++     * Keep manual show/hide consistent with the rotation policy. */
++    GSettings *settings = g_settings_new ("org.gnome.desktop.a11y.applications");
++    g_settings_set_boolean (settings, "screen-keyboard-enabled", !res);
++    g_object_unref (settings);
++
++    g_dbus_proxy_call_sync (proxy, "SetVisible", g_variant_new ("(b)", !res),
++        G_DBUS_CALL_FLAGS_NONE, -1, NULL, &err);
++    if (err) { printf ("%s\n", err->message); g_error_free (err); }
+ }
+ 
+ /* Callback for Squeekboard appearing on D-Bus */

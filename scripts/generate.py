@@ -37,6 +37,7 @@ for name,m in lock.items():
  if name=='pplug-netman':depends+=' networkmanager network-manager-applet gnome-keyring'
  if name=='pplug-volumepulse':depends+=' pipewire-pulse wireplumber'
  if name=='pplug-bluetooth':depends+=' bluez'
+ if name=='wfplug-squeek':depends+=' gsettings-desktop-schemas'
  if name=='lxtask':depends='!lxtask'
  if name=='pi-greeter':depends='lightdm rpd-theme rpd-icons rpd-menu-data font-nunito'
  if name=='pishutdown':depends='swaylock usbutils'
