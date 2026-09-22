@@ -1,0 +1,90 @@
+#!/usr/bin/python3
+"""Sample standard battery telemetry, retain calibration data, publish a UI estimate."""
+import configparser
+import datetime
+import json
+import logging
+import os
+import pathlib
+import signal
+import sys
+import time
+sys.path.insert(0, '/usr/lib/rpd-power')
+from power_model import Model
+
+ROOT = pathlib.Path('/sys/class/power_supply')
+STATE = pathlib.Path('/var/lib/rpd-power')
+RUNTIME = pathlib.Path('/run/rpd-power')
+running = True
+
+
+def atomic(path, text):
+    temp = path.with_suffix(path.suffix + '.tmp')
+    temp.write_text(text)
+    os.replace(temp, path)
+
+
+def read_sample():
+    b = ROOT / 'm10-battery'
+    raw = pathlib.Path('/sys/module/m10_battery/parameters/snapshot').read_text()
+    regs = {int(a, 16): int(v, 16) for a, v in (line.split('=') for line in raw.splitlines())}
+    adc = pathlib.Path('/sys/bus/platform/devices/200f000.spmi:pmic@2:adc@3100')
+    paths = list(adc.glob('iio:device*/in_temp_bat_id_input'))
+    if len(paths) != 1:
+        raise ValueError('No unique battery ID channel')
+    return {'timestamp': time.time(), 'elapsed': time.clock_gettime(time.CLOCK_BOOTTIME),
+            'boot_id': pathlib.Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
+            'voltage_uv': int((b / 'voltage_now').read_text()),
+            'current_ua': int((b / 'current_now').read_text()),
+            'temp_c': int((b / 'temp').read_text()) / 10,
+            'id_uv': int(paths[0].read_text()),
+            'usb_online': (ROOT / 'm10-usb/online').read_text().strip() == '1',
+            'charger_state': regs[0x1006] & 7,
+            'float_voltage_uv': 3600000 + regs[0x1070] * 10000}
+
+
+def stop(*_):
+    global running
+    running = False
+
+
+def main():
+    STATE.mkdir(parents=True, exist_ok=True)
+    RUNTIME.mkdir(parents=True, exist_ok=True)
+    profiles = json.loads(pathlib.Path('/usr/share/rpd-power/m10-profiles.json').read_text())['profiles']
+    try:
+        state = json.loads((STATE / 'state.json').read_text())
+    except (OSError, ValueError):
+        state = None
+    model = Model(profiles, state)
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, stop)
+    while running:
+        try:
+            result = model.update(read_sample())
+            atomic(STATE / 'state.json', json.dumps(model.state))
+            atomic(RUNTIME / 'status.json', json.dumps(result, indent=2))
+            atomic(RUNTIME / 'estimates.ini', '[m10-battery]\npercentage={}\ntimestamp={}\ntime_to_empty={}\ntime_to_full_at_current_rate={}\n'.format(
+                result['percentage'], int(result['timestamp']),
+                result['time_to_empty_seconds'] if result['time_to_empty_seconds'] is not None else -1,
+                result['time_to_full_seconds_at_current_rate'] if result['time_to_full_seconds_at_current_rate'] is not None else -1))
+            day = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+            with (STATE / (day + '.jsonl')).open('a') as f:
+                f.write(json.dumps(result) + '\n')
+            for old in STATE.glob('*.jsonl'):
+                if time.time() - old.stat().st_mtime > 30 * 86400:
+                    old.unlink()
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            logging.warning('Battery estimate unavailable: %s', error)
+            model.state.pop('previous', None)
+            (RUNTIME / 'estimates.ini').unlink(missing_ok=True)
+            (RUNTIME / 'status.json').unlink(missing_ok=True)
+        for _ in range(15):
+            if not running:
+                break
+            time.sleep(1)
+    (RUNTIME / 'estimates.ini').unlink(missing_ok=True)
+
+
+if __name__ == '__main__':
+    main()

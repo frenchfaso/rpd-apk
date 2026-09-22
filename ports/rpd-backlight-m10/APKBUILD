@@ -1,19 +1,20 @@
 pkgname=rpd-backlight-m10
 pkgver=7.1.3
-pkgrel=13
+pkgrel=14
 pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="GPL-2.0-only"
-subpackages="rpd-usb-otg-m10:otg"
-install="rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall"
+subpackages="rpd-usb-otg-m10:otg rpd-battery-m10:battery"
+install="rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
 _kernel_apk_version=7.1.3-r0
 depends="kmod brightnessctl brightnessctl-udev"
 makedepends="clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3"
-source="linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
+source="80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
     kernel.config Makefile m10_firmware_backlight.c
     rpd-backlight-m10.service rpd-backlight-m10-load
-    m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset"
+    m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset
+    m10_battery.c m10_battery_temperature.h m10-adc5-battery.patch rpd-battery-m10-load rpd-battery-m10.service"
 builddir="$srcdir/linux-7.1.3-r1"
 
 build() {
@@ -32,6 +33,9 @@ build() {
     make LLVM=1 modules_prepare
     mkdir -p "$srcdir/backlight-module"
     cp "$srcdir/Makefile" "$srcdir/m10_firmware_backlight.c" "$srcdir/m10_otg_id.c" "$srcdir/m10_otg_vbus.c" "$srcdir/backlight-module/"
+    cp "$srcdir/m10_battery.c" "$srcdir/m10_battery_temperature.h" "$srcdir/backlight-module/"
+    cp drivers/iio/adc/qcom-spmi-adc5.c "$srcdir/backlight-module/m10_adc5_battery.c"
+    patch -d "$srcdir/backlight-module" -p0 < "$srcdir/m10-adc5-battery.patch"
     make LLVM=1 M="$srcdir/backlight-module" modules
 }
 
@@ -77,17 +81,39 @@ otg() {
         > "$subpkgdir/usr/lib/rpd-usb-otg-m10/kernel.json"
 }
 
+
+battery() {
+    install -Dm644 "$srcdir/80-rpd-battery-m10.preset" "$subpkgdir/usr/lib/systemd/system-preset/80-rpd-battery-m10.preset"
+    pkgdesc="Lenovo M10 battery current, voltage and OEM thermistor telemetry"
+    depends="python3 kmod rpd-battery>=1.11-r23"
+    for module in m10_battery m10_adc5_battery; do
+        install -Dm644 "$srcdir/backlight-module/$module.ko" \
+            "$subpkgdir/usr/lib/modules/$pkgver-msm89x7/extra/$module.ko"
+    done
+    install -Dm755 "$srcdir/rpd-battery-m10-load" "$subpkgdir/usr/libexec/rpd-battery-m10-load"
+    install -Dm644 "$srcdir/rpd-battery-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-battery-m10.service"
+    mkdir -p "$subpkgdir/usr/lib/rpd-battery-m10"
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" \
+        > "$subpkgdir/usr/lib/rpd-battery-m10/kernel.json"
+}
+
 sha512sums="
+42b72db375438a3b354ad858068bbe92de80eb4655554d5ef20cdd30b0ea249c157965919616220d9e85cd447eb2afe9a05a48378b946648c47656750cbf147b  80-rpd-battery-m10.preset
 c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a  linux-v7.1.3-r1.tar.gz
 ffe6bd375fecf5d69c586d821605af94f8d5665ce51fb9471627b52ff54712f1de3bf1e64f65125f7fae9a961f8b9818f870db22029d5185c2caf7e1f7f97354  kernel.config
-0faf91158c5f17597ca552f0436e904f690df2ab91780ca8bcd8e8afc5382a61ef1f553e1a427e32adb7208a7ad7edd4d8813cf3f95e47117384cfd96ad93c21  Makefile
+1fb1532a7ffcc2d247aba71368e3cef14a543787e01a5ece0ce55238d04b8ebc280991018b263a867e9430b46478e308adc0f7de6a3836ac8ebe1f37756f5d16  Makefile
 a4806415cd529b1528abf2b8cb6bff447ac1ecae347f67870a8090ca8eccc4b329183b9eca4c343011e1ba88981be1236e8f5b57f402f0712c56e7f644b23df7  m10_firmware_backlight.c
 c6a52f9fdef8e19515aa7bf1de0bd6ec848901f8985445d8043296d17cda0e94548a27695bf18196bfbdcc8682e956681630b22706613773339935b9dbe2350b  rpd-backlight-m10.service
 436bc87d387c383779e59ae887e0998f42c2861ff91d9a4bbafd7217f114346404d79e3ab3a19d4db71b9542b0be1023b07020afb3a4a205385070eef63e2b4b  rpd-backlight-m10-load
 c338990441970e66599b3903bf1badd158170b13ff609c9e95f96486c1a9994993c839ebbf7f95f9e227650b1212e30255271441a31b8c7d88140c74cdb89ed6  m10_otg_id.c
 8be85a47ad203dc7d9aa0456febd079bf709667008cfc15da6369bad69f0bea5c6ab57518f146ece4c406a584b474c8b9cffdc363aa6adf28eee8d33b25bcf19  m10_otg_vbus.c
-3ce0149d3b4f8e1c34c0d6a96f4f457f368de3d0550eb4d76629598c74304a3ea82a76c1d33413a4bbd9db13d37a7e6bb798f25eed5d1c94d6c2d0cbc1d67457  rpd-usb-otg-m10
+45253473cdf71827c26ab14dfb29fea0829bd89dc86fbd2de86317fe969a36b4d565fad8cfa9ba54cf2e0d1c4acf13f8028e4e053c77c024df9d0527b2ac8419  rpd-usb-otg-m10
 c5b2c1eedc44b6cbfd718808ef5abd2e0d28191c7cedb1132eb5a78c3bf396a4e05d56cd37cb321c6f2745015ceec51946df385114988f243c7111bbea687d2e  rpd-usb-otg-m10.service
-e9802491ca2a931f0d93737894c40185e641b018ba593e286f96d29f759a25643c7b852cbf7ec5674b6b838ae755b781392db58faa402b200af1804497c44cf9  test-otg.py
+51fb58cd77d82492e22b18ef05cd34e54da0c612200ba5feca469d012885c6515e9f25a09b092865c86526e30528222b99076e3d13c087dc21561da74c0d7f0a  test-otg.py
 203a575e6a5955b708c5ff73956774803aaad67a9652fe0965869a3cfb6cc56dac7c5da2e4af01e7e46a12121ffde8d147cd67fd6f023f28698c7ddc04179570  80-rpd-usb-otg-m10.preset
+a75a234a8ce9078746828d2c4f15376cdc40bcfb61d1db84ef36006b3fd2696a2244a3e01f4688700c751142c36249a874d054da7fd393baad5248286ac5eb1d  m10_battery.c
+49e1db7685d1f4033a778a6dbcad19d4593b4cdc9fd201da331aa5cc1749e102d27ada3da5ca7861531dee1874267d49748dedc74de4906fff12f13fe56cf492  m10_battery_temperature.h
+dbe2c4fa198d417cd6a14f3f4e098a394dd64a55bbcda5a42c711fb2825ecd74951433f1c5afa1e25fa260c38eb7a993706a41a28f998a31fdce15aa658f399e  m10-adc5-battery.patch
+fb3f4468669d40a7698b5dd97b504684d64afb920c12aab957741b0e311592f8e4f9093126aee92d281f0c9ef1feb765da4d1fe2aad81c4c5ac63deb56f6abac  rpd-battery-m10-load
+eb1706d6d3e788e1d0c5d5100bd035d9bf00d2421b729ca6948c658fbe4d84a57f3e59741e321bb79149da74f98eb0d9b31dd8c42f40ebe31d1e41311d7d8e6f  rpd-battery-m10.service
 "

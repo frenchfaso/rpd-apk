@@ -1,0 +1,95 @@
+--- a/src/batt_sys.h
++++ b/src/batt_sys.h
+@@ -51,6 +51,8 @@
+     /* extra info */
+     int seconds;
+     int percentage;
++    gboolean estimated;
++    int estimated_seconds;
+     char *state;
+     char *scope;
+     //const char *poststr;
+--- a/src/batt_sys.c
++++ b/src/batt_sys.c
+@@ -164,6 +164,33 @@
+ }
+ 
+ 
++static int estimated_percentage(battery *b)
++{
++    GKeyFile *key = g_key_file_new();
++    GError *error = NULL;
++    int percentage = -1, value;
++    gint64 stamp, now = g_get_real_time() / G_USEC_PER_SEC;
++    if (!g_key_file_load_from_file(key, "/run/rpd-power/estimates.ini", G_KEY_FILE_NONE, &error))
++        goto out;
++    stamp = g_key_file_get_int64(key, b->path, "timestamp", &error);
++    if (error || stamp > now + 5 || stamp < now - 90)
++        goto out;
++    value = g_key_file_get_integer(key, b->path, "percentage", &error);
++    if (!error && value >= 0 && value <= 100) {
++        percentage = value;
++        b->estimated = TRUE;
++        const char *field = b->state && !strcasecmp(b->state, "charging") ?
++                            "time_to_full_at_current_rate" : "time_to_empty";
++        int seconds = g_key_file_get_integer(key, b->path, field, &error);
++        if (!error && seconds >= 0 && seconds <= 604800)
++            b->estimated_seconds = seconds;
++    }
++ out:
++    g_clear_error(&error);
++    g_key_file_free(key);
++    return percentage;
++}
++
+ battery* battery_update(battery *b)
+ {
+     gchar *gctmp;
+@@ -174,6 +201,9 @@
+ 
+     if (!battery_inserted(b->path))
+         return NULL;
++
++    b->estimated = FALSE;
++    b->estimated_seconds = -1;
+ 
+     /* read from sysfs */
+     b->charge_now = get_gint_from_infofile(b, "charge_now");
+@@ -275,6 +305,8 @@
+             g_free(capacity);
+         }
+     }
++    if (b->percentage < 0)
++        b->percentage = estimated_percentage(b);
+     if (b->percentage > 100)
+         b->percentage = 100;
+ 
+@@ -308,6 +340,7 @@
+         b->seconds = -1;
+     }
+ 
++    if (b->estimated) b->seconds = b->estimated_seconds;
+     return b;
+ }
+ 
+--- a/src/batt.c
++++ b/src/batt.c
+@@ -264,6 +264,18 @@
+         else draw_icon (pt, capacity, 0, 0.85, 0, 0);
+     }
+ 
++    if (pt->batt && pt->batt->estimated)
++    {
++        const char *state = status == STAT_CHARGING ? _("Charging") :
++                            status == STAT_EXT_POWER ? _("On external power") : _("Discharging");
++        g_snprintf (str, sizeof str, "%s\nEstimated charge: ≈%d%%", state, capacity);
++        if (pt->batt->seconds >= 0)
++            g_snprintf (str + strlen(str), sizeof str - strlen(str), "\n%s: ~%d h %02d min",
++                status == STAT_CHARGING ? "Time to full (current rate)" : "Estimated runtime", time / 60, time % 60);
++        else
++            g_strlcat (str, "\nTime estimate: calculating", sizeof str);
++    }
++
+     // set the tooltip
+     gtk_widget_set_tooltip_text (pt->tray_icon, str);
+     gtk_widget_show_all (pt->plugin);

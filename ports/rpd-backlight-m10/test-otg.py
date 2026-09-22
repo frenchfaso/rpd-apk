@@ -18,6 +18,9 @@ class ProbeTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         for name in ('ROLE', 'ID', 'STOP', 'VOLTAGE'):
             setattr(self.probe, name, pathlib.Path(self.temp.name) / name)
+        self.probe.ADC = pathlib.Path(self.temp.name) / 'adc'
+        (self.probe.ADC / 'iio:device8').mkdir(parents=True)
+        self.probe.VOLTAGE = self.probe.ADC / 'iio:device8/in_voltage_usb_in_v_div_16_input'
         self.probe.ROLE.write_text('gadget\n')
         self.probe.ID.write_text('0\n')
         self.probe.VOLTAGE.write_text('7000\n')

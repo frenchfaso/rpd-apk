@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Battery notifications
+Exec=/usr/libexec/rpd-power-notify
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

@@ -1,0 +1,16 @@
+[Unit]
+Description=Lenovo M10 battery and thermistor telemetry
+After=systemd-udev-trigger.service
+Before=rpd-usb-otg-m10.service display-manager.service
+ConditionPathExists=/proc/device-tree/compatible
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/rpd-battery-m10-load
+ExecStop=/usr/libexec/rpd-battery-m10-load stop
+TimeoutStartSec=90
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target

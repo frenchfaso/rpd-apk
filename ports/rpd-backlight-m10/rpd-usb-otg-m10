@@ -14,7 +14,13 @@ import time
 ROLE = pathlib.Path('/sys/bus/platform/devices/78db000.usb/ci_hdrc.0/role')
 ID = pathlib.Path('/sys/module/m10_otg_id/parameters/id')
 STOP = pathlib.Path('/sys/module/m10_otg_vbus/parameters/stop')
-VOLTAGE = pathlib.Path('/sys/bus/iio/devices/iio:device0/in_voltage_usb_in_v_div_16_input')
+ADC = pathlib.Path('/sys/bus/platform/devices/200f000.spmi:pmic@2:adc@3100')
+
+def input_voltage():
+    channels = list(ADC.glob('iio:device*/in_voltage_usb_in_v_div_16_input'))
+    if len(channels) != 1:
+        raise RuntimeError('Expected one PMI632 USB voltage channel')
+    return int(channels[0].read_text())
 
 def log(message):
     print(message, flush=True)
@@ -73,7 +79,7 @@ def run():
         elif not active:
             attached_samples += 1
             if attached_samples >= 3 and not blocked:
-                microvolts = int(VOLTAGE.read_text())
+                microvolts = input_voltage()
                 if not 0 <= microvolts < 800000:
                     blocked = True
                     log(f'OTG inhibited: external VBUS or invalid reading ({microvolts}uV); reconnect after removing external power')

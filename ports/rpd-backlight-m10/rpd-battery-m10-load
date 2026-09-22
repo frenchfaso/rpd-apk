@@ -1,0 +1,97 @@
+#!/usr/bin/python3
+"""Bind the matching battery ADC extension, with rollback and OTG ordering."""
+import json
+import pathlib
+import subprocess
+import sys
+
+DEVICE = pathlib.Path('/sys/bus/platform/devices/200f000.spmi:pmic@2:adc@3100')
+DRIVERS = pathlib.Path('/sys/bus/platform/drivers')
+SUPPLIES = pathlib.Path('/sys/class/power_supply')
+META = pathlib.Path('/usr/lib/rpd-battery-m10/kernel.json')
+ORIGINAL = 'qcom-spmi-adc5'
+CUSTOM = 'm10-adc5-battery'
+NAME = DEVICE.name
+
+
+def run(*args, check=True):
+    return subprocess.run(args, check=check, capture_output=True, text=True, timeout=25)
+
+
+def driver():
+    link = DEVICE / 'driver'
+    return link.resolve().name if link.is_symlink() else None
+
+
+def write(path, value):
+    path.write_text(value + '\n')
+
+
+def matching():
+    meta = json.loads(META.read_text())
+    return (run('uname', '-r').stdout.strip() == meta['release'] and
+            run('apk', 'info', '-e', 'linux-postmarketos-qcom-msm89x7=' + meta['apk'], check=False).returncode == 0)
+
+
+def restore():
+    run('modprobe', '-r', 'm10_battery', check=False)
+    if driver() == CUSTOM:
+        write(DRIVERS / CUSTOM / 'unbind', NAME)
+    run('modprobe', '-r', 'm10_adc5_battery', check=False)
+    write(DEVICE / 'driver_override', '')
+    if driver() is None:
+        write(DRIVERS / ORIGINAL / 'bind', NAME)
+    if driver() != ORIGINAL:
+        raise RuntimeError('Original ADC driver not restored; keep OTG stopped')
+
+
+def main():
+    if sys.argv[1:] != ['stop']:
+        if not matching():
+            print('Battery support skipped: kernel mismatch; official upgrades remain unrestricted')
+            return
+        for supply in SUPPLIES.glob('*'):
+            if supply.name != 'm10-battery' and (supply / 'type').read_text().strip() == 'Battery':
+                print('Native battery provider present; custom driver skipped')
+                return
+        if driver() == CUSTOM:
+            run('modprobe', 'm10_battery')
+            return
+        if driver() != ORIGINAL or list(DEVICE.glob('consumer:*')):
+            print('Battery ADC integration skipped: unexpected driver or kernel consumer')
+            return
+        for module in ('m10_adc5_battery', 'm10_battery'):
+            run('modinfo', module)
+    if sys.argv[1:] == ['stop'] and driver() != CUSTOM and not pathlib.Path('/sys/module/m10_battery').exists():
+        return
+    active = run('systemctl', 'is-active', '--quiet', 'rpd-usb-otg-m10.service', check=False).returncode == 0
+    if active:
+        run('systemctl', 'stop', 'rpd-usb-otg-m10.service')
+    try:
+        if sys.argv[1:] == ['stop']:
+            restore()
+        else:
+            if pathlib.Path('/sys/module/m10_otg_vbus').exists():
+                raise RuntimeError('VBUS source still active; ADC binding refused')
+            run('modprobe', 'm10_adc5_battery')
+            write(DEVICE / 'driver_override', CUSTOM)
+            write(DRIVERS / ORIGINAL / 'unbind', NAME)
+            write(DRIVERS / CUSTOM / 'bind', NAME)
+            if driver() != CUSTOM:
+                raise RuntimeError('ADC binding failed')
+            run('modprobe', 'm10_battery')
+            # Validate a real cell/profile reading, not merely module presence.
+            temp = int((SUPPLIES / 'm10-battery/temp').read_text())
+            if not -400 <= temp <= 980:
+                raise RuntimeError('Battery temperature outside supported table')
+            print(f'Battery telemetry ready; cell temperature {temp / 10:.1f} C')
+    except Exception:
+        restore()
+        raise
+    finally:
+        if active and driver() in (ORIGINAL, CUSTOM):
+            run('systemctl', 'start', '--no-block', 'rpd-usb-otg-m10.service')
+
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,24 @@
+[Unit]
+Description=Battery estimate and local calibration history
+After=rpd-battery-m10.service
+Wants=rpd-battery-m10.service
+ConditionPathExists=/sys/class/power_supply/m10-battery
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/rpd-power-monitor
+Restart=on-failure
+RestartSec=15
+StateDirectory=rpd-power
+RuntimeDirectory=rpd-power
+UMask=0022
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/rpd-power /run/rpd-power
+
+[Install]
+WantedBy=multi-user.target

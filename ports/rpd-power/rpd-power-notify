@@ -1,0 +1,22 @@
+#!/usr/bin/python3
+"""User-session notifications; no shutdown/suspend or charger-control actions."""
+import json,pathlib,subprocess,time
+last={}
+while True:
+    try:
+        d=json.loads(pathlib.Path('/run/rpd-power/status.json').read_text())
+        fresh=-5 <= time.time()-d['timestamp'] <= 90
+        messages={}
+        if fresh and not d['usb_online'] and d['percentage'] <= 15:
+            messages['low']='Estimated battery charge is low (≈{}%). Connect the charger.'.format(d['percentage'])
+        if fresh and d['voltage_uv'] < 3500000 and d['current_ua'] < 0:
+            messages['voltage']='Battery voltage is low. Save your work and connect the charger.'
+        if fresh and d['temp_c'] >= 45:
+            messages['temperature']='Battery temperature is {:.1f} °C. Let the tablet cool down.'.format(d['temp_c'])
+        for key,message in messages.items():
+            if time.monotonic()-last.get(key,-3600) >= 1800:
+                subprocess.run(['notify-send','--app-name=Power','--icon=battery-low','Battery',message],check=False,timeout=10)
+                last[key]=time.monotonic()
+    except (OSError,ValueError,KeyError,subprocess.TimeoutExpired):
+        pass
+    time.sleep(30)

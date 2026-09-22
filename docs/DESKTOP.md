@@ -182,3 +182,18 @@ applies the hint before the initial modeset and consumes it once. Thus even the
 first cursor frame can use the login screen's orientation. Other outputs and
 sessions without the hint retain upstream behavior. The bounded initial pass
 after compositor startup remains as a fallback/current-sensor check.
+
+## Panel icon order
+
+Verified against Raspberry Pi `wf-panel-pi` upstream `plug_conf.h` on 2026-09-22
+(commit `63551ec06d7f0ff0a5046dbcddfbf79846c74d1d`).
+The configured right-hand sequence, from left to right, is tray, removable-drive
+eject, Bluetooth, network, volume, clock, battery, on-screen keyboard. Hidden
+plugins keep their relative position when they become visible. This is the
+upstream order with Pi hardware power warnings, APT updater and Raspberry Pi
+Connect removed as previously selected for the Alpine port. The M10 user config
+contains no `widgets_right` override. The volume icon can be hidden when only the
+PipeWire dummy sink is available; it returns with a usable audio output.
+
+See [battery telemetry](BATTERY-TELEMETRY.md) for the M10 driver and the explicitly
+estimated percentage/time integration in the original battery plugin.

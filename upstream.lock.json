@@ -125,7 +125,7 @@
     "version": "1.11",
     "source_version": "1.11",
     "directory": "pplug-batt",
-    "pkgrel": 24
+    "pkgrel": 25
   },
   "pishutdown": {
     "url": "https://archive.raspberrypi.com/debian/pool/main/p/pishutdown/pishutdown_0.43.tar.xz",

@@ -1,0 +1,150 @@
+--- m10_adc5_battery.c
++++ m10_adc5_battery.c
+@@ -9,11 +9,14 @@
+ #include <linux/err.h>
+ #include <linux/iio/adc/qcom-vadc-common.h>
+ #include <linux/iio/iio.h>
++#include <linux/iio/driver.h>
++#include <linux/iio/machine.h>
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
+ #include <linux/log2.h>
+ #include <linux/math64.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/mod_devicetable.h>
+ #include <linux/platform_device.h>
+ #include <linux/property.h>
+@@ -820,6 +823,47 @@
+ };
+-MODULE_DEVICE_TABLE(of, adc5_match_table);
++/* Loaded only by the board/kernel-checked service, never by modalias. */
+ 
++
++/* Kept separately so the exact bounds/copy logic can be tested under ASan. */
++static int m10_append_therm_channel(struct adc5_chip *adc, unsigned int index)
++{
++	struct adc5_channel_prop *source = NULL, *dest;
++	struct iio_chan_spec *chan;
++	unsigned int i;
++
++	if (!adc->chan_props || !adc->iio_chans || !index ||
++	    adc->nchannels > ADC5_MAX_CHANNEL || index >= adc->nchannels ||
++	    index != adc->nchannels - 1)
++		return -EINVAL;
++	for (i = 0; i < index; i++) {
++		if (adc->chan_props[i].channel == ADC5_BAT_THERM_30K_PU)
++			return -EEXIST;
++		if (adc->chan_props[i].channel == ADC5_BAT_ID_100K_PU) {
++			if (source)
++				return -EEXIST;
++			source = &adc->chan_props[i];
++		}
++	}
++	if (!source || source->cal_method != ADC5_RATIOMETRIC_CAL ||
++	    source->prescale != 0)
++		return -EINVAL;
++
++	/* Reuse board timing, upstream conversion mutex and IRQ handling. */
++	dest = &adc->chan_props[index];
++	chan = &adc->iio_chans[index];
++	*dest = *source;
++	dest->channel = ADC5_BAT_THERM_30K_PU;
++	dest->scale_fn_type = SCALE_HW_CALIB_DEFAULT;
++	dest->channel_name = "bat_therm_uv";
++	chan->channel = ADC5_BAT_THERM_30K_PU;
++	chan->datasheet_name = "bat_therm_uv";
++	chan->extend_name = "bat_therm_uv";
++	chan->info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED);
++	chan->type = IIO_VOLTAGE;
++	chan->address = index;
++	return 0;
++}
++
+ static int adc5_get_fw_data(struct adc5_chip *adc)
+ {
+ 	const struct adc5_channels *adc_chan;
+@@ -829,8 +873,9 @@
+ 	int ret;
+ 
+ 	adc->nchannels = device_get_child_node_count(adc->dev);
+-	if (!adc->nchannels)
+-		return dev_err_probe(adc->dev, -EINVAL, "no channels defined\n");
++	if (!adc->nchannels || adc->nchannels >= ADC5_MAX_CHANNEL)
++		return dev_err_probe(adc->dev, -EINVAL, "invalid channel count\n");
++	adc->nchannels++; /* Reserve one bounded diagnostic channel. */
+ 
+ 	adc->iio_chans = devm_kcalloc(adc->dev, adc->nchannels,
+ 				       sizeof(*adc->iio_chans), GFP_KERNEL);
+@@ -849,6 +894,8 @@
+ 		adc->data = &adc5_data_pmic;
+ 
+ 	device_for_each_child_node_scoped(adc->dev, child) {
++		if (index >= adc->nchannels - 1)
++			return -EOVERFLOW;
+ 		ret = adc5_get_fw_channel_data(adc, &prop, child, adc->data);
+ 		if (ret)
+ 			return ret;
+@@ -869,8 +916,14 @@
+ 		index++;
+ 	}
+ 
+-	return 0;
+-}
++	return m10_append_therm_channel(adc, index);
++}
++
++static const struct iio_map m10_battery_maps[] = {
++ IIO_MAP("bat_therm_uv", "m10-battery", "battery-therm-voltage"),
++ IIO_MAP("bat_id", "m10-battery", "battery-id-voltage"),
++ { }
++};
+ 
+ static int adc5_probe(struct platform_device *pdev)
+ {
+@@ -881,6 +934,10 @@
+ 	int ret, irq_eoc;
+ 	u32 reg;
+ 
++	if (!of_machine_is_compatible("lenovo,tbx505x") ||
++	    !dev->parent || !of_device_is_compatible(dev->parent->of_node, "qcom,pmi632"))
++		return -ENODEV;
++
+ 	regmap = dev_get_regmap(dev->parent, NULL);
+ 	if (!regmap)
+ 		return -ENODEV;
+@@ -888,6 +945,8 @@
+ 	ret = device_property_read_u32(dev, "reg", &reg);
+ 	if (ret < 0)
+ 		return ret;
++	if (reg != 0x3100)
++		return -ENODEV;
+ 
+ 	indio_dev = devm_iio_device_alloc(dev, sizeof(*adc));
+ 	if (!indio_dev)
+@@ -923,18 +982,21 @@
+ 	indio_dev->channels = adc->iio_chans;
+ 	indio_dev->num_channels = adc->nchannels;
+ 
+-	return devm_iio_device_register(dev, indio_dev);
++	ret = devm_iio_device_register(dev, indio_dev);
++	if (ret)
++		return ret;
++	return devm_iio_map_array_register(dev, indio_dev, m10_battery_maps);
+ }
+ 
+ static struct platform_driver adc5_driver = {
+ 	.driver = {
+-		.name = "qcom-spmi-adc5",
++		.name = "m10-adc5-battery",
+ 		.of_match_table = adc5_match_table,
+ 	},
+ 	.probe = adc5_probe,
+ };
+ module_platform_driver(adc5_driver);
+ 
+-MODULE_ALIAS("platform:qcom-spmi-adc5");
+-MODULE_DESCRIPTION("Qualcomm Technologies Inc. PMIC5 ADC driver");
++
++MODULE_DESCRIPTION("M10 ADC5 battery thermistor support");
+ MODULE_LICENSE("GPL v2");

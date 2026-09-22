@@ -15,7 +15,8 @@ with tempfile.TemporaryDirectory(prefix='rpd-battery-test-') as directory:
     root = pathlib.Path(directory)
     supply = root / 'sysfs'
     (supply / 'BAT0').mkdir(parents=True)
-    (root / 'batt_sys.c').write_bytes((source / 'batt_sys.c').read_bytes())
+    (root / 'batt_sys.c').write_text((source / 'batt_sys.c').read_text().replace('/run/rpd-power', str(root / 'runtime')))
+    (root / 'runtime').mkdir()
     (root / 'batt_sys.h').write_text((source / 'batt_sys.h').read_text().replace('/sys/class/power_supply', str(supply)))
     (root / 'test.c').write_text(r'''
 #include "batt_sys.h"
@@ -45,6 +46,17 @@ int main(void) {
     put("charge_full", NULL); put("charge_now", NULL);
     put("energy_now", "10000000"); put("energy_full", "20000000");
     battery_update(b); assert(b->percentage == 50);
+    put("energy_now", NULL); put("energy_full", NULL);
+    gchar *runtime = g_build_filename(ACPI_PATH_SYS_POWER_SUPPLY, "..", "runtime", "estimates.ini", NULL);
+    gchar *estimate = g_strdup_printf("[BAT0]\npercentage=67\ntime_to_empty=7200\ntime_to_full_at_current_rate=1800\ntimestamp=%" G_GINT64_FORMAT "\n", g_get_real_time()/G_USEC_PER_SEC);
+    assert(g_file_set_contents(runtime, estimate, -1, NULL)); g_free(estimate);
+    battery_update(b); assert(b->percentage == 67); assert(b->estimated); assert(b->seconds == 7200);
+    put("status", "Charging"); battery_update(b); assert(b->seconds == 1800);
+    put("capacity", "42"); battery_update(b); assert(b->percentage == 42); assert(!b->estimated);
+    put("capacity", NULL);
+    assert(g_file_set_contents(runtime, "[BAT0]\npercentage=67\ntimestamp=1\n", -1, NULL));
+    battery_update(b); assert(b->percentage == -1); assert(!b->estimated);
+    g_free(runtime);
     battery_free(b); return 0;
 }
 ''')
