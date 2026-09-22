@@ -41,7 +41,7 @@ greeter-session=test
 user-session=rpd-session
 allow-guest=false
 EOF
-timeout 20 lightdm --test-mode --debug --config=/tmp/rpd-greeter-test/lightdm.conf > /tmp/greeter-test.log 2>&1 &
+timeout 45 lightdm --test-mode --debug --config=/tmp/rpd-greeter-test/lightdm.conf > /tmp/greeter-test.log 2>&1 &
 manager=$!
 sleep 8
 grep -q 'Greeter connected' /tmp/greeter-test.log
@@ -49,15 +49,27 @@ grep -q 'Prompt greeter with' /tmp/greeter-test.log
 pid=$(pgrep -n -x pi-greeter)
 address=$(su builder -c "cat /proc/$pid/environ" | tr '\0' '\n' | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p')
 [ -n "$address" ]
-# Hide any automatic focus-triggered keyboard, then prove tapping reopens it.
+# The M10 policy suppresses password-triggered keyboards in landscape.
+# Exercise that policy and the explicit toggle using real pointer events.
 su builder -c "DBUS_SESSION_BUS_ADDRESS='$address' gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method sm.puri.OSK0.SetVisible false"
 sleep 1
 su builder -c "DBUS_SESSION_BUS_ADDRESS='$address' gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method org.freedesktop.DBus.Properties.Get sm.puri.OSK0 Visible" | grep -q false
-# Real pointer events exercise GTK's release handler and normal focus behaviour.
+# Password field at the centre of the default 1280x720 headless output.
 su builder -c 'export XDG_RUNTIME_DIR=/tmp/rpd-greeter-test/runtime WAYLAND_DISPLAY=wayland-0; wlrctl pointer move -2000 -2000; wlrctl pointer move 700 360; wlrctl pointer click left'
 sleep 2
+su builder -c "DBUS_SESSION_BUS_ADDRESS='$address' gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method org.freedesktop.DBus.Properties.Get sm.puri.OSK0 Visible" | grep -q false
+# The explicit button opens even in landscape. The dialog moves up when the
+# keyboard reserves the bottom half, so the second click follows its new position.
+su builder -c 'export XDG_RUNTIME_DIR=/tmp/rpd-greeter-test/runtime WAYLAND_DISPLAY=wayland-0; wlrctl pointer move -2000 -2000; wlrctl pointer move 640 414; wlrctl pointer click left'
+sleep 1
 su builder -c "DBUS_SESSION_BUS_ADDRESS='$address' gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method org.freedesktop.DBus.Properties.Get sm.puri.OSK0 Visible" | grep -q true
-# Press a harmless test character on Squeekboard; never submit the login form.
+su builder -c 'export XDG_RUNTIME_DIR=/tmp/rpd-greeter-test/runtime WAYLAND_DISPLAY=wayland-0; wlrctl pointer move -2000 -2000; wlrctl pointer move 640 234; wlrctl pointer click left'
+sleep 1
+su builder -c "DBUS_SESSION_BUS_ADDRESS='$address' gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method org.freedesktop.DBus.Properties.Get sm.puri.OSK0 Visible" | grep -q false
+# Open once more and enter a harmless test character; never submit the login form.
+su builder -c 'export XDG_RUNTIME_DIR=/tmp/rpd-greeter-test/runtime WAYLAND_DISPLAY=wayland-0; wlrctl pointer move -2000 -2000; wlrctl pointer move 640 414; wlrctl pointer click left'
+sleep 1
+su builder -c "DBUS_SESSION_BUS_ADDRESS='$address' gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 --method org.freedesktop.DBus.Properties.Get sm.puri.OSK0 Visible" | grep -q true
 su builder -c 'export XDG_RUNTIME_DIR=/tmp/rpd-greeter-test/runtime WAYLAND_DISPLAY=wayland-0; wlrctl pointer move -2000 -2000; wlrctl pointer move 60 410; wlrctl pointer click left'
 sleep 1
 if [ -S /tmp/rpd-greeter-test/runtime/wayland-0 ]; then
@@ -76,4 +88,4 @@ done
 cleanup
 trap - EXIT INT TERM
 cp /tmp/greeter-test.log /work/out/lightdm-test.log
-printf 'LightDM greeter protocol, PAM prompt and visible on-screen keyboard passed\n' >> /work/out/validation.txt
+printf 'LightDM greeter protocol, PAM prompt, landscape keyboard policy and toggle passed\n' >> /work/out/validation.txt

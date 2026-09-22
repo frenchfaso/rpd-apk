@@ -13,6 +13,14 @@ apk --root "$root" --initdb --no-scripts add rpd-desktop-m10
 for path in usr/lib/rpd-cpu-topology-m10/topology.py usr/share/boot-deploy/hooks/90-rpd-cpu-topology-m10 etc/deviceinfo usr/bin/rpd-autorotate usr/lib/rpd-autorotate/main.py etc/xdg/rpd/autorotate.conf usr/bin/chromium usr/bin/rpd-browser usr/sbin/rpd-configure-host usr/libexec/rpd-system-settings usr/share/raspi-ui-overrides/applications/mimeinfo.cache usr/lib/chromium/initial_preferences etc/chromium/policies/recommended/rpd.json usr/bin/vlc usr/bin/rpd-localisation usr/bin/rpd-apply-greeter usr/lib/rpcc/librpcc_raindrop.so usr/lib/rpcc/librpcc_rpinters.so usr/lib/rpcc/librpcc_rc_gui.so usr/bin/rpcc usr/bin/lxtask usr/bin/gui-runcmd usr/bin/gui-screenshot usr/bin/galculator usr/bin/eom usr/bin/evince usr/lib/wf-panel-pi/libsmenu.so usr/lib/rpcc/librpcc_pipanel.so usr/lib/rpcc/librpcc_wf-panel-pi.so usr/bin/wf-panel-pi usr/bin/pcmanfm usr/bin/rpd-session usr/bin/squeekboard usr/bin/labwc usr/lib/wf-panel-pi/libnmenu.so usr/lib/wf-panel-pi/libtlist.so usr/lib/wf-panel-pi/libsqueek.so usr/lib/wf-panel-pi/libejecter.so usr/lib/wf-panel-pi/libnetman.so usr/lib/wf-panel-pi/libvolumepulse.so usr/lib/wf-panel-pi/libbatt.so usr/bin/xdg-user-dirs-update usr/bin/udisksctl usr/libexec/gvfs/gvfs-udisks2-volume-monitor usr/libexec/polkit-mate-authentication-agent-1 usr/bin/pishutdown usr/lib/wf-panel-pi/libbluetooth.so usr/sbin/pi-greeter usr/bin/rpd-greeter-session usr/share/xgreeters/rpd-greeter-labwc.desktop; do
     test -f "$root/$path" || { echo "Missing $path" >&2; exit 1; }
 done
+# The M10 metapackage must carry the complete battery integration, not merely
+# the panel plugin. Check the clean installation including service presets.
+for path in usr/bin/rpd-battery-status usr/libexec/rpd-battery-m10-load usr/libexec/rpd-power-monitor usr/lib/rpd-power/power_model.py usr/share/rpd-power/m10-profiles.json usr/lib/systemd/system/rpd-battery-m10.service usr/lib/systemd/system/rpd-power-monitor.service usr/lib/systemd/system-preset/80-rpd-battery-m10.preset usr/lib/systemd/system-preset/80-rpd-power-monitor.preset; do
+    test -f "$root/$path" || { echo "Missing battery integration: $path" >&2; exit 1; }
+done
+for module in m10_battery m10_adc5_battery; do
+    find "$root/usr/lib/modules" -name "$module.ko" | grep -q .
+done
 apk --root "$root" info -s > out/installed-sizes.txt
 apk --root "$root" info > out/installed-packages.txt
 # Version and shared-library load checks in the native clean root.
