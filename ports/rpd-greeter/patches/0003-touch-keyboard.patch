@@ -1,6 +1,6 @@
 --- a/src/pi-greeter.c
 +++ b/src/pi-greeter.c
-@@ -1146,6 +1146,43 @@
+@@ -1146,6 +1146,49 @@
      g_key_file_free (config);
  }
  
@@ -8,9 +8,8 @@
 +static void show_osk (GtkButton *button, gpointer data)
 +{
 +    GDBusConnection *bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, NULL);
-+    (void) button;
 +    (void) data;
-+    if (g_getenv ("RPD_GREETER_PORTRAIT_OSK"))
++    if (!button && g_getenv ("RPD_GREETER_PORTRAIT_OSK"))
 +    {
 +        GdkRectangle geometry;
 +        GdkDisplay *display = gtk_widget_get_display (GTK_WIDGET (password_entry));
@@ -26,6 +25,13 @@
 +        }
 +    }
 +    if (!bus) return;
++    /* Explicit requests override automatic landscape suppression until rotation. */
++    if (button)
++    {
++        GSettings *settings = g_settings_new ("org.gnome.desktop.a11y.applications");
++        g_settings_set_boolean (settings, "screen-keyboard-enabled", TRUE);
++        g_object_unref (settings);
++    }
 +    g_dbus_connection_call (bus, "sm.puri.OSK0", "/sm/puri/OSK0",
 +        "sm.puri.OSK0", "SetVisible", g_variant_new ("(b)", TRUE),
 +        NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
@@ -44,7 +50,7 @@
  static void draw_windows (void)
  {
      GdkDisplay *display = gdk_display_get_default ();
-@@ -1169,6 +1206,18 @@
+@@ -1169,6 +1212,18 @@
      cancel_button = GTK_BUTTON (gtk_builder_get_object (builder, "cancel_button"));
      login_button = GTK_BUTTON (gtk_builder_get_object (builder, "login_button"));
  

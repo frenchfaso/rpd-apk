@@ -143,7 +143,7 @@
     "sha512": "c7881278d13ac5c10355d29486a19f78ba4126d8eb0136b3d23d1fbb460fc28ac02985072efb00e90b892504b82f55959ba2faa98246e00c5943624d8d38312f",
     "filename": "pi-greeter_1.3.tar.xz",
     "directory": "pi-greeter",
-    "pkgrel": 30
+    "pkgrel": 31
   },
   "pplug-bluetooth": {
     "url": "https://archive.raspberrypi.com/debian/pool/main/p/pplug-bluetooth/pplug-bluetooth_1.15.tar.xz",

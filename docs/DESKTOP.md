@@ -151,9 +151,10 @@ copy of the compositor configuration under XDG_RUNTIME_DIR lets it set the same
 Goodix output mapping as the desktop without making /etc writable to LightDM.
 
 The greeter keyboard follows portrait orientation. Landscape disables the screen
-keyboard setting and hides Squeekboard; the password-entry/manual keyboard action
-also checks monitor geometry on this profile. Other targets retain the ordinary
-manual keyboard behavior. Raspberry's RPiSystem wallpaper, user logo, PiXtrix theme
+keyboard setting and hides Squeekboard; password-entry taps also check monitor
+geometry on this profile. The explicit keyboard button overrides landscape
+suppression and enables Squeekboard until the next orientation change. Other
+targets retain the ordinary manual keyboard behavior. Raspberry's RPiSystem wallpaper, user logo, PiXtrix theme
 and Nunito font are used from the pinned ARM packages. Artwork is installed from
 rpd-metas, with its BSD-3-Clause copyright, and follows the existing upstream
 release tracker.
