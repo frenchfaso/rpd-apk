@@ -61,3 +61,5 @@ On an M10 with Buffyboard, establish mutual exclusion and console recovery befor
 enabling normal graphical boot. Exit the desktop to return to the terminal.
 
 The portable System, Display and Interfaces pages retain the original Control Centre widgets. See [browser and portable settings](docs/ALIGNMENT.md) for supported operations, default browser configuration and remaining differences.
+
+Lenovo M10 passive USB OTG is included in its device profile; see [OTG setup and hardware scope](docs/M10-USB-OTG.md).

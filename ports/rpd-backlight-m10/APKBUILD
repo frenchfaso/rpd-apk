@@ -1,17 +1,19 @@
 pkgname=rpd-backlight-m10
 pkgver=7.1.3
-pkgrel=3
+pkgrel=4
 pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="GPL-2.0-only"
-install="rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade"
+subpackages="rpd-usb-otg-m10:otg"
+install="rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall"
 _kernel_apk_version=7.1.3-r0
 depends="kmod brightnessctl brightnessctl-udev"
 makedepends="clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3"
 source="linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
     kernel.config Makefile m10_firmware_backlight.c
-    rpd-backlight-m10.service rpd-backlight-m10-load"
+    rpd-backlight-m10.service rpd-backlight-m10-load
+    m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py"
 builddir="$srcdir/linux-7.1.3-r1"
 
 build() {
@@ -27,7 +29,7 @@ build() {
     make LLVM=1 -j2 vmlinux
     cp vmlinux.symvers Module.symvers
     mkdir -p "$srcdir/backlight-module"
-    cp "$srcdir/Makefile" "$srcdir/m10_firmware_backlight.c" "$srcdir/backlight-module/"
+    cp "$srcdir/Makefile" "$srcdir/m10_firmware_backlight.c" "$srcdir/m10_otg_id.c" "$srcdir/m10_otg_vbus.c" "$srcdir/backlight-module/"
     make LLVM=1 M="$srcdir/backlight-module" modules
 }
 
@@ -36,15 +38,16 @@ check() {
     test "$(make -s LLVM=1 kernelrelease)" = 7.1.3-msm89x7
     test -s vmlinux.symvers
     # Every module import must resolve against the verified kernel exports.
-    llvm-nm -u "$srcdir/backlight-module/m10_firmware_backlight.ko" > "$srcdir/imports"
+    llvm-nm -u "$srcdir/backlight-module/"*.ko > "$srcdir/imports"
     python3 - "$srcdir/imports" Module.symvers <<'PY'
 import sys
-imports={s.split()[-1] for s in open(sys.argv[1]) if s.strip()}
+imports={s.split()[-1] for s in open(sys.argv[1]) if s.strip() and not s.rstrip().endswith(':')}
 exports={s.split()[1] for s in open(sys.argv[2]) if s.strip()}
 missing=imports-exports
 assert not missing, f'Unresolved kernel exports: {sorted(missing)}'
 PY
     sh -n "$srcdir/rpd-backlight-m10-load"
+    python3 "$srcdir/test-otg.py"
 }
 
 package() {
@@ -56,11 +59,31 @@ package() {
         "$pkgdir/usr/libexec/rpd-backlight-m10-load"
 }
 
+
+otg() {
+    pkgdesc="Automatic passive USB OTG for Lenovo M10 (500mA)"
+    depends="python3 kmod"
+    for module in m10_otg_id m10_otg_vbus; do
+        install -Dm644 "$srcdir/backlight-module/$module.ko" \
+            "$subpkgdir/usr/lib/modules/$pkgver-msm89x7/extra/$module.ko"
+    done
+    install -Dm755 "$srcdir/rpd-usb-otg-m10" "$subpkgdir/usr/libexec/rpd-usb-otg-m10"
+    install -Dm644 "$srcdir/rpd-usb-otg-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-usb-otg-m10.service"
+    mkdir -p "$subpkgdir/usr/lib/rpd-usb-otg-m10"
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" \
+        > "$subpkgdir/usr/lib/rpd-usb-otg-m10/kernel.json"
+}
+
 sha512sums="
 c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a  linux-v7.1.3-r1.tar.gz
 ffe6bd375fecf5d69c586d821605af94f8d5665ce51fb9471627b52ff54712f1de3bf1e64f65125f7fae9a961f8b9818f870db22029d5185c2caf7e1f7f97354  kernel.config
-ebcc24e9a3cf1ae5ee93c6297db4a05a7d4fa816f957212043c634487f8b91fd7ede60fcf70eacd215bfeee8149e98bf22675f59c9300df95f3bd1cbeedc896c  Makefile
+0faf91158c5f17597ca552f0436e904f690df2ab91780ca8bcd8e8afc5382a61ef1f553e1a427e32adb7208a7ad7edd4d8813cf3f95e47117384cfd96ad93c21  Makefile
 a4806415cd529b1528abf2b8cb6bff447ac1ecae347f67870a8090ca8eccc4b329183b9eca4c343011e1ba88981be1236e8f5b57f402f0712c56e7f644b23df7  m10_firmware_backlight.c
 c6a52f9fdef8e19515aa7bf1de0bd6ec848901f8985445d8043296d17cda0e94548a27695bf18196bfbdcc8682e956681630b22706613773339935b9dbe2350b  rpd-backlight-m10.service
 436bc87d387c383779e59ae887e0998f42c2861ff91d9a4bbafd7217f114346404d79e3ab3a19d4db71b9542b0be1023b07020afb3a4a205385070eef63e2b4b  rpd-backlight-m10-load
+c338990441970e66599b3903bf1badd158170b13ff609c9e95f96486c1a9994993c839ebbf7f95f9e227650b1212e30255271441a31b8c7d88140c74cdb89ed6  m10_otg_id.c
+8be85a47ad203dc7d9aa0456febd079bf709667008cfc15da6369bad69f0bea5c6ab57518f146ece4c406a584b474c8b9cffdc363aa6adf28eee8d33b25bcf19  m10_otg_vbus.c
+3ce0149d3b4f8e1c34c0d6a96f4f457f368de3d0550eb4d76629598c74304a3ea82a76c1d33413a4bbd9db13d37a7e6bb798f25eed5d1c94d6c2d0cbc1d67457  rpd-usb-otg-m10
+c5b2c1eedc44b6cbfd718808ef5abd2e0d28191c7cedb1132eb5a78c3bf396a4e05d56cd37cb321c6f2745015ceec51946df385114988f243c7111bbea687d2e  rpd-usb-otg-m10.service
+e9802491ca2a931f0d93737894c40185e641b018ba593e286f96d29f759a25643c7b852cbf7ec5674b6b838ae755b781392db58faa402b200af1804497c44cf9  test-otg.py
 "

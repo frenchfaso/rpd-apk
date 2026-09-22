@@ -1,0 +1,103 @@
+#!/usr/bin/python3
+"""Lenovo M10 passive OTG supervisor.
+
+For passive micro-USB OTG peripherals only. Powered Y cables/docks unsupported.
+The systemd unit also runs cleanup through ExecStopPost.
+"""
+import json
+import pathlib
+import signal
+import subprocess
+import sys
+import time
+
+ROLE = pathlib.Path('/sys/bus/platform/devices/78db000.usb/ci_hdrc.0/role')
+ID = pathlib.Path('/sys/module/m10_otg_id/parameters/id')
+STOP = pathlib.Path('/sys/module/m10_otg_vbus/parameters/stop')
+VOLTAGE = pathlib.Path('/sys/bus/iio/devices/iio:device0/in_voltage_usb_in_v_div_16_input')
+
+def log(message):
+    print(message, flush=True)
+
+def command(*args):
+    subprocess.run(args, check=True, timeout=10)
+
+def cleanup():
+    # Cut VBUS even if changing the controller role fails.
+    if not STOP.exists() and not ID.exists():
+        return
+    failure = None
+    try:
+        if ROLE.read_text().strip() != 'gadget':
+            ROLE.write_text('gadget\n')
+    except Exception as error:
+        failure = error
+    if STOP.exists():
+        STOP.write_text('1\n')
+        command('rmmod', 'm10_otg_vbus')
+        log('VBUS off; board GPIOs restored')
+    if failure:
+        raise failure
+
+def release_id():
+    if ID.exists():
+        command('rmmod', 'm10_otg_id')
+
+def kernel_matches():
+    metadata = json.loads(pathlib.Path('/usr/lib/rpd-usb-otg-m10/kernel.json').read_text())
+    running = subprocess.check_output(['uname', '-r'], text=True).strip()
+    match = subprocess.run(['apk', 'info', '-e', 'linux-postmarketos-qcom-msm89x7=' + metadata['apk']], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+    return running == metadata['release'] and match
+
+def run():
+    if not kernel_matches():
+        log('OTG skipped: kernel/module mismatch; kernel upgrades remain unrestricted')
+        return
+    command('modprobe', 'm10_otg_id')
+    cleanup()
+    active = False
+    attached_samples = 0
+    blocked = False
+    log('OTG ready; VBUS off, waiting for physical ID')
+    while True:
+        value = ID.read_text().strip()
+        if value not in ('0', '1'):
+            raise RuntimeError('Invalid ID reading')
+        if value == '1':
+            attached_samples = 0
+            blocked = False
+            if active:
+                cleanup()
+                active = False
+                log('OTG detached')
+        elif not active:
+            attached_samples += 1
+            if attached_samples >= 3 and not blocked:
+                microvolts = int(VOLTAGE.read_text())
+                if not 0 <= microvolts < 800000:
+                    blocked = True
+                    log(f'OTG inhibited: external VBUS or invalid reading ({microvolts}uV); reconnect after removing external power')
+                elif ID.read_text().strip() == '0':
+                    command('modprobe', 'm10_otg_vbus', 'otg_cable=1', 'board_route=1')
+                    if ID.read_text().strip() != '0':
+                        cleanup()
+                    else:
+                        ROLE.write_text('host\n')
+                        active = True
+                        log('OTG attached; host enabled at500mA')
+        time.sleep(0.1)
+
+if __name__ == '__main__':
+    if sys.argv[1:] == ['cleanup']:
+        cleanup()
+        release_id()
+    else:
+        def stop(signum, frame):
+            raise SystemExit(0)
+        signal.signal(signal.SIGTERM, stop)
+        signal.signal(signal.SIGINT, stop)
+        try:
+            run()
+        finally:
+            cleanup()
+            release_id()
