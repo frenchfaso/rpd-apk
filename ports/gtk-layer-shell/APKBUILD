@@ -1,7 +1,7 @@
 # Alpine compatibility build: GTK 3.24.52 carries GNOME MR 5628.
 pkgname=gtk-layer-shell
 pkgver=0.10.1
-pkgrel=129
+pkgrel=130
 pkgdesc="GTK Layer Shell with Alpine GTK touch-seat ABI compatibility"
 url="https://github.com/wmww/gtk-layer-shell"
 arch="aarch64"
