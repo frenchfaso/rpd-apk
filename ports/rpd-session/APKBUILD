@@ -5,7 +5,7 @@ pkgdesc="Portable Raspberry Pi Desktop session and defaults"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="python3 wayvnc gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard network-manager-applet mate-polkit polkit mousepad"
+depends="python3 wayvnc gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard>=1.43.1-r100 network-manager-applet mate-polkit polkit mousepad"
 options="!check"
 source="90-rpd-desktop-audio.conf rpd-idle rpd-idle.service rpd-reload-displays rpd-kanshi.service lxsession-default-apps.desktop rpd-polkit.service lxpolkit.desktop polkit-mate-authentication-agent-1.desktop desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop wf-panel-pi.ini rc.xml settings.ini"
 package() {
@@ -56,7 +56,7 @@ e9f6ca6a9ced3181eaddac8753a5aaa6d7df181775717977574865133e56b84aac3c4148e6fac981
 6c6098da54bfb088bf1bc8b9e9f53c0027bf5cda07c7fc5b195c66b9302b84101fdccbfd68697bb8391d2d397d07f1c0a76ae98570cb3c1d28425f106959127e  rpd-edit-launcher
 6a3873dc65fdc1bba85e89415365add4b5bc420c22808b9a3085559f617227d1feebb4adca5f4a271196ff0cd774852415be4f4f66793c02e1fe5e6a883bf276  rpd-session
 78d911838fe99ec420cc1b931a550f72c5b96138920d670dbdad32a15bbc4e73766881ec731a33edf3eeb8292b5afcf8084966f0064fa00f9c3ed4523da23ffa  rpd-autostart
-005fc3fa26efdf97fac5d686dd66445b08f37d7a4d049bedefd2b081bceb0532c2188a303957e2d249244d4382c0b1773dbdbdc4ea2dc565d943797627714698  rpd-session-services
+5b3046c5bfac8fecca8a99fe04534e541f36af529b6ecfa7f64413aec12d9fea4ff02710becc89207c98737a723cb997e7ea82cc28559fa1495e3b9ecd760fcb  rpd-session-services
 e27b1eac94e89f723a1c7b910c60d9ccd2031ab978089d30a2091323eacded63bc85ed6b7fd5bc2473b1c9d36a5b1739475ec444e5988308c07c865d8a51a11f  rpd-panel-settings
 6087ca2bd85e15cc63782f67e684cc6d980481b153ff90608de92d5101702081bbd36398a98baeaefb36dce4521c302eab11ffad7cffb186a4d3e08dc6a2ba41  rpd-session.desktop
 dfb7949dd0466e0e6aaba691f7f583e5b7f088d747f190bf0bbb6e12c764d0a8d75f3de419612f245ce96966c91ce37486cfdb42e84887f0f38f92afa8886854  wf-panel-pi.ini

@@ -30,3 +30,22 @@ Device diagnosis on M10, 2026-09-22:
 The isolated diagnostic terminals were closed after each test; no desktop session
 restart is needed. Installed-package and physical touch verification are recorded
 in the project hardware notes.
+
+## Explicit visibility survives application closure
+
+Synchronizing the preference alone does not preserve visibility when a terminal
+closes: upstream Squeekboard clears its explicit override on both input-method
+activation and deactivation. Its upstream `force_visible` test deliberately
+expects that behavior.
+
+Our Alpine-based Squeekboard package adds the opt-in environment variable
+`SQUEEKBOARD_PERSISTENT_VISIBILITY=1`. It preserves explicit show **and** hide
+overrides through text-input events while still updating the input method and
+layout purpose. The next explicit D-Bus request replaces the override normally.
+Without an explicit override, automatic text-input visibility remains unchanged.
+Only the desktop session starts Squeekboard with this option; the login screen
+keeps the upstream default. No visibility polling or hide-then-reopen is used.
+
+Three regression tests cover repeated terminal activation/exit while shown,
+manual hiding across focus changes, subsequent opposite explicit requests, and
+unforced automatic hiding. The upstream visibility tests still run unchanged.

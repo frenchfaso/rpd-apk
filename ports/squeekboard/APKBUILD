@@ -1,0 +1,88 @@
+# Contributor: Bart Ribbers <bribbers@disroot.org>
+# Contributor: Danct12 <danct12@disroot.org>
+# Contributor: Rasmus Thomsen <oss@cogitri.dev>
+# Based on Alpine community/squeekboard 1.43.1-r5 (team/phosh).
+# Local patch is opt-in; the greeter retains upstream visibility behavior.
+pkgname=squeekboard
+pkgver=1.43.1
+pkgrel=100
+pkgdesc="The final Phosh keyboard"
+# loongarch64: nix error: sys/ioctl/linux.rs:51: could not find `consts` in `self`
+# s390x: fails with nix/libc errors
+arch="aarch64"
+url="https://gitlab.gnome.org/World/Phosh/squeekboard"
+license="GPL-3.0-or-later"
+makedepends="
+	bash
+	cargo
+	feedbackd-dev
+	glib-dev
+	gnome-desktop-dev
+	gtk+3.0-dev
+	libbsd-dev
+	meson
+	ninja
+	rust
+	wayland-dev
+	wayland-protocols
+	"
+checkdepends="xvfb-run"
+options="net"
+subpackages="$pkgname-lang $pkgname-systemd"
+source="https://gitlab.gnome.org/World/Phosh/squeekboard/-/archive/v$pkgver/squeekboard-v$pkgver.tar.gz
+	sm.puri.OSK0.desktop
+	systemd-service.patch
+	nix-0.22.3-timespec.patch
+	persistent-visibility.patch
+	"
+builddir="$srcdir/$pkgname-v$pkgver"
+
+provides="phosh-keyboard=0"
+provider_priority=10
+replaces="phosh"
+
+prepare() {
+	# Temporarily vendor to patch nix crate
+	cargo vendor --locked
+
+	mkdir -p .cargo
+	cat >> .cargo/config.toml <<-EOF
+		[source.crates-io]
+		replace-with = "vendored-sources"
+
+		[source.vendored-sources]
+		directory = "vendor"
+	EOF
+	sed -i 's/\("files":{\)[^}]*/\1/' vendor/nix/.cargo-checksum.json
+
+	default_prepare
+	# Preserve exact Rust dependencies with our other published source archives.
+	tar -czf "$SRCDEST/squeekboard-vendor-$pkgver.tar.gz" vendor
+}
+
+build() {
+	abuild-meson \
+		-Db_lto=true \
+		-Dstrict=false \
+		. output
+	meson compile -C output
+}
+
+check() {
+	xvfb-run -a meson test --print-errorlogs -C output -t 10
+}
+
+package() {
+	DESTDIR="$pkgdir" meson install --no-rebuild -C output
+
+	install -D -m644 "$srcdir"/sm.puri.OSK0.desktop \
+		"$pkgdir"/usr/share/applications/sm.puri.OSK0.desktop
+}
+
+sha512sums="
+34bf9ab4bf22371e2f7aa7111ba0b2047a4cb00f823deeeb43fc64e5b0d7f94fd288fa70f7931488f808bf22c53a404c8ca4325fc478799ed139bb99553ca25b  squeekboard-v1.43.1.tar.gz
+39072909e750ba3a635b4245f45d969129e5e846aaa83af7530b265ccf31b5758f03520ebdb19dfe7a3494a6203d543addae1c9afba51ac5aafec044683e4172  sm.puri.OSK0.desktop
+e1c2b41c1ea856208d18e296b941d0324b8b3d017637bd1edc7208071385c66f1860a370e848193456796247b264d314836cd3d93eb78403bd9187504909539b  systemd-service.patch
+8283a049711e3195b46681022935c1d520bd2f8ea0078833d4ce173ab7c861d01b3b33687b66a9e24dee9d370394143c162b6b843d71bba8f58889224269b00b  nix-0.22.3-timespec.patch
+2e126dee99872344a4f8349e4ca8008397a1e95ef12073a4996a9f4d9ea787ec652e888f2edbe4741b830b54dec44aae95bda45a4ca91b976e5eca70bb921871  persistent-visibility.patch
+"

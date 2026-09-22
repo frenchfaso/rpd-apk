@@ -1,0 +1,97 @@
+--- a/src/state.rs
++++ b/src/state.rs
+@@ -197,6 +197,8 @@
+ pub struct Application {
+     pub im: InputMethod,
+     pub visibility_override: visibility::State,
++    /// Desktop policy: explicit show/hide survives text-input focus changes.
++    pub persistent_visibility: bool,
+     pub physical_keyboard: Presence,
+     pub debug_mode_enabled: bool,
+     /// The output on which the panel should appear.
+@@ -226,6 +228,7 @@
+         Self {
+             im: InputMethod::InactiveSince(now),
+             visibility_override: visibility::State::NotForced,
++            persistent_visibility: false,
+             physical_keyboard: Presence::Missing,
+             debug_mode_enabled: false,
+             preferred_output: None,
+@@ -289,6 +292,10 @@
+                 app
+             },
+ 
++            Event::InputMethod(new_im) if self.persistent_visibility => Self {
++                im: new_im,
++                ..self
++            },
+             Event::InputMethod(new_im)
+             => match (self.im.clone(), new_im, self.visibility_override) {
+                 (InputMethod::Active(_old), InputMethod::Active(new_im), _)
+@@ -576,6 +583,52 @@
+         }
+     }
+ 
++    /// Explicit desktop show survives both focus and terminal destruction.
++    #[test]
++    fn desktop_show_survives_terminal_exit() {
++        let now = Instant::now();
++        let mut state = Application {
++            persistent_visibility: true,
++            ..application_with_fake_output(now)
++        }.apply_event(Event::Visibility(visibility::Event::ForceVisible), now);
++        for _ in 0..3 {
++            state = state.apply_event(Event::InputMethod(InputMethod::Active(imdetails_new())), now);
++            state = state.apply_event(Event::InputMethod(InputMethod::InactiveSince(now)), now);
++            assert_matches!(state.get_outcome(now + Duration::from_secs(1)).panel,
++                animation::Outcome::Visible{..});
++        }
++        // A subsequent panel toggle or landscape transition still hides it.
++        state = state.apply_event(Event::Visibility(visibility::Event::ForceHidden), now);
++        assert_eq!(state.get_outcome(now).panel, animation::Outcome::Hidden);
++    }
++
++    #[test]
++    fn desktop_hide_survives_focus_changes() {
++        let now = Instant::now();
++        let mut state = Application {
++            persistent_visibility: true,
++            ..application_with_fake_output(now)
++        }.apply_event(Event::Visibility(visibility::Event::ForceHidden), now);
++        state = state.apply_event(Event::InputMethod(InputMethod::Active(imdetails_new())), now);
++        assert_eq!(state.get_outcome(now).panel, animation::Outcome::Hidden);
++        state = state.apply_event(Event::InputMethod(InputMethod::InactiveSince(now)), now);
++        assert_eq!(state.get_outcome(now).panel, animation::Outcome::Hidden);
++        state = state.apply_event(Event::Visibility(visibility::Event::ForceVisible), now);
++        assert_matches!(state.get_outcome(now).panel, animation::Outcome::Visible{..});
++    }
++
++    #[test]
++    fn desktop_unforced_input_still_hides() {
++        let now = Instant::now();
++        let state = Application {
++            persistent_visibility: true,
++            ..application_with_fake_output(now)
++        }.apply_event(Event::InputMethod(InputMethod::Active(imdetails_new())), now)
++            .apply_event(Event::InputMethod(InputMethod::InactiveSince(now)), now);
++        assert_eq!(state.get_outcome(now + Duration::from_secs(1)).panel,
++            animation::Outcome::Hidden);
++    }
++
+     /// Test the original delay scenario: no flicker on quick switches.
+     #[test]
+     fn avoid_hide() {
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -105,7 +105,10 @@
+         // Set up channels
+         let (sender, receiver) = MainContext::channel(Priority::default());
+         let now = Instant::now();
+-        let state_manager = driver::Threaded::new(sender, state::Application::new(now));
++        let mut app = state::Application::new(now);
++        app.persistent_visibility = std::env::var("SQUEEKBOARD_PERSISTENT_VISIBILITY")
++            .map(|value| value == "1").unwrap_or(false);
++        let state_manager = driver::Threaded::new(sender, app);
+ 
+         debug::init(state_manager.clone());
+ 
