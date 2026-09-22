@@ -135,7 +135,7 @@
     "version": "0.43",
     "source_version": "0.43",
     "directory": "pishutdown",
-    "pkgrel": 2
+    "pkgrel": 3
   },
   "pi-greeter": {
     "version": "1.3",
