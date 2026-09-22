@@ -1,6 +1,6 @@
 --- a/src/pi-greeter.c
 +++ b/src/pi-greeter.c
-@@ -1146,6 +1146,28 @@
+@@ -1146,6 +1146,43 @@
      g_key_file_free (config);
  }
  
@@ -10,6 +10,21 @@
 +    GDBusConnection *bus = g_bus_get_sync (G_BUS_TYPE_SESSION, NULL, NULL);
 +    (void) button;
 +    (void) data;
++    if (g_getenv ("RPD_GREETER_PORTRAIT_OSK"))
++    {
++        GdkRectangle geometry;
++        GdkDisplay *display = gtk_widget_get_display (GTK_WIDGET (password_entry));
++        GdkWindow *window = gtk_widget_get_window (GTK_WIDGET (password_entry));
++        GdkMonitor *monitor = window ? gdk_display_get_monitor_at_window (display, window)
++                                    : gdk_display_get_monitor (display, 0);
++        if (!monitor) { if (bus) g_object_unref (bus); return; }
++        gdk_monitor_get_geometry (monitor, &geometry);
++        if (geometry.width >= geometry.height)
++        {
++            if (bus) g_object_unref (bus);
++            return;
++        }
++    }
 +    if (!bus) return;
 +    g_dbus_connection_call (bus, "sm.puri.OSK0", "/sm/puri/OSK0",
 +        "sm.puri.OSK0", "SetVisible", g_variant_new ("(b)", TRUE),
@@ -29,7 +44,7 @@
  static void draw_windows (void)
  {
      GdkDisplay *display = gdk_display_get_default ();
-@@ -1169,6 +1191,18 @@
+@@ -1169,6 +1206,18 @@
      cancel_button = GTK_BUTTON (gtk_builder_get_object (builder, "cancel_button"));
      login_button = GTK_BUTTON (gtk_builder_get_object (builder, "login_button"));
  

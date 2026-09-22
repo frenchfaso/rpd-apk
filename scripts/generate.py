@@ -17,6 +17,7 @@ for name,m in lock.items():
  pkg=NAMES[name];p=ROOT/'ports'/pkg;p.mkdir(parents=True,exist_ok=True)
  asset=name in ['pixtrix-theme','pixtrix-icons','rpd-metas','rpi-chromium-mods']
  license='MIT' if name=='wf-panel-pi' else 'GPL-2.0-or-later' if asset or name in ['pcmanfm-pi','pplug-netman','pi-greeter','lxtask','gtk2-engines-pixflat'] else 'BSD-3-Clause'
+ if name=='rpd-metas':license='BSD-3-Clause'
  if name=='qtstyleplugins-src':license='GPL-3.0-only'
  if name in ['pplug-menu','gui-runcmd']:license='BSD-3-Clause AND GPL-2.0-or-later'
  depends='rpd-panel' if name.startswith('wfplug-') or name.startswith('pplug-') else ''
@@ -37,7 +38,7 @@ for name,m in lock.items():
  if name=='pplug-volumepulse':depends+=' pipewire-pulse wireplumber'
  if name=='pplug-bluetooth':depends+=' bluez'
  if name=='lxtask':depends='!lxtask'
- if name=='pi-greeter':depends='lightdm rpd-theme rpd-icons'
+ if name=='pi-greeter':depends='lightdm rpd-theme rpd-icons rpd-menu-data font-nunito'
  if name=='pishutdown':depends='swaylock usbutils'
  if name=='pixtrix-icons':depends='adwaita-icon-theme'
  # Retain the original GTK2 engine for the Qt5 GTK style used by VLC.
@@ -133,7 +134,7 @@ build() {
  'rpi-chromium-mods':'python3 \"$srcdir/prepare-defaults.py\" \"$builddir\" \"$pkgdir\"',
  'pixtrix-theme':'mkdir -p "$pkgdir/usr/share"\n    cp -a usr/share/themes "$pkgdir/usr/share/"',
  'pixtrix-icons':'mkdir -p "$pkgdir/usr/share/icons"\n    cp -a PiXtrix "$pkgdir/usr/share/icons/"',
- 'rpd-metas':'mkdir -p "$pkgdir/etc/xdg/rpd/menus" "$pkgdir/usr/share"\n    cp common/etc/xdg/menus/rpd-applications.menu "$pkgdir/etc/xdg/rpd/menus/"\n    cp -a common/usr/share/desktop-directories common/usr/share/raspi-ui-overrides "$pkgdir/usr/share/"\n    mkdir -p "$pkgdir/etc/xdg/rpd"\n    cp -a common/etc/xdg/qt5ct common/etc/xdg/qt6ct "$pkgdir/etc/xdg/rpd/"\n    sed -i "/x-www-browser.desktop/d; /Thonny.desktop/d; /glade.desktop/d" "$pkgdir/usr/share/raspi-ui-overrides/applications/mimeapps.list"',
+ 'rpd-metas':'mkdir -p "$pkgdir/etc/xdg/rpd/menus" "$pkgdir/usr/share"\n    cp common/etc/xdg/menus/rpd-applications.menu "$pkgdir/etc/xdg/rpd/menus/"\n    cp -a common/usr/share/desktop-directories common/usr/share/raspi-ui-overrides common/usr/share/raspberrypi-artwork common/usr/share/rpd-wallpaper "$pkgdir/usr/share/"\n    mkdir -p "$pkgdir/etc/xdg/rpd"\n    cp -a common/etc/xdg/qt5ct common/etc/xdg/qt6ct "$pkgdir/etc/xdg/rpd/"\n    sed -i "/x-www-browser.desktop/d; /Thonny.desktop/d; /glade.desktop/d" "$pkgdir/usr/share/raspi-ui-overrides/applications/mimeapps.list"',
  }[name]
  if name=='rpd-metas':body+='\n    update-desktop-database \"$pkgdir/usr/share/raspi-ui-overrides/applications\"'
  if name=='rc-gui':body+='\n    install -Dm755 "$srcdir/rpd-localisation" "$pkgdir/usr/bin/rpd-localisation"\n    python3 "$srcdir/generate-data.py" "$pkgdir/usr/share/rpd-localisation"'

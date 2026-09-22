@@ -9,6 +9,7 @@ settings_dir = config_home/'rpd'
 settings_dir.mkdir(parents=True, exist_ok=True)
 disabled = settings_dir/'autorotate-disabled'
 parser = argparse.ArgumentParser()
+parser.add_argument('--greeter', action='store_true', help='Rotate the active login screen and enable its keyboard only in portrait')
 actions = parser.add_mutually_exclusive_group()
 for name in ('enable', 'disable', 'status', 'reset-touch'):
     actions.add_argument('--'+name, action='store_true')
@@ -89,6 +90,8 @@ def apply():
         if transform in ('90', '270'): width, height = height, width
         keyboard = policy.committed(orientation, height > width)
         if keyboard is not None:
+            if args.greeter:
+                Gio.Settings.new('org.gnome.desktop.a11y.applications').set_boolean('screen-keyboard-enabled', keyboard)
             bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
             bus.call_sync('sm.puri.OSK0', '/sm/puri/OSK0', 'sm.puri.OSK0', 'SetVisible',
                           GLib.Variant('(b)', (keyboard,)), None, Gio.DBusCallFlags.NONE, 3000, None)
@@ -114,6 +117,8 @@ def reconcile(*unused):
     wanted = (not disabled.exists() and value(session, 'Active', False)
               and not value(session, 'Remote', True) and not value(session, 'LockedHint', False)
               and value(sensor, 'HasAccelerometer', False))
+    if args.greeter:
+        wanted = wanted and value(session, 'Class') == 'greeter'
     if not sensor.get_name_owner():
         claimed = False
     try:

@@ -3,4 +3,8 @@
 gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true
 [ ! -f /etc/xdg/rpd/greeter/config.kanshi ] || kanshi -c /etc/xdg/rpd/greeter/config.kanshi &
 squeekboard &
+if [ -f /etc/xdg/rpd/autorotate.conf ] && command -v rpd-autorotate >/dev/null; then
+    export RPD_GREETER_PORTRAIT_OSK=1
+    rpd-autorotate --greeter &
+fi
 /usr/sbin/pi-greeter &

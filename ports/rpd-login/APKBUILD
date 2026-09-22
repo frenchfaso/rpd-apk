@@ -1,6 +1,6 @@
 pkgname=rpd-login
 pkgver=0.1.0
-pkgrel=29
+pkgrel=30
 pkgdesc="LightDM with the Raspberry Pi Wayland greeter and on-screen keyboard"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
@@ -16,8 +16,8 @@ package() {
     install -Dm644 "$srcdir/60-rpd.conf" "$pkgdir/etc/lightdm/lightdm.conf.d/60-rpd.conf"
 }
 sha512sums="
-91565b7e739532ce9a1b3e1d689cacac10147554b9a16e28d524566a4e9328b4758fb560bb1a62aa8bc5f090b1089e5e2317ca0efeeb31ce705d5e6f770dac11  rpd-greeter-session
-60619ed8f223c03f16fc7d49f61cba5f20ed0a3f56f2c5afa905e82dc6aa1b2b7bc72c3037fcabc67297d2c5627c15e45f9d191d294bf826879e570205bd8767  greeter-autostart
+85fa1ab88cce07d09ddd6501cf79cdd49749f53805211c6c7982814cbf7704b182c9ba2bda9a2c206976d11dc1bc33b42150e9db04d924781b7c6b307ba006f4  rpd-greeter-session
+cc5cd8065ef5cc3df727e7dfdaedad41e1b2db87193bd6df60b8b220ab0910240de5651e09f4c4ba2dc283b17a972a00b48f7c90751a47f87c126ae0756b205d  greeter-autostart
 6d8ffcec7f96f871fa40e359f95cf739ac8278b1ac2b408cae886c3699048d8654e27c30829da25531d9a7aed500a60a87d2d9e2b5a2814ab3f14036055418de  greeter-rc.xml
 0c803814921635c2721077fe07e24f37231f975685dfa7d54e03834795f8648b0b42c30bebda3c8972a0a6e626307aab0f4cc91bcb4814e57f09ae47ed998614  rpd-greeter-labwc.desktop
 d20e18f25b5f02b6a30ad8808d1c0ffe3bd2527b4610a6768ddb2db8e894e45b4b44aafc7d26c6207b4f8d4adca19f93a33d75136d80ba1f3ec004caef44b4d6  60-rpd.conf

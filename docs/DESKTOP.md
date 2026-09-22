@@ -141,3 +141,23 @@ VLC uses Raspberry's published GTK2 engine and Qt GTK2 style/platform plugin, sh
 The session installs `90-rpd-desktop-audio.conf` under its XDG_CONFIG_DIRS, disabling postmarketOS mobile role loopbacks only in this desktop session. Streams use WirePlumber's standard selected-output routing. On M10, VLC was waiting indefinitely for activation of the Multimedia role loopback despite connected A2DP headphones. Direct routing produced active stereo links to the Bluetooth sink; native pw-play and VLC with repeat disabled completed the four-second WAV. The user's repeat preference is not changed. Physical audibility confirmation remains separate.
 
 Configuration lookup: https://pipewire.pages.freedesktop.org/wireplumber/daemon/locations.html
+
+## M10 login screen
+
+LightDM's private labwc session starts `rpd-autorotate --greeter` when the target
+rotation configuration is installed. It claims SensorProxy only for its active,
+local greeter session and exits with the greeter process group at login. A private
+copy of the compositor configuration under XDG_RUNTIME_DIR lets it set the same
+Goodix output mapping as the desktop without making /etc writable to LightDM.
+
+The greeter keyboard follows portrait orientation. Landscape disables the screen
+keyboard setting and hides Squeekboard; the password-entry/manual keyboard action
+also checks monitor geometry on this profile. Other targets retain the ordinary
+manual keyboard behavior. Raspberry's RPiSystem wallpaper, user logo, PiXtrix theme
+and Nunito font are used from the pinned ARM packages. Artwork is installed from
+rpd-metas, with its BSD-3-Clause copyright, and follows the existing upstream
+release tracker.
+
+Verified on the M10: login screen portrait/landscape rotation, aligned touch,
+keyboard visible only in portrait (including password-field taps in landscape),
+and original wallpaper. The user confirmed the combined result.
