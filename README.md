@@ -1,44 +1,44 @@
-# Raspberry Pi Desktop per Lenovo M10
+# Raspberry Pi Desktop for Lenovo M10
 
-Desktop Raspberry Pi OS **ARM Trixie** su postmarketOS/Alpine, con menu, tema,
-LightDM, Chromium, VLC e utility essenziali. Include le integrazioni M10 per touch,
-rotazione, tastiera virtuale, Bluetooth, USB OTG, luminosità e batteria.
-È un port del desktop: il sistema resta postmarketOS, aggiornabile tramite APK.
+The **Raspberry Pi OS ARM Trixie** desktop on postmarketOS/Alpine, with its menu,
+theme, LightDM login, Chromium, VLC and essential utilities. Includes M10 support
+for touch, rotation, the on-screen keyboard, Bluetooth, USB OTG, brightness and battery.
+This ports the desktop; the underlying OS remains postmarketOS, managed through APK.
 
-## Installazione
+## Install
 
-Per **Lenovo Tab M10 TB-X505L**, già avviato con **postmarketOS edge aarch64,
-systemd**, Wi-Fi funzionante e un utente esistente con `sudo`.
-Usare un’installazione senza il profilo console/Buffyboard: LightDM sarà il login principale.
-Questi comandi non installano postmarketOS e non sbloccano il tablet.
+Requires a **Lenovo Tab M10 TB-X505L** already running **postmarketOS edge aarch64
+with systemd**, working Wi-Fi and an existing user with `sudo` access.
+Use an installation without the console/Buffyboard profile: LightDM becomes the main login.
+These commands do not install postmarketOS or unlock the tablet.
 
 ```sh
-# Aggiungi repository e chiave di firma; aggiorna l’indice APK.
+# Add the repository and signing key, then refresh the APK index.
 wget https://raw.githubusercontent.com/frenchfaso/rpd-apk/main/scripts/install-repository.sh
 sudo sh install-repository.sh
 
-# Installa il desktop e configura i servizi.
+# Install the desktop and configure host services.
 sudo apk add rpd-desktop-m10
 sudo rpd-configure-host frenchfaso
 sudo reboot
 ```
 
-Sostituisci `frenchfaso` con il tuo utente. Al riavvio accedi dal login grafico.
+Replace `frenchfaso` with your username. Sign in at the graphical login after rebooting.
 
-## Aggiornamenti
+## Update
 
 ```sh
 sudo apk update && sudo apk upgrade
 ```
 
-GitHub Actions segue le release ufficiali dei componenti Raspberry e pubblica gli APK
-firmati dopo build e verifiche. Le modifiche upstream incompatibili possono richiedere
-intervento manuale. I pacchetti specifici delle board Raspberry sono esclusi.
-Gli aggiornamenti del kernel non vengono bloccati: i moduli M10 richiedono una build
-compatibile e possono restare temporaneamente inattivi.
+GitHub Actions tracks official Raspberry component releases and publishes signed
+APKs after building and testing. Incompatible upstream changes may require manual
+maintenance. Raspberry board-specific packages are excluded.
+Official kernel updates are never blocked: M10 modules require a matching build
+and may remain temporarily unavailable after a kernel upgrade.
 
-Il metapacchetto ricrea desktop e integrazioni, non file personali, credenziali Wi-Fi
-o storico di calibrazione. Percentuale e autonomia della batteria sono stime.
+The metapackage restores the desktop and integrations, not personal files, Wi-Fi
+credentials or battery calibration history. Battery charge and runtime are estimates.
 
-Dettagli: [desktop](docs/DESKTOP.md), [batteria](docs/BATTERY-TELEMETRY.md),
-[USB OTG](docs/M10-USB-OTG.md), [build e repository](docs/REPOSITORY.md).
+Details: [desktop](docs/DESKTOP.md), [battery](docs/BATTERY-TELEMETRY.md),
+[USB OTG](docs/M10-USB-OTG.md), [building and publishing](docs/REPOSITORY.md).
