@@ -164,3 +164,12 @@ release tracker.
 Verified on the M10: login screen portrait/landscape rotation, aligned touch,
 keyboard visible only in portrait (including password-field taps in landscape),
 and original wallpaper. The user confirmed the combined result.
+
+Desktop startup performs a bounded `rpd-autorotate --initial-only` pass before
+starting panel, desktop or keyboard clients. It uses SensorProxy's current
+orientation (retained across the greeter handoff) without the movement debounce,
+while preserving active/local/unlocked session checks and the user's rotation
+disable flag. The normal service handles subsequent movement and keyboard state.
+An unavailable sensor or timeout must not block login. Flat/undefined sensor
+readings are still ignored; this is sensor-state reuse, not a persisted greeter
+compositor configuration. Custom kanshi profiles remain independent.

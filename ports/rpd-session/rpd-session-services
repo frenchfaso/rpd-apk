@@ -10,6 +10,11 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 compositor=${LABWC_PID:?labwc must export LABWC_PID}
+# Finish initial rotation before any desktop/panel/keyboard client can map.
+# Failure or unavailable sensors must never prevent a usable session.
+if [ -f /etc/xdg/rpd/autorotate.conf ] && command -v rpd-autorotate >/dev/null; then
+    timeout 8 rpd-autorotate --initial-only || echo 'Initial rotation unavailable; continuing session' >&2
+fi
 # Create locale-aware Desktop/Documents/Downloads/etc. without overwriting choices.
 xdg-user-dirs-update
 # D-Bus-activated GVFS, keyring and portals must inherit this Wayland session.

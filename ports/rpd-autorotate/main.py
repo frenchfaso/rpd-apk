@@ -11,7 +11,7 @@ disabled = settings_dir/'autorotate-disabled'
 parser = argparse.ArgumentParser()
 parser.add_argument('--greeter', action='store_true', help='Rotate the active login screen and enable its keyboard only in portrait')
 actions = parser.add_mutually_exclusive_group()
-for name in ('enable', 'disable', 'status', 'reset-touch'):
+for name in ('enable', 'disable', 'status', 'reset-touch', 'initial-only'):
     actions.add_argument('--'+name, action='store_true')
 args = parser.parse_args()
 if args.enable or args.disable or args.status:
@@ -89,7 +89,7 @@ def apply():
         width, height = mode['width'], mode['height']
         if transform in ('90', '270'): width, height = height, width
         keyboard = policy.committed(orientation, height > width)
-        if keyboard is not None:
+        if keyboard is not None and not args.initial_only:
             if args.greeter:
                 Gio.Settings.new('org.gnome.desktop.a11y.applications').set_boolean('screen-keyboard-enabled', keyboard)
             bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
@@ -157,6 +157,20 @@ user.connect('g-properties-changed', display_session_changed)
 monitor = Gio.File.new_for_path(str(settings_dir)).monitor_directory(Gio.FileMonitorFlags.NONE, None)
 monitor.connect('changed', reconcile)
 display_session_changed()
+if args.initial_only:
+    # SensorProxy retains the orientation observed by the greeter. Apply it before
+    # desktop clients start, without the debounce used for subsequent movement.
+    # No keyboard call here: Squeekboard has not been started yet.
+    clear_timer = pending_timer
+    if clear_timer is not None:
+        GLib.source_remove(clear_timer)
+        pending_timer = None
+    if claimed and policy.pending:
+        policy.deadline = time.monotonic()
+        apply()
+    success = policy.applied is not None
+    stop()
+    raise SystemExit(0 if success or disabled.exists() or not value(sensor, 'HasAccelerometer', False) else 1)
 for sig in (signal.SIGINT, signal.SIGTERM): GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, sig, stop)
 try: loop.run()
 finally: stop()
