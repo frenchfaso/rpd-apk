@@ -14,7 +14,7 @@ source="80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm
     kernel.config Makefile m10_firmware_backlight.c
     rpd-backlight-m10.service rpd-backlight-m10-load
     m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset
-    m10_battery.c m10_battery_temperature.h m10-adc5-battery.patch rpd-battery-m10-load rpd-battery-m10.service"
+    m10_battery.c m10_battery_temperature.h m10-adc5-battery.diff rpd-battery-m10-load rpd-battery-m10.service"
 builddir="$srcdir/linux-7.1.3-r1"
 
 build() {
@@ -35,7 +35,9 @@ build() {
     cp "$srcdir/Makefile" "$srcdir/m10_firmware_backlight.c" "$srcdir/m10_otg_id.c" "$srcdir/m10_otg_vbus.c" "$srcdir/backlight-module/"
     cp "$srcdir/m10_battery.c" "$srcdir/m10_battery_temperature.h" "$srcdir/backlight-module/"
     cp drivers/iio/adc/qcom-spmi-adc5.c "$srcdir/backlight-module/m10_adc5_battery.c"
-    patch -d "$srcdir/backlight-module" -p0 < "$srcdir/m10-adc5-battery.patch"
+    # .diff avoids abuild applying this to the kernel during default_prepare.
+    # Only the standalone module copy receives the battery ADC changes.
+    patch -d "$srcdir/backlight-module" -p0 < "$srcdir/m10-adc5-battery.diff"
     make LLVM=1 M="$srcdir/backlight-module" modules
 }
 
@@ -113,7 +115,7 @@ c5b2c1eedc44b6cbfd718808ef5abd2e0d28191c7cedb1132eb5a78c3bf396a4e05d56cd37cb321c
 203a575e6a5955b708c5ff73956774803aaad67a9652fe0965869a3cfb6cc56dac7c5da2e4af01e7e46a12121ffde8d147cd67fd6f023f28698c7ddc04179570  80-rpd-usb-otg-m10.preset
 a75a234a8ce9078746828d2c4f15376cdc40bcfb61d1db84ef36006b3fd2696a2244a3e01f4688700c751142c36249a874d054da7fd393baad5248286ac5eb1d  m10_battery.c
 49e1db7685d1f4033a778a6dbcad19d4593b4cdc9fd201da331aa5cc1749e102d27ada3da5ca7861531dee1874267d49748dedc74de4906fff12f13fe56cf492  m10_battery_temperature.h
-dbe2c4fa198d417cd6a14f3f4e098a394dd64a55bbcda5a42c711fb2825ecd74951433f1c5afa1e25fa260c38eb7a993706a41a28f998a31fdce15aa658f399e  m10-adc5-battery.patch
+dbe2c4fa198d417cd6a14f3f4e098a394dd64a55bbcda5a42c711fb2825ecd74951433f1c5afa1e25fa260c38eb7a993706a41a28f998a31fdce15aa658f399e  m10-adc5-battery.diff
 fb3f4468669d40a7698b5dd97b504684d64afb920c12aab957741b0e311592f8e4f9093126aee92d281f0c9ef1feb765da4d1fe2aad81c4c5ac63deb56f6abac  rpd-battery-m10-load
 eb1706d6d3e788e1d0c5d5100bd035d9bf00d2421b729ca6948c658fbe4d84a57f3e59741e321bb79149da74f98eb0d9b31dd8c42f40ebe31d1e41311d7d8e6f  rpd-battery-m10.service
 "
