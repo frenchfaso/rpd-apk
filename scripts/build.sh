@@ -3,8 +3,11 @@
 set -eu
 cd "$(dirname "$0")/.."
 [ "$(uname -m)" = aarch64 ] || { echo 'Native aarch64 build required' >&2; exit 1; }
-sh scripts/configure-pmos-build-repo.sh
-sh scripts/test-kernel-upgrade-guard.sh
+# pmOS installs modules under /usr; Alpine's depmod still reads /lib.
+# This alias is confined to the disposable test/build container.
+mkdir -p /usr/lib/modules
+[ -e /lib/modules ] || ln -s /usr/lib/modules /lib/modules
+sh scripts/test-kernel-priority.sh
 apk add --no-cache alpine-sdk abuild-rootbld meson samurai python3 git sudo
 # Keep shared build dependencies installed between ports.
 apk add --no-cache pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev networkmanager-dev libnma-dev libsecret-dev pulseaudio-dev
@@ -28,7 +31,6 @@ cp -a . /home/builder/rpd-build/
 chown -R builder:builder /home/builder/rpd-build /home/builder/packages
 printf '\n/home/builder/packages/ports\n' >> /etc/apk/repositories
 for pkg in rpd-backlight-m10 rpd-settings-backend rpd-autorotate labwc gtk-layer-shell rpd-chromium-defaults rpd-gtk2-engine rpd-qt-gtk2 rpd-theme rpd-icons rpd-menu-data rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-file-manager rpd-ejecter rpd-network rpd-volume rpd-battery rpd-shutdown rpd-bluetooth rpd-greeter rpd-task-manager rpd-control-center rpd-appearance rpd-run rpd-screenshot rpd-menu-editor rpd-shortcuts rpd-localisation rpd-input-settings rpd-classic-menu rpd-display-settings rpd-printer-settings rpd-bookshelf rpd-session rpd-login rpd-desktop-lite rpd-desktop-browser rpd-desktop-m10; do
-    if [ "$pkg" = rpd-backlight-m10 ]; then apk add linux-postmarketos-qcom-msm89x7@pmos; fi
     su builder -c "cd /home/builder/rpd-build/ports/$pkg && abuild -r"
     apk update
     if [ "$pkg" = gtk-layer-shell ]; then apk add --upgrade gtk-layer-shell gtk-layer-shell-dev; fi

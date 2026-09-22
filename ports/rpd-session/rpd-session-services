@@ -49,6 +49,11 @@ start xsettingsd -c "${XDG_CONFIG_HOME:-$HOME/.config}/xsettingsd/xsettingsd.con
 if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/kanshi/config" ]; then
     if [ "$managed" = 1 ]; then systemctl --user start rpd-kanshi.service; else start kanshi; fi
 fi
+# This service needs the compositor environment imported above. Start it
+# explicitly: lxsession's XDG runner may filter OnlyShowIn=labwc entries.
+if [ -f /etc/xdg/rpd/autorotate.conf ] && command -v rpd-autorotate >/dev/null; then
+    if [ "$managed" = 1 ]; then systemctl --user start rpd-autorotate.service; else start rpd-autorotate; fi
+fi
 # Same XDG autostart runner as Raspberry Pi OS; honours per-user overrides.
 if [ "$managed" = 1 ]; then
     start systemd-run --user --scope --unit=rpd-autostart --property=PartOf=rpd-session.target lxsession-xdg-autostart

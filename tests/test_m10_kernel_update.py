@@ -40,7 +40,8 @@ class KernelUpdateTests(unittest.TestCase):
         self.config=self.config.replace(self.old_ver,self.new_ver)
         u.main()
         text=(self.port/'APKBUILD').read_text()
-        self.assertIn('linux-postmarketos-qcom-msm89x7='+self.new_ver+'-r0 ',text)
+        self.assertIn('_kernel_apk_version='+self.new_ver+'-r0',text)
+        self.assertNotIn('depends="linux-postmarketos',text)
         self.assertIn('linux-v'+self.new_ver+'-r1.tar.gz',text)
         self.assertIn('expected='+self.new_ver+'-msm89x7',(self.port/'rpd-backlight-m10-load').read_text())
         for name in ['kernel.config','rpd-backlight-m10-load']:

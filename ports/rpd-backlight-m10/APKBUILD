@@ -6,7 +6,8 @@ url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="GPL-2.0-only"
 install="rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade"
-depends="linux-postmarketos-qcom-msm89x7=7.1.3-r0 kmod brightnessctl brightnessctl-udev"
+_kernel_apk_version=7.1.3-r0
+depends="kmod brightnessctl brightnessctl-udev"
 makedepends="clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3"
 source="linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
     kernel.config Makefile m10_firmware_backlight.c
@@ -61,5 +62,5 @@ ffe6bd375fecf5d69c586d821605af94f8d5665ce51fb9471627b52ff54712f1de3bf1e64f65125f
 ebcc24e9a3cf1ae5ee93c6297db4a05a7d4fa816f957212043c634487f8b91fd7ede60fcf70eacd215bfeee8149e98bf22675f59c9300df95f3bd1cbeedc896c  Makefile
 a4806415cd529b1528abf2b8cb6bff447ac1ecae347f67870a8090ca8eccc4b329183b9eca4c343011e1ba88981be1236e8f5b57f402f0712c56e7f644b23df7  m10_firmware_backlight.c
 c6a52f9fdef8e19515aa7bf1de0bd6ec848901f8985445d8043296d17cda0e94548a27695bf18196bfbdcc8682e956681630b22706613773339935b9dbe2350b  rpd-backlight-m10.service
-b3da3820a546d6ac92a08b7f96b13cc2e50f6cad04a2ab6f1c685f90b66a63cbd6106c4be243fe59e9b69bc61a389d1163ff23ca10b305fd3efe4cb58e4a8458  rpd-backlight-m10-load
+436bc87d387c383779e59ae887e0998f42c2861ff91d9a4bbafd7217f114346404d79e3ab3a19d4db71b9542b0be1023b07020afb3a4a205385070eef63e2b4b  rpd-backlight-m10-load
 "

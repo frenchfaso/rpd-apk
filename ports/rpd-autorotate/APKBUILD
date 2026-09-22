@@ -20,7 +20,6 @@ package() {
     install -Dm755 "$srcdir/rpd-autorotate" "$pkgdir/usr/bin/rpd-autorotate"
     install -Dm755 "$srcdir/rpd-autorotate-start" "$pkgdir/usr/libexec/rpd-autorotate-start"
     install -Dm644 "$srcdir/rpd-autorotate.service" "$pkgdir/usr/lib/systemd/user/rpd-autorotate.service"
-    install -Dm644 "$srcdir/rpd-autorotate.desktop" "$pkgdir/etc/xdg/rpd/autostart/rpd-autorotate.desktop"
 }
 sha512sums="
 795afd589d10a55a3af67383799c76e3bf83aae18c21181c515b592eb7271116e31c96410a9bdf4ac59971df2ec37a4b4a461e3203c27a320323a5faebec2ead  touchmap.py

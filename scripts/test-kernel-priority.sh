@@ -16,19 +16,20 @@ makepkg() {
 index() { apk --allow-untrusted mkndx --output "$testroot/repo/index.adb" "$testroot"/repo/*.apk; }
 runapk() { apk --root "$testroot/root" --arch aarch64 --repositories-file /dev/null --repository "$testroot/repo/index.adb" --allow-untrusted --no-cache "$@"; }
 makepkg test-kernel 1.0-r0
-makepkg test-backlight 1.0-r0 test-kernel=1.0-r0
+makepkg test-backlight 1.0-r0
 index
 runapk --initdb add --no-scripts test-kernel test-backlight
 makepkg test-kernel 1.0-r1
-# Rolling repositories can remove the old kernel; the installed pair must survive.
+# Rolling repositories can remove the old kernel. Backlight must not hold it.
 rm "$testroot/repo/test-kernel-1.0-r0.apk"
 index
-# Either retaining the pair or reporting a conflict is valid; no mismatch is.
-runapk upgrade --no-scripts || true
-runapk info -e test-kernel=1.0-r0
-makepkg test-backlight 1.0-r1 test-kernel=1.0-r1
+# Kernel upgrades immediately, even while only the old backlight package exists.
+runapk upgrade --no-scripts
+runapk info -e test-kernel=1.0-r1
+runapk info -e test-backlight=1.0-r0
+makepkg test-backlight 1.0-r1
 index
 runapk upgrade --no-scripts
 runapk info -e test-kernel=1.0-r1
 runapk info -e test-backlight=1.0-r1
-printf '%s\n' 'Kernel upgrade guard passed: unmatched kernel held; matched pair upgraded.'
+printf '%s\n' 'Kernel priority passed: kernel upgraded independently of the backlight module.'

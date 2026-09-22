@@ -41,7 +41,7 @@ def main():
     if not re.fullmatch(r'\d+(?:\.\d+)+-r\d+',version):
         raise ValueError('Kernel version format requires review: '+version)
     text=(PORT/'APKBUILD').read_text()
-    previous=re.search(PACKAGE+r'=(\S+)',text)[1]
+    previous=field(text,'_kernel_apk_version')
     if version==previous:
         if config != (PORT/'kernel.config').read_text():
             raise ValueError('Published kernel config changed without an APK version bump')
@@ -67,7 +67,7 @@ def main():
         raise ValueError('Compiler needs review')
     oldver=field(text,'pkgver')
     text=text.replace(oldver,pkgver)
-    text=re.sub(PACKAGE+r'=[^ ]+',PACKAGE+'='+version,text)
+    text=re.sub(r'^_kernel_apk_version=.*$', '_kernel_apk_version='+version, text, flags=re.M)
     text=re.sub(r'clang\d+ lld\d+ llvm\d+',f'clang{clang} lld{clang} llvm{clang}',text)
     text=re.sub(r'/usr/lib/llvm\d+/bin',f'/usr/lib/llvm{clang}/bin',text)
     text=re.sub(r'^pkgrel=\d+$','pkgrel='+('0' if pkgver!=oldver else str(int(field(text,'pkgrel'))+1)),text,flags=re.M)
@@ -75,7 +75,10 @@ def main():
     (PORT/'kernel.config').write_text(config)
     for name in ['rpd-backlight-m10-load','rpd-backlight-m10.post-install','rpd-backlight-m10.post-upgrade']:
         p=PORT/name
-        p.write_text(re.sub(r'\d+(?:\.\d+)+-msm89x7',release,p.read_text()))
+        updated=re.sub(r'\d+(?:\.\d+)+-msm89x7',release,p.read_text())
+        if name=='rpd-backlight-m10-load':
+            updated=re.sub(r'^expected_apk=.*$', 'expected_apk='+version, updated, flags=re.M)
+        p.write_text(updated)
     for name in ['kernel.config','rpd-backlight-m10-load']:
         digest=hashlib.sha512((PORT/name).read_bytes()).hexdigest()
         text=re.sub(r'^[0-9a-f]{128}  '+re.escape(name)+r'$',digest+'  '+name,text,flags=re.M)

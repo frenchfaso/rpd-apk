@@ -1,8 +1,11 @@
 #!/bin/sh
 set -eu
 expected=7.1.3-msm89x7
-if [ "$(uname -r)" != "$expected" ]; then
-    echo "M10 backlight needs a module rebuilt for $(uname -r); this package supports $expected" >&2
-    exit 1
+expected_apk=7.1.3-r0
+if [ "$(uname -r)" != "$expected" ] || ! apk info -e "linux-postmarketos-qcom-msm89x7=$expected_apk" >/dev/null 2>&1; then
+    echo "M10 backlight skipped: module built for $expected (APK $expected_apk); kernel upgrades remain unrestricted."
+    exit 0
 fi
-exec modprobe m10_firmware_backlight panel=inx-jd9365-800p initial_brightness=32
+if ! modprobe m10_firmware_backlight panel=inx-jd9365-800p initial_brightness=32; then
+    echo 'M10 backlight unavailable: module rejected; retaining firmware brightness.' >&2
+fi

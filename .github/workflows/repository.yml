@@ -24,7 +24,7 @@ jobs:
           ref: main
       - name: Check signed upstream releases and allocate APK revision
         run: |
-          python3 -m unittest discover -s tests -p test_m10_kernel_update.py
+          python3 -m unittest discover -s tests -p 'test_*.py'
           docker run --rm -v "$PWD:/work" -w /work alpine:edge sh -ec 'apk add --no-cache python3; python3 scripts/update-m10-kernel.py'
           sudo chown -R "$(id -u):$(id -g)" ports/rpd-backlight-m10
           python3 scripts/update-upstream.py
