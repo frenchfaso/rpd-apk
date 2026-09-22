@@ -1,6 +1,6 @@
 --- a/src/pi-greeter.c
 +++ b/src/pi-greeter.c
-@@ -1146,6 +1146,49 @@
+@@ -1146,6 +1146,61 @@
      g_key_file_free (config);
  }
  
@@ -25,18 +25,30 @@
 +        }
 +    }
 +    if (!bus) return;
-+    /* Explicit requests override automatic landscape suppression until rotation. */
++    gboolean visible = TRUE;
++    /* Read actual visibility, including changes made by autorotation. */
 +    if (button)
 +    {
-+        GSettings *settings = g_settings_new ("org.gnome.desktop.a11y.applications");
-+        g_settings_set_boolean (settings, "screen-keyboard-enabled", TRUE);
-+        g_object_unref (settings);
++        GVariant *reply = g_dbus_connection_call_sync (bus, "sm.puri.OSK0",
++            "/sm/puri/OSK0", "org.freedesktop.DBus.Properties", "Get",
++            g_variant_new ("(ss)", "sm.puri.OSK0", "Visible"),
++            G_VARIANT_TYPE ("(v)"), G_DBUS_CALL_FLAGS_NONE, 1000, NULL, NULL);
++        if (!reply) { g_object_unref (bus); return; }
++        GVariant *value;
++        g_variant_get (reply, "(v)", &value);
++        visible = !g_variant_get_boolean (value);
++        g_variant_unref (value);
++        g_variant_unref (reply);
 +    }
++    /* Disable automatic reopening when the button explicitly hides the OSK. */
++    GSettings *settings = g_settings_new ("org.gnome.desktop.a11y.applications");
++    g_settings_set_boolean (settings, "screen-keyboard-enabled", visible);
++    g_object_unref (settings);
 +    g_dbus_connection_call (bus, "sm.puri.OSK0", "/sm/puri/OSK0",
-+        "sm.puri.OSK0", "SetVisible", g_variant_new ("(b)", TRUE),
++        "sm.puri.OSK0", "SetVisible", g_variant_new ("(b)", visible),
 +        NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
 +    g_object_unref (bus);
-+    gtk_widget_grab_focus (GTK_WIDGET (password_entry));
++    if (visible) gtk_widget_grab_focus (GTK_WIDGET (password_entry));
 +}
 +
 +static gboolean password_pressed (GtkWidget *widget, GdkEventButton *event, gpointer data)
@@ -50,7 +62,7 @@
  static void draw_windows (void)
  {
      GdkDisplay *display = gdk_display_get_default ();
-@@ -1169,6 +1212,18 @@
+@@ -1169,6 +1224,18 @@
      cancel_button = GTK_BUTTON (gtk_builder_get_object (builder, "cancel_button"));
      login_button = GTK_BUTTON (gtk_builder_get_object (builder, "login_button"));
  

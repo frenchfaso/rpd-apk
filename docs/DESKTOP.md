@@ -153,7 +153,9 @@ Goodix output mapping as the desktop without making /etc writable to LightDM.
 The greeter keyboard follows portrait orientation. Landscape disables the screen
 keyboard setting and hides Squeekboard; password-entry taps also check monitor
 geometry on this profile. The explicit keyboard button overrides landscape
-suppression and enables Squeekboard until the next orientation change. Other
+suppression and toggles Squeekboard using its actual D-Bus Visible property.
+Hiding also disables automatic reopening; the next orientation change reapplies
+the portrait/landscape policy. Other
 targets retain the ordinary manual keyboard behavior. Raspberry's RPiSystem wallpaper, user logo, PiXtrix theme
 and Nunito font are used from the pinned ARM packages. Artwork is installed from
 rpd-metas, with its BSD-3-Clause copyright, and follows the existing upstream
