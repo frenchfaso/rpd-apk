@@ -12,7 +12,7 @@ options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="https://archive.raspberrypi.com/debian/pool/main/p/pplug-batt/pplug-batt_1.11.tar.xz"
 builddir="$srcdir/pplug-batt"
-source="$source patches/0001-portable-wayland.patch"
+source="$source patches/0001-portable-wayland.patch patches/0002-unknown-capacity.patch"
 
 build() {
     abuild-meson -Db_lto=false . output
@@ -27,4 +27,5 @@ package() {
 sha512sums="
 d69030beff4faabfac01b5121cf56af966317c0069328f6a2521a7e24db56e3ab38a2ab3f871753af5a806fda0c00110f0d52faf11b7251b59b5b8cb8f59a366  pplug-batt_1.11.tar.xz
 26747a2f3580e59e7e7ccd27a56c42cc96c3a7252c397dbd4ea788a2aab602cf6f1bc92fd9f2eaf318d53f81806cad03c2ad28352d23eca847e726434d4d3572  0001-portable-wayland.patch
+3a9888d58f7d2ef9403988a6c65c3686f7d57aa8c3da6027db8ad0cb978ddda3eb090f78714dd793429c23b80424a0e3c933bd95c03b9f11e194ddb27150d301  0002-unknown-capacity.patch
 "

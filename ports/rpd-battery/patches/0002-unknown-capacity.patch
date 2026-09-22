@@ -1,0 +1,87 @@
+--- a/src/batt_sys.c
++++ b/src/batt_sys.c
+@@ -256,15 +256,25 @@
+     }
+ #endif
+ 
+-    if (b->charge_now != -1 && b->charge_full != -1)
++    if (b->charge_now >= 0 && b->charge_full > 0)
+         promille = (b->charge_now * 1000) / b->charge_full;
+-    else if (b->energy_full != -1 && b->energy_now != -1)
++    else if (b->energy_full > 0 && b->energy_now >= 0)
+         /* no charge data, let try energy instead */
+         promille = (b->energy_now * 1000) / b->energy_full;
+     else
+-        promille = 0;
+-
+-    b->percentage = (promille + 5) / 10; /* round properly */
++        promille = -1;
++
++    b->percentage = promille < 0 ? -1 : (promille + 5) / 10;
++    if (promille < 0) {
++        gchar *end;
++        gchar *capacity = parse_info_file(b, "capacity");
++        if (capacity) {
++            gint64 value = g_ascii_strtoll(capacity, &end, 10);
++            if (end != capacity && *end == '\0' && value >= 0 && value <= 100)
++                b->percentage = value;
++            g_free(capacity);
++        }
++    }
+     if (b->percentage > 100)
+         b->percentage = 100;
+ 
+@@ -274,20 +284,20 @@
+         //b->poststr = "rate information unavailable";
+         b->seconds = -1;
+     } else if (!strcasecmp(b->state, "charging")) {
+-        if (b->current_now > MIN_PRESENT_RATE) {
++        if (b->current_now > MIN_PRESENT_RATE && b->charge_full > 0 && b->charge_now >= 0) {
+             b->seconds = 3600 * (b->charge_full - b->charge_now) / b->current_now;
+             //b->poststr = " until charged";
+-        } else if (b->power_now > 0) {
++        } else if (b->power_now > 0 && b->energy_full > 0 && b->energy_now >= 0) {
+             b->seconds = 3600 * (b->energy_full - b->energy_now) / b->power_now;
+         } else {
+             //b->poststr = "charging at zero rate - will never fully charge.";
+             b->seconds = -1;
+         }
+     } else if (!strcasecmp(b->state, "discharging")) {
+-        if (b->current_now > MIN_PRESENT_RATE) {
++        if (b->current_now > MIN_PRESENT_RATE && b->charge_now >= 0) {
+             b->seconds = 3600 * b->charge_now / b->current_now;
+             //b->poststr = " remaining";
+-        } else if (b->power_now > 0) {
++        } else if (b->power_now > 0 && b->energy_now >= 0) {
+             b->seconds = 3600 * b->energy_now / b->power_now;
+         } else {
+             //b->poststr = "discharging at zero rate - will never fully discharge.";
+--- a/src/batt.c
++++ b/src/batt.c
+@@ -110,6 +110,7 @@
+     if (b)
+     {
+         battery_update (b);
++        if (!b->state || !strcasecmp (b->state, "unknown")) return b->percentage;
+         if (battery_is_charging (b))
+         {
+             if (strcasecmp (b->state, "full") == 0) *status = STAT_EXT_POWER;
+@@ -220,6 +221,18 @@
+ 
+     // read the charge status
+     capacity = charge_level (pt, &status, &time);
++    if (capacity < 0 && pt->batt)
++    {
++        const char *state = status == STAT_CHARGING ? _("Charging") :
++                            status == STAT_DISCHARGING ? _("Discharging") :
++                            status == STAT_EXT_POWER ? _("On external power") :
++                            _("Battery status unknown");
++        g_snprintf (str, sizeof str, "%s\n%s", state, _("Percentage unavailable"));
++        draw_icon (pt, -1, 0.6, 0.6, 0.6, status == STAT_CHARGING ? 1 : 0);
++        gtk_widget_set_tooltip_text (pt->tray_icon, str);
++        gtk_widget_show_all (pt->plugin);
++        return;
++    }
+     if (status == STAT_UNKNOWN) return;
+     ftime = time / 60.0;
+ 
