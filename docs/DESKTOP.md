@@ -173,3 +173,12 @@ disable flag. The normal service handles subsequent movement and keyboard state.
 An unavailable sensor or timeout must not block login. Flat/undefined sensor
 readings are still ignored; this is sensor-state reuse, not a persisted greeter
 compositor configuration. Custom kanshi profiles remain independent.
+
+The RPD session additionally reads `rpd-autorotate --initial-env` before starting
+labwc. This is a read-only SensorProxy snapshot (no sensor claim before owning
+the seat), disabled when the user has disabled autorotation. The local labwc
+adaptation accepts only normal/90/180/270 and only for the exact named output,
+applies the hint before the initial modeset and consumes it once. Thus even the
+first cursor frame can use the login screen's orientation. Other outputs and
+sessions without the hint retain upstream behavior. The bounded initial pass
+after compositor startup remains as a fallback/current-sensor check.

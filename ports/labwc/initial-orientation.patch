@@ -1,0 +1,41 @@
+--- a/src/output.c
++++ b/src/output.c
+@@ -12,6 +12,8 @@
+ #include <drm_fourcc.h>
+ #include <glib.h>
+ #include <strings.h>
++#include <stdlib.h>
++#include <string.h>
+ #include <wlr/backend/wayland.h>
+ #include <wlr/config.h>
+ #include <wlr/types/wlr_cursor.h>
+@@ -528,6 +530,29 @@
+ 	wlr_log(WLR_DEBUG, "enable output %s", wlr_output->name);
+ 	wlr_output_state_set_enabled(&output->pending, true);
+ 
++	/* Session-start snapshot: transform the first modeset, including its cursor. */
++	const char *initial_output = getenv("RPD_INITIAL_OUTPUT");
++	const char *initial_transform = getenv("RPD_INITIAL_TRANSFORM");
++	if (initial_output && initial_transform
++			&& !strcmp(initial_output, wlr_output->name)) {
++		const char *names[] = { "normal", "90", "180", "270" };
++		const enum wl_output_transform transforms[] = {
++			WL_OUTPUT_TRANSFORM_NORMAL, WL_OUTPUT_TRANSFORM_90,
++			WL_OUTPUT_TRANSFORM_180, WL_OUTPUT_TRANSFORM_270,
++		};
++		for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
++			if (!strcmp(initial_transform, names[i])) {
++				wlr_output_state_set_transform(&output->pending, transforms[i]);
++				wlr_log(WLR_INFO, "initial orientation %s: %s",
++					wlr_output->name, names[i]);
++				break;
++			}
++		}
++		/* Do not override later output reconfiguration. */
++		unsetenv("RPD_INITIAL_OUTPUT");
++		unsetenv("RPD_INITIAL_TRANSFORM");
++	}
++
+ 	if (!output_test_auto(wlr_output, &output->pending,
+ 			/* is_client_request */ false)) {
+ 		wlr_log(WLR_INFO, "mode test failed for output %s",

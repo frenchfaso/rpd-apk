@@ -30,6 +30,17 @@ done
 # Ensure touchscreen output mapping and base calibration before starting labwc.
 if [ -f /etc/xdg/rpd/autorotate.conf ] && command -v rpd-autorotate >/dev/null; then
     RPD_CONFIG_DIR="$config" rpd-autorotate --reset-touch
+    # Seed the compositor from the greeter's sensor snapshot without shell eval.
+    unset RPD_INITIAL_OUTPUT RPD_INITIAL_TRANSFORM
+    if initial=$(timeout 5 rpd-autorotate --initial-env); then
+        read -r RPD_INITIAL_OUTPUT RPD_INITIAL_TRANSFORM <<EOF
+$initial
+EOF
+        case "$RPD_INITIAL_TRANSFORM" in
+            normal|90|180|270) export RPD_INITIAL_OUTPUT RPD_INITIAL_TRANSFORM ;;
+            *) unset RPD_INITIAL_OUTPUT RPD_INITIAL_TRANSFORM ;;
+        esac
+    fi
 fi
 if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
     exec dbus-run-session -- labwc --config-dir "$config" "$@"

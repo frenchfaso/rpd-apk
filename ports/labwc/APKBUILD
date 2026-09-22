@@ -2,7 +2,7 @@
 # Maintainer: Patrycja Rosa <alpine@ptrcnull.me>
 pkgname=labwc
 pkgver=0.20.2
-pkgrel=119
+pkgrel=120
 pkgdesc="Wayland stacking compositor"
 url="https://github.com/labwc/labwc"
 arch="aarch64"
@@ -24,7 +24,7 @@ makedepends="
 	"
 subpackages="$pkgname-doc $pkgname-lang"
 source="https://github.com/labwc/labwc/archive/$pkgver/labwc-$pkgver.tar.gz
-	two-finger-tap.patch rpd-two-finger.h test-two-finger.c
+	initial-orientation.patch two-finger-tap.patch rpd-two-finger.h test-two-finger.c
 	"
 
 prepare() {
@@ -49,6 +49,7 @@ package() {
 
 sha512sums="
 68519170aa01c65e3be5ea115ebcb9173132f34febb2f3b7990ba067ea219819e2551847e91f548bf011fb3ceeae4802248153693a5e14914eb6cee889656b4d  labwc-0.20.2.tar.gz
+23572826eb1b7ffe906642c322258907665bdccbba444fea38ab9036e6e7e613b3457406cfc7d4ebd5d2eefd89ea2c54632d513fe19e584b421d37a3bd9c3959  initial-orientation.patch
 75aa2347a48f094e024b73874ad6a8032398b47dd62b793652d4b366cf79a12847b4288f415b889d22e34dd7cec6008fd6da900f96f9e9a82ef0015abf99b787  two-finger-tap.patch
 e54b422faae7ae848c4c435f3615d9cb546e59d2cb62b610965642fec553f92797ced8aced04444b4f7fdf6bbcd20cd0400b312765938c3d8dffc72c229ffe54  rpd-two-finger.h
 bed83dae4c9b9c783a2e4f0bf0b2218469f3385614621376fe0507b119bffacbcb61a63c0da2743a69089cce7f4fbc06b5a041568f24c329c640de2eb9b6ab91  test-two-finger.c

@@ -11,7 +11,7 @@ disabled = settings_dir/'autorotate-disabled'
 parser = argparse.ArgumentParser()
 parser.add_argument('--greeter', action='store_true', help='Rotate the active login screen and enable its keyboard only in portrait')
 actions = parser.add_mutually_exclusive_group()
-for name in ('enable', 'disable', 'status', 'reset-touch', 'initial-only'):
+for name in ('enable', 'disable', 'status', 'reset-touch', 'initial-only', 'initial-env'):
     actions.add_argument('--'+name, action='store_true')
 args = parser.parse_args()
 if args.enable or args.disable or args.status:
@@ -149,6 +149,14 @@ def stop(*unused):
     return GLib.SOURCE_REMOVE
 
 sensor = proxy(SENSOR, SENSOR_PATH, SENSOR)
+if args.initial_env:
+    # Read the system snapshot before the compositor owns the seat; no claim.
+    orientation = value(sensor, 'AccelerometerOrientation')
+    if (not disabled.exists() and value(sensor, 'HasAccelerometer', False)
+            and orientation in rotation_map and not any(c.isspace() for c in output)):
+        print(output, rotation_map[orientation])
+        raise SystemExit(0)
+    raise SystemExit(1)
 sensor.connect('g-properties-changed', lambda *a: (reconcile(), orientation_changed()))
 sensor.connect('notify::g-name-owner', reconcile)
 # User.Display identifies the local graphical session even for systemd user units.
