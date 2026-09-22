@@ -1,0 +1,31 @@
+pkgname=rpd-cpu-topology-m10
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Correct Lenovo M10 SDM429 CPU topology using the current official DTB"
+url="https://github.com/frenchfaso/rpd-apk"
+arch="noarch"
+license="MIT"
+# boot-deploy/mkinitfs are host integration points supplied by postmarketOS.
+# Keep the package installable in the Alpine dependency-test root as well.
+depends="python3 py3-libfdt"
+makedepends="python3 py3-libfdt"
+install="$pkgname.post-deinstall"
+source="topology.py test-topology.py 90-rpd-cpu-topology-m10 deviceinfo"
+check() {
+    cd "$srcdir"
+    python3 test-topology.py
+}
+package() {
+    install -Dm644 "$srcdir/topology.py" "$pkgdir/usr/lib/$pkgname/topology.py"
+    install -Dm755 "$srcdir/90-rpd-cpu-topology-m10" "$pkgdir/usr/share/boot-deploy/hooks/90-rpd-cpu-topology-m10"
+    install -Dm644 "$srcdir/deviceinfo" "$pkgdir/etc/deviceinfo"
+    mkdir -p "$pkgdir/usr/share/mkinitfs-triggers"
+    touch "$pkgdir/usr/share/mkinitfs-triggers/$pkgname"
+}
+
+sha512sums="
+b85bd1796a7d474edabdda2a2f8c79998deecc1e7a17b019b6686c606149a627176c32622331287554d6f62009e3c4b672dd6eb92faf3f06bdcc596e6d4202b9  topology.py
+637c63549551b0316c05c1ff5cb44917f4fbb0a0268e149d4acc455fe94ab7d8f437f1220f20416a98f4cfe9c236fe8ed2bb4145bc9a10ec51c58a74a28b32e2  test-topology.py
+4b5d656c0556fa393f8467b8c85e0b4cf813af31fd4cda992d1fc7b0ca9d98d8901199937fab92ef25dcdf7b8ab625d7457098ca78efeb3d3f95f3f80bfc9e59  90-rpd-cpu-topology-m10
+34636278cb3ef364a139330c6f808fa25d8a04b7d3caa362f5dccc39799abfb429c122d2f6891b88ea7ae19f6d2e0b6bd488b3366e64340b26cee391f9d06f0a  deviceinfo
+"

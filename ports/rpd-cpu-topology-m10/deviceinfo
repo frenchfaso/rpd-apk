@@ -1,0 +1,5 @@
+# Derive from the current official DTB; boot-deploy's hook generates this copy.
+# If the kernel changes its DTB location, retain its ordinary device selection.
+if [ -r /boot/dtbs/qcom/sdm429-lenovo-tbx505x.dtb ]; then
+    deviceinfo_dtb="rpd/sdm429-lenovo-tbx505x"
+fi
