@@ -29,7 +29,7 @@ for name,m in lock.items():
  if name=='rc-gui':depends='rpd-control-center rpd-settings-backend python3 musl-locales musl-locales-lang xkeyboard-config tzdata'
  if name=='raindrop':depends='rpd-control-center rpd-settings-backend wlr-randr kanshi procps-ng libinput-tools'
  if name=='rpinters':depends='rpd-control-center cups cups-pk-helper cups-filters'
- if name=='rp-bookshelf':depends='evince xdg-utils'
+ if name=='rp-bookshelf':depends='evince xdg-utils coreutils'
  if name=='gui-screenshot':depends='grim'
  if name=='pplug-menu':depends+=' rpd-control-center rpd-menu-editor rpd-run rpd-shutdown'
  if name=='wf-panel-pi':depends='gtk-layer-shell>=0.10.1-r100'
