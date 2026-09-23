@@ -1,6 +1,6 @@
 pkgname=rpd-backlight-m10
 pkgver=7.1.3
-pkgrel=17
+pkgrel=18
 pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"

@@ -2,7 +2,7 @@
 # Maintainer: Patrycja Rosa <alpine@ptrcnull.me>
 pkgname=labwc
 pkgver=0.20.2
-pkgrel=128
+pkgrel=129
 pkgdesc="Wayland stacking compositor"
 url="https://github.com/labwc/labwc"
 arch="aarch64"
