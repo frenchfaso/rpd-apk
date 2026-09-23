@@ -1,6 +1,6 @@
 pkgname=rpd-autorotate
 pkgver=0.1.0
-pkgrel=28
+pkgrel=29
 pkgdesc="Sensor-driven rotation and keyboard policy for convertible desktops"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
