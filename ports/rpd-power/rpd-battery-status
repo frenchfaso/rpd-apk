@@ -10,6 +10,8 @@ if data['percentage'] is None:
     print('Estimated charge: unavailable ('+data['estimate_status']+')')
 else:
     print(f"Estimated charge: ≈{data['percentage']}% ({data['method']})")
+print('Charge integration: '+data.get('integration_source', 'unknown'))
+print('Last reference: '+data.get('reference_source', 'unknown'))
 print('Capacity learning: '+data.get('learning_status', 'unknown'))
 print(f"Battery: {data['voltage_uv']/1e6:.3f} V, {data['current_ua']/1000:+.0f} mA, {data['temp_c']:.1f} °C")
 print(f"External power: {'connected' if data['usb_online'] else 'disconnected'}")

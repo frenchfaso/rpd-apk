@@ -7,6 +7,7 @@ Low-current references and voltage seeds remain unvalidated approximations.
 """
 import math
 import statistics
+from qg_model import charge_delta
 
 
 def clamp(value, low, high):
@@ -76,6 +77,8 @@ class Model:
         dt = sample['elapsed'] - p['elapsed'] if p else 0
         continuous = bool(p and sample['boot_id'] == p['boot_id'] and 0 < dt <= 45)
         reference = curve_soc(profile, sample['voltage_uv'], sample['temp_c'], sample['current_ua'] > 0)
+        integration_source = 'none'
+        interval_current = float(sample['current_ua'])
         if not continuous:
             # A brief reboot provides no new charge measurement. Preserve the
             # last estimate, without integrating unobserved current or using
@@ -88,7 +91,7 @@ class Model:
             s.update(soc=clamp(last_soc if resume else reference, 0, 99),
                      method='last-estimate-after-gap' if resume else 'voltage-seed',
                      rest_seconds=0, full_seconds=0, anchor_net_mah=None, was_full=False,
-                     learning_anchor=None, rest_reference_taken=False)
+                     learning_anchor=None, rest_reference_taken=False, pending_hardware_rest=None)
             if not resume:
                 s.update(seed_started=sample['elapsed'], seed_samples=[],
                          estimate_exhausted=False)
@@ -96,7 +99,13 @@ class Model:
                 # A seed window must not span an unobserved interval.
                 s.update(seed_started=sample['elapsed'], seed_samples=[])
         else:
-            dq = (sample['current_ua'] + p['current_ua']) / 2 * dt / 3600000
+            dq = charge_delta(p.get('qg'), sample.get('qg'), dt)
+            integration_source = 'qg-fifo' if dq is not None else 'instantaneous-samples'
+            if dq is None:
+                dq = (sample['current_ua'] + p['current_ua']) / 2 * dt / 3600000
+            else:
+                s['hardware_intervals'] = s.get('hardware_intervals', 0) + 1
+            interval_current = dq * 3600000 / dt
             s['soc'] = clamp(s['soc'] + dq * 100 / s['capacity_mah'], 0, 100)
             if s.get('anchor_net_mah') is not None:
                 s['anchor_net_mah'] += dq
@@ -112,9 +121,44 @@ class Model:
             if age >= 180:
                 s['soc'] = clamp(statistics.median(s['seed_samples']), 0, 99)
                 s['method'] = 'filtered-voltage-seed'
+                s['reference_source'] = 'loaded-voltage'
                 del s['seed_started'], s['seed_samples']
             else:
                 s['method'] = 'collecting-voltage-seed'
+        qg, old_qg = sample.get('qg'), p.get('qg') if p else None
+        hardware_reference = None
+        hardware_source = None
+        if qg and old_qg:
+            # Untimestamped hardware references need evidence of freshness.
+            # PON is only considered early in a *different* boot, with changed
+            # raw data. Never reuse a previous boot's PON during a service restart.
+            pon, old_pon = qg.get('pon'), old_qg.get('pon')
+            if (not continuous and not resume and sample['elapsed'] <= 180 and
+                    sample['boot_id'] != p['boot_id'] and pon and old_pon and
+                    pon['raw'] != old_pon['raw']):
+                hardware_reference = pon
+                hardware_source = 'qg-power-on'
+            rest, old_rest = qg.get('rest'), old_qg.get('rest')
+            if continuous and rest:
+                pending = s.get('pending_hardware_rest')
+                if not old_rest or rest['raw'] != old_rest['raw']:
+                    s['pending_hardware_rest'] = rest['raw']
+                elif pending == rest['raw']:
+                    hardware_reference = rest
+                    hardware_source = 'qg-rest'
+                    s['pending_hardware_rest'] = None
+            else:
+                s['pending_hardware_rest'] = None
+        if hardware_reference and 10 <= sample['temp_c'] <= 45:
+            s['reference_source'] = hardware_source
+            reference = curve_soc(profile, hardware_reference['voltage_uv'], sample['temp_c'], False)
+            s.update(soc=min(reference, 99.), estimate_exhausted=False,
+                     method='hardware-voltage-reference')
+            s['hardware_references'] = s.get('hardware_references', 0) + 1
+            s.pop('seed_started', None)
+            s.pop('seed_samples', None)
+            if s['reference_source'] == 'qg-rest':
+                self.rest_reference(reference, {**sample, 'current_ua': hardware_reference['current_ua']})
         if sample['current_ua'] > 100000:
             s.update(learning_anchor=None, anchor_net_mah=None)
         full = (sample['usb_online'] and sample['charger_state'] == 5 and
@@ -125,7 +169,7 @@ class Model:
             if not s.get('was_full'):
                 s['full_references'] += 1
             s.update(soc=100., method='full-charge-reference', anchor_net_mah=0., was_full=True,
-                     estimate_exhausted=False,
+                     estimate_exhausted=False, reference_source='charger-termination',
                      learning_anchor={'soc': 100., 'temp_c': sample['temp_c'], 'full': True})
             s.pop('seed_started', None)
             s.pop('seed_samples', None)
@@ -152,6 +196,7 @@ class Model:
             else:
                 s['soc'] += clamp((reference - s['soc']) * .02, -.1, .1)
             s['method'] = 'rest-corrected'
+            s['reference_source'] = 'low-current-voltage'
             if not s.get('rest_reference_taken'):
                 self.rest_reference(reference, sample)
                 s['rest_reference_taken'] = True
@@ -165,7 +210,7 @@ class Model:
             s.update(rate_ua=float(sample['current_ua']), rate_seconds=0, rate_mode=mode)
         else:
             alpha = dt / (300 + dt)
-            s['rate_ua'] += alpha * (sample['current_ua'] - s['rate_ua'])
+            s['rate_ua'] += alpha * (interval_current - s['rate_ua'])
             s['rate_seconds'] += dt
         time_empty = time_full = None
         if available and s['rate_seconds'] >= 180:
@@ -184,6 +229,11 @@ class Model:
                 'learning_status': 'waiting-for-quiet-reference' if s.get('learning_anchor') else
                     'waiting-for-first-reference',
                 'capacity_candidates': s.get('capacity_candidates', 0),
+                'integration_source': integration_source,
+                'interval_current_ua': round(interval_current) if continuous else None,
+                'hardware_intervals': s.get('hardware_intervals', 0),
+                'reference_source': s.get('reference_source', 'legacy-voltage'),
+                'hardware_references': s.get('hardware_references', 0),
                 'time_to_empty_seconds': time_empty, 'time_to_full_seconds_at_current_rate': time_full,
                 'method': s['method'], 'capacity_mah_estimated': round(s['capacity_mah']),
                 'full_references': s['full_references'], 'capacity_updates': s['capacity_updates'],

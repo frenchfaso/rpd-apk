@@ -39,7 +39,35 @@ load/transient sensitivity; **it does not turn loaded voltage into open-circuit
 voltage or provide a validated accuracy bound**.
 
 During uninterrupted sampling, current integration tracks charge entering or
-leaving the battery. Genuine charger termination sustained for five minutes
+leaving the battery. On the M10 it now prefers the PMI632 QG FIFO and partial
+accumulator: the current configuration measures every 300 ms, averages 256
+samples per FIFO entry and retains eight entries (614.4 seconds). Successive
+snapshots count only newly measured samples, including across FIFO wrap and
+charge/discharge transitions. Both charge integration and the smoothed rate used
+for ETAs use this interval measurement. Missing, inconsistent or mismatched
+windows fall back explicitly to the periodic instantaneous samples.
+
+The driver exposes a root-only, read-only `qg_snapshot`. It checks FIFO and
+accumulator counters before and after reading; moving snapshots are retried.
+The decoder checks configuration, cadence and coverage. It never holds, resets
+or clears the gauge and never counts a repeated window twice. This is continuous
+hardware sampling with software integration of its bounded window, not a
+persistent lifetime charge counter. Sampling gaps/reboots still invalidate
+capacity-learning intervals.
+
+Changed hardware power-on voltage/current may supply a better initial reference
+only early in a new boot, when a brief resume cannot preserve the prior estimate.
+A newly observed hardware rest reference must remain unchanged on the next poll
+before it is accepted. Untimestamped references already present at service
+startup are not reused as fresh measurements. Both paths require plausible
+low-current readings and temperature; acceptance is reported separately from
+capacity learning. The captured power-on sample was about 3.825 V at 19 mA load,
+but was not applied retroactively to the running tablet. The hardware rest
+reference is still unavailable in the live traces. The current hardware sleep
+entry threshold is about 10 mA, far below the active Linux desktop load; reading
+more registers alone does not establish a relaxed-voltage reference.
+
+ Genuine charger termination sustained for five minutes
 anchors 100%. Quiet discharge periods (at most 80 mA for ten minutes, within
 5 mV of their starting voltage and 2 C, at 10..45 C) permit approximate voltage
 references. These heuristic gates are not proof of electrochemical relaxation.
@@ -85,8 +113,9 @@ portable implementation of its estimation algorithm.
 The appropriate M10 analogue is fuller support for the PMI632 QG measurement and
 Lenovo/Qualcomm estimation path, including validated references and continuity.
 The OEM kernel exchanges SOC values with userspace; copying its driver alone is
-insufficient. The current monitor uses periodic instantaneous current samples,
-not a continuously running hardware charge counter. Native kernel capacity,
+insufficient. We use its documented QG scaling, FIFO and accumulator semantics,
+but do not substitute stale SOC/SDAM bytes for valid capacity. OEM-disabled ESR
+excitation remains disabled; undocumented impedance tables are not guessed. Native kernel capacity,
 when available, already takes precedence in our panel. Charger control and
 battery health/charge-limit policies are separate from this userspace estimate.
 
@@ -111,6 +140,8 @@ charge/discharge curve semantics follow `qg-battery-profile.c`, revision
 Tests cover units/profile selection, analytic charge integration, filtered startup,
 gaps/reboots, exhausted estimates, migration, partial-reference gates, real full
 recovery, ETA warmup/direction changes, invalid readings,
+hardware signed units, interval integration, FIFO wrap, variable loads, repeated
+windows, cadence/configuration changes and stale/fresh hardware references,
 loader rollback and kernel mismatch. `tests/verify_battery_sysfs.py` compiles the
 patched upstream reader against native fixtures for unavailable capacity,
 charge/energy fallback, native capacity precedence and stale estimates.
@@ -121,3 +152,13 @@ A real reboot verified both services active and enabled before user login, the
 custom IIO driver bound, battery readings live, OTG and LightDM active, and no
 new kernel BUG/Oops/Call trace in the inspected boot log. Calibration accuracy
 requires later observations during real use.
+
+The hardware integration revision was tested on the M10 without reboot: 24 of
+24 intervals in a 120-second discharge trace had valid hardware coverage
+(total 10.038 mAh). A subsequent live charger transition and FIFO index 7-to-0
+wrap retained hardware integration without a percentage jump. Native tests also
+compile the actual C snapshot reader and exercise moving counters, bus errors
+and missing regmap; host sanitizer checks pass. The read-only module was built
+against the running kernel and its imports audited for register writes.
+Hardware OCV acceptance and learned-capacity accuracy still require real-device
+validation; unit tests alone do not validate electrochemical estimates.

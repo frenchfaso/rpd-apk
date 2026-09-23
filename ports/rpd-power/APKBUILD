@@ -1,6 +1,6 @@
 pkgname=rpd-power
 pkgver=0.1.0
-pkgrel=13
+pkgrel=15
 pkgdesc="Explicit battery estimates, local calibration and desktop notifications"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
@@ -8,13 +8,15 @@ license="GPL-2.0-or-later"
 depends="python3 libnotify rpd-battery-m10 rpd-battery>=1.11-r25"
 makedepends="python3"
 install="rpd-power.post-install rpd-power.post-upgrade rpd-power.pre-deinstall"
-source="80-rpd-power-monitor.preset power_model.py m10-profiles.json rpd-power-monitor rpd-power-monitor.service rpd-battery-status rpd-power-notify rpd-power-notify.desktop test_power_model.py"
+source="80-rpd-power-monitor.preset power_model.py qg_model.py m10-profiles.json rpd-power-monitor rpd-power-monitor.service rpd-battery-status rpd-power-notify rpd-power-notify.desktop test_power_model.py test_qg_model.py"
 builddir="$srcdir"
 check() {
     python3 "$srcdir/test_power_model.py"
+    python3 "$srcdir/test_qg_model.py"
 }
 package() {
     install -Dm644 "$srcdir/80-rpd-power-monitor.preset" "$pkgdir/usr/lib/systemd/system-preset/80-rpd-power-monitor.preset"
+    install -Dm644 "$srcdir/qg_model.py" "$pkgdir/usr/lib/rpd-power/qg_model.py"
     install -Dm644 "$srcdir/power_model.py" "$pkgdir/usr/lib/rpd-power/power_model.py"
     install -Dm644 "$srcdir/m10-profiles.json" "$pkgdir/usr/share/rpd-power/m10-profiles.json"
     install -Dm755 "$srcdir/rpd-power-monitor" "$pkgdir/usr/libexec/rpd-power-monitor"
@@ -26,12 +28,14 @@ package() {
 
 sha512sums="
 e61970798770eaf2b3373d99d81bee784a6bd0dd4e4f73de657ebe2159bd1755649c02e12d577bb568f11bfc368a89ef8dca4d01af8428287fc4c5a73512de1e  80-rpd-power-monitor.preset
-c6de04b64658fe0aa10105dea4cede005169a76927874a57eeb37d18e934d87079c01db24940aa3c44b253af70940626d2d94775d3bacf1e4e55bf671dd63876  power_model.py
+c333f0d6ba3190ef0aef882617403853bfdf7bea8cf15b48333eb46a2d45b94481e1b877cb969e8de6b67348b9b5b6e9f31a6e329c8414e583512173ebc7249b  power_model.py
+d3679914b9d3fb844c5360c6fcb0c22b059516f5a384df04d81e10619fed52203a98470b329c88e380cadb6e579e616aff9ba01cacf3edfc9f6f39f33164a62d  qg_model.py
 c9dc335fc7099f670b064346c599b5b9d0a0a9b0675610ba407103c996169ba1310c07d6e39e6f27b0323001f0c210416d3f59a17dbfbeefe82f7b95a764c651  m10-profiles.json
-90c6216610d258fa4062b470302fec06db884ac4e86198f4a2af527ca277bbdb64ad075ed2c7dee57b0041cb1c498189678923f533b9d9945a90ea18957d2e78  rpd-power-monitor
+fcdd2fbdc66e1cab2e8a549ecbe6bfa8833837c7d4f1bd0bac4ad505d63c649d5f108ebad938df103a048b9db6bfd2a430acfb5654632b47cb9a24dd7a3a5e32  rpd-power-monitor
 f5b62819734f508187bef830fdcb87f8a452cd25cecce6ce24aa53ecac2b206a62d4af8701ca8e4bb813de5a379756f79e14e4dc81ad7f6838634eb38f35fb04  rpd-power-monitor.service
-a3a280da8d8d2669207ed34f4e5130eaf12414aaface1a1e7c8cca819b0f543e05111cb1191a2f9a8f9bfe7b3a41c48329d9db70a4afd961bb61cc7ffce8057f  rpd-battery-status
+a256793ca9f9ccd366142fdca60d07ba13d1b153a94652f9e5fc976a4242fe92395e52677eec1ad57645ed9292e8e9a5b9f0aa0b7fb5b3b7c43a9b128a768563  rpd-battery-status
 adfcabcad8a5605f62b6039a90bf81def53389c2ec20c2fe0c39b065fd53398cd4e2f334903823752a7412be72676513922bc97300d7a661e2ade0eb3d8e677c  rpd-power-notify
 f10da4dde1afecae18a650c0c80cc6185504997545a5adb8b47b57246bd97292e4ec41d20660de646033d1cbd6869fd647db4499d9033e784cdca625fa252e4a  rpd-power-notify.desktop
 9d5265f91e038c01ccbbccc838d2cf261f80b9a4832e49dbbe2f0fff6a83cc2eaf2eea18809b1eb43a3e84d176bd0828d87acc03c976b33822f7863adc1a4a88  test_power_model.py
+15e541bbd4fc370071c87839b7b67ba96bb4189d96c81ee884ccb74bcf26b88d27daedb57c854f14753566af432c128ef9be2a9fff6ba5043929626a3d57430d  test_qg_model.py
 "

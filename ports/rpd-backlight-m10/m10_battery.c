@@ -159,6 +159,44 @@ static const struct kernel_param_ops snapshot_ops = { .get = snapshot_get };
 module_param_cb(snapshot, &snapshot_ops, NULL, 0400);
 MODULE_PARM_DESC(snapshot, "Read-only selected PMI632 gauge and charger registers");
 
+/* A coherent, read-only view of the hardware integration window. Counter
+ * movement during a read makes the sample unusable; never hold/reset the gauge.
+ * QG_STATUS2 is cleared by an explicit write in OEM qg_read(), not by reading.
+ */
+static const struct sample qg_samples[] = {
+ {0x4808, 3}, {0x4851, 2}, {0x4870, 8}, {0x4888, 7},
+ {0x4890, 8}, {0x4898, 8}, {0x48a0, 8}, {0x48a8, 8},
+};
+
+static int qg_snapshot_get(char *buf, const struct kernel_param *kp)
+{
+ unsigned int before_fifo, before_acc, after_fifo, after_acc, i, j;
+ unsigned char data[8];
+ int ret, n = 0;
+ if (!map) return -ENODEV;
+ ret = regmap_read(map, 0x480a, &before_fifo);
+ if (ret) return ret;
+ ret = regmap_read(map, 0x488e, &before_acc);
+ if (ret) return ret;
+ for (i = 0; i < ARRAY_SIZE(qg_samples); ++i) {
+  if (!qg_samples[i].len || qg_samples[i].len > sizeof(data)) return -EINVAL;
+  ret = regmap_bulk_read(map, qg_samples[i].reg, data, qg_samples[i].len);
+  if (ret) return ret;
+  for (j = 0; j < qg_samples[i].len; ++j)
+   n += scnprintf(buf + n, PAGE_SIZE - n, "%04x=%02x\n",
+                  qg_samples[i].reg + j, data[j]);
+ }
+ ret = regmap_read(map, 0x480a, &after_fifo);
+ if (ret) return ret;
+ ret = regmap_read(map, 0x488e, &after_acc);
+ if (ret) return ret;
+ if (before_fifo != after_fifo || before_acc != after_acc) return -EAGAIN;
+ return n;
+}
+static const struct kernel_param_ops qg_snapshot_ops = { .get = qg_snapshot_get };
+module_param_cb(qg_snapshot, &qg_snapshot_ops, NULL, 0400);
+MODULE_PARM_DESC(qg_snapshot, "Coherent read-only PMI632 FIFO, accumulator and OCV data");
+
 static int __init probe_init(void)
 {
  struct device_node *node;

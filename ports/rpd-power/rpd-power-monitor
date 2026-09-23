@@ -11,6 +11,7 @@ import sys
 import time
 sys.path.insert(0, '/usr/lib/rpd-power')
 from power_model import Model
+from qg_model import decode_snapshot
 
 ROOT = pathlib.Path('/sys/class/power_supply')
 STATE = pathlib.Path('/var/lib/rpd-power')
@@ -32,7 +33,16 @@ def read_sample():
     paths = list(adc.glob('iio:device*/in_temp_bat_id_input'))
     if len(paths) != 1:
         raise ValueError('No unique battery ID channel')
-    return {'timestamp': time.time(), 'elapsed': time.clock_gettime(time.CLOCK_BOOTTIME),
+    qg = None
+    qg_path = pathlib.Path('/sys/module/m10_battery/parameters/qg_snapshot')
+    if qg_path.exists():
+        for _ in range(3):
+            try:
+                qg = decode_snapshot(qg_path.read_text())
+                break
+            except (OSError, ValueError, KeyError):
+                pass  # Older/unsupported or moving hardware window: keep telemetry.
+    return {'qg': qg, 'timestamp': time.time(), 'elapsed': time.clock_gettime(time.CLOCK_BOOTTIME),
             'boot_id': pathlib.Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
             'voltage_uv': int((b / 'voltage_now').read_text()),
             'current_ua': int((b / 'current_now').read_text()),

@@ -14,6 +14,7 @@ sh scripts/test-kernel-priority.sh
 apk add --no-cache alpine-sdk abuild-rootbld meson samurai python3 git sudo
 # Keep shared build dependencies installed between ports.
 apk add --no-cache pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev networkmanager-dev libnma-dev libsecret-dev pulseaudio-dev
+python3 tests/verify_qg_snapshot.py ports/rpd-backlight-m10/m10_battery.c
 adduser -D builder 2>/dev/null || true
 addgroup builder abuild 2>/dev/null || true
 printf 'builder ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/rpd-builder
