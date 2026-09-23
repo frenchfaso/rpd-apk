@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Own one idle client; disabling blanking restores the display immediately."""
-import os,pathlib,signal,subprocess,time
+import configparser,json,os,pathlib,signal,subprocess,sys,time
 config=pathlib.Path(os.environ.get('XDG_CONFIG_HOME',str(pathlib.Path.home()/'.config')))/'rpd'
 device_power=pathlib.Path('/etc/xdg/rpd/screen-power.conf').exists()
 wake=['rpd-screen-power','on'] if device_power else ['wlopm','--on','*']
@@ -8,6 +8,14 @@ commands={'blanking-enabled':['swayidle','-w','timeout','600','wlopm --off "*"',
           'remote-enabled':['wayvnc','127.0.0.1','5900']}
 if device_power:
     commands['blanking-enabled']=['swayidle','-w','timeout','600','rpd-screen-power idle-off','resume','rpd-screen-power idle-on']
+settings=configparser.ConfigParser()
+settings.read('/etc/xdg/rpd/screen-power.conf')
+sleep_delay=settings.getint('sleep','after_blank_seconds',fallback=0)
+state=pathlib.Path(os.environ.get('XDG_STATE_HOME',str(pathlib.Path.home()/'.local/state')))/'rpd/screen-power.json'
+greeter='--greeter' in sys.argv
+if device_power and sleep_delay>0:
+    commands['sleep-events']=['swayidle','-w','before-sleep','rpd-screen-power before-sleep',
+                              'after-resume','rpd-screen-power after-resume']
 children={};running=True
 def stop(*unused):
     global running
@@ -18,11 +26,22 @@ try:
     while running:
         for flag,command in commands.items():
             child=children.get(flag)
-            if (config/flag).exists() and (child is None or child.poll() is not None):
+            enabled=flag=='sleep-events' or (not greeter and (config/flag).exists())
+            if enabled and (child is None or child.poll() is not None):
                 children[flag]=subprocess.Popen(command)
-            elif not (config/flag).exists() and child is not None:
+            elif not enabled and child is not None:
                 child.terminate();child.wait(timeout=5);del children[flag]
                 if flag=='blanking-enabled':subprocess.run(wake,check=False)
+        # Count from the actual blank event, not from a second idle timeout.
+        # Input removes this state; the helper rechecks it under its lock.
+        if not greeter and sleep_delay>0 and (config/'blanking-enabled').exists():
+            try:
+                data=json.loads(state.read_text());now=time.monotonic()
+                if (data.get('reason')=='idle' and 'blanked_at' in data and
+                    now-data['blanked_at']>=sleep_delay and now-data.get('last_attempt',-60)>=60):
+                    subprocess.run(['rpd-screen-power','idle-suspend'],check=False)
+            except (OSError,ValueError):
+                pass
         time.sleep(3)
 finally:
     subprocess.run(['rpd-screen-power','on'],check=False)

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Opt-in display power toggle; never suspend or change CPU/power-supply policy."""
+"""Opt-in display blanking and guarded logind suspend; no charger/CPU policy."""
 import configparser
 import fcntl
 import json
@@ -12,13 +12,20 @@ import xml.etree.ElementTree as ET
 
 CONFIG = Path('/etc/xdg/rpd/screen-power.conf')
 BACKLIGHTS = Path('/sys/class/backlight')
+RETENTION = Path('/sys/module/m10_firmware_backlight/parameters/retention_active')
+MEM_SLEEP = Path('/sys/power/mem_sleep')
+
+
+def boottime():
+    # Linux includes time spent suspended; the fallback supports host tests.
+    return time.clock_gettime(getattr(time, 'CLOCK_BOOTTIME', time.CLOCK_MONOTONIC))
 
 
 def run(*command):
     return subprocess.run(command, check=True, text=True, capture_output=True, timeout=5).stdout
 
 
-def configure(path):
+def configure(path, suspend=False):
     tree = ET.parse(path)
     root = tree.getroot()
     namespace = root.tag.partition('}')[0][1:] if root.tag.startswith('{') else ''
@@ -35,7 +42,7 @@ def configure(path):
         if bind.get('key') == 'XF86PowerOff':
             keyboard.remove(bind)
     bind = ET.SubElement(keyboard, tag('keybind'), {'key': 'XF86PowerOff', 'onRelease': 'yes'})
-    ET.SubElement(bind, tag('action'), {'name': 'Execute', 'command': 'rpd-screen-power toggle'})
+    ET.SubElement(bind, tag('action'), {'name': 'Execute', 'command': 'rpd-screen-power power' if suspend else 'rpd-screen-power toggle'})
     tree.write(path, encoding='UTF-8', xml_declaration=True)
 
 
@@ -82,7 +89,8 @@ class DisplayPower:
             value = int((self.device / 'brightness').read_text()) if self.device.exists() else None
             self.state.parent.mkdir(parents=True, exist_ok=True)
             temp = self.state.with_suffix('.tmp')
-            temp.write_text(json.dumps({'brightness': value, 'reason': reason}) + '\n')
+            temp.write_text(json.dumps({'brightness': value, 'reason': reason,
+                                        'blanked_at': time.monotonic()}) + '\n')
             temp.replace(self.state)
         try:
             if self.device.exists():
@@ -99,13 +107,64 @@ class DisplayPower:
         # An idle-resume callback must not undo a deliberate Power press.
         if self.state.exists() and json.loads(self.state.read_text()).get('reason') == 'idle':
             self.on()
-            self.state.with_suffix('.wake').write_text(str(time.monotonic()))
+            self.state.with_suffix('.wake').write_text(str(boottime()))
+
+    def before_sleep(self):
+        self.off(reason='sleep')
+        data = json.loads(self.state.read_text())
+        data['reason'] = 'sleep'
+        self.state.write_text(json.dumps(data) + '\n')
+
+    def after_resume(self):
+        self.on()
+        self.state.parent.mkdir(parents=True, exist_ok=True)
+        self.state.with_suffix('.resume').write_text(str(boottime()))
+
+    def just_resumed(self):
+        wake = self.state.with_suffix('.resume')
+        return (wake.exists() and
+                0 <= boottime() - float(wake.read_text()) < 2)
+
+    def sleep_supported(self):
+        try:
+            return RETENTION.read_text().strip() == 'Y' and MEM_SLEEP.read_text().strip() == '[s2idle]'
+        except OSError:
+            return False
+
+    def power(self):
+        # The wake key release may arrive before or after after-resume. Handle
+        # both orders without immediately putting the tablet back to sleep.
+        data = json.loads(self.state.read_text()) if self.state.exists() else {}
+        if self.just_resumed() or data.get('reason') == 'sleep':
+            self.after_resume()
+            return False
+        if not self.sleep_supported():
+            print('rpd-screen-power: qualified suspend unavailable; using display toggle', file=sys.stderr)
+            self.toggle()
+            return False
+        self.before_sleep()
+        return True
+
+    def idle_suspend(self, delay):
+        if not self.state.exists() or delay <= 0:
+            return False
+        data = json.loads(self.state.read_text())
+        now = time.monotonic()
+        if (data.get('reason') != 'idle' or 'blanked_at' not in data or
+                now - data['blanked_at'] < delay or now - data.get('last_attempt', -60) < 60):
+            return False
+        data['last_attempt'] = now
+        self.state.write_text(json.dumps(data) + '\n')
+        if not self.sleep_supported():
+            return False
+        self.before_sleep()
+        return True
 
     def toggle(self):
         # A Power key-down may already wake an idle-blanked display. Do not
         # switch it off again when the onRelease binding arrives just after it.
         wake = self.state.with_suffix('.wake')
-        if wake.exists() and 0 <= time.monotonic() - float(wake.read_text()) < 0.75:
+        if wake.exists() and 0 <= boottime() - float(wake.read_text()) < 0.75:
             return
         outputs = json.loads(run('wlopm', '--json'))
         target = next(item for item in outputs if item['output'] == self.output)
@@ -121,18 +180,39 @@ def main():
     config = configparser.ConfigParser()
     config.read(CONFIG)
     action = sys.argv[1].replace('-', '_')
+    sleep_delay = config.getint('sleep', 'after_blank_seconds', fallback=0)
     if action == 'configure':
-        configure(sys.argv[2])
+        configure(sys.argv[2], suspend=sleep_delay > 0)
         return
     runtime = Path(os.environ['XDG_RUNTIME_DIR'])
     state_root = Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state')))
     controller = DisplayPower(config['display']['output'], config['display']['backlight'],
                               state_root / 'rpd/screen-power.json')
+    requested = False
     with (runtime / 'rpd-screen-power.lock').open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        if action not in ('toggle', 'on', 'off', 'restore', 'idle_on', 'idle_off'):
-            raise ValueError('Expected toggle, on, off, restore or configure')
-        getattr(controller, action)()
+        if action == 'power':
+            requested = controller.power() if sleep_delay > 0 else controller.toggle()
+        elif action == 'idle_suspend':
+            requested = controller.idle_suspend(sleep_delay)
+        elif action in ('toggle', 'on', 'off', 'restore', 'idle_on', 'idle_off',
+                        'before_sleep', 'after_resume'):
+            getattr(controller, action)()
+        else:
+            raise ValueError('Unknown screen power action')
+    # Release the state lock before logind broadcasts PrepareForSleep: the
+    # delay-inhibitor callback must be able to acquire it and blank the display.
+    if requested:
+        try:
+            subprocess.run(['busctl', '--system', 'call', 'org.freedesktop.login1',
+                            '/org/freedesktop/login1', 'org.freedesktop.login1.Manager',
+                            'Suspend', 'b', 'false'], check=True, timeout=20)
+        except Exception:
+            with (runtime / 'rpd-screen-power.lock').open('w') as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                controller.on()
+            raise
+
 
 
 if __name__ == '__main__':

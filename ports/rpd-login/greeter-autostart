@@ -7,4 +7,5 @@ if [ -f /etc/xdg/rpd/autorotate.conf ] && command -v rpd-autorotate >/dev/null; 
     export RPD_GREETER_PORTRAIT_OSK=1
     rpd-autorotate --greeter &
 fi
+/usr/libexec/rpd-idle --greeter &
 /usr/sbin/pi-greeter &

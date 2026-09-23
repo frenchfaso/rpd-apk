@@ -84,8 +84,8 @@ framebuffer reference. These APIs require the framebuffer to remain attached;
 native DRM takeover while this firmware bridge is loaded is unsupported.
 
 This workaround retains display-domain power and therefore costs energy. It is
-not native low-power panel suspend. No automatic suspend or change to the short
-Power binding is enabled. `/sys/module/m10_firmware_backlight/parameters/retention_active`
+not native low-power panel suspend. The opt-in M10 sleep policy below requires
+this retention mechanism before requesting suspend. `/sys/module/m10_firmware_backlight/parameters/retention_active`
 reports registration; `retained` counts vetoed power-off attempts. Loading the
 module with `retain_display=0` opts out.
 
@@ -102,3 +102,34 @@ The integrated `7.1.3-r27` package also passed a 90-second RTC suspend on batter
 brightness without reboot. QG measured about 139 mA across the 91.7-second
 measurement interval, including transitions. This is still far above the
 hardware rest-reference threshold, and is not a long-term standby benchmark.
+
+
+## M10 Power key and inactivity policy
+
+The M10 configuration enables guarded s2idle through logind:
+
+- A short Power press suspends; Power wakes the tablet. The wake key release is
+  suppressed briefly so it cannot immediately suspend again.
+- The existing Screen Blanking setting still blanks the desktop after ten
+  minutes of inactivity. Touch or other input wakes this blanked display.
+- After another twenty minutes continuously blank, the desktop requests s2idle.
+  Input cancels the pending request. Disabling Screen Blanking also disables
+  automatic suspend; manual Power remains available.
+- The greeter handles Power and display restoration through the same helper.
+  Its existing lack of automatic blanking is unchanged.
+
+`after_blank_seconds=1200` in `/etc/xdg/rpd/screen-power.conf` controls the delay
+from the actual blank event, not from the start of inactivity. The shared desktop
+keeps its previous behavior on targets without this configuration.
+
+The helper requires the firmware display-retention module to report active and
+`/sys/power/mem_sleep` to contain only `[s2idle]`. Otherwise automatic suspend is
+skipped and Power falls back to display toggling. Official kernel upgrades remain
+unrestricted, including when the optional module cannot rebuild.
+
+A separate swayidle listener blanks before logind sleep and restores brightness
+and scanout after resume, in both user and greeter sessions. Calls to logind happen
+outside the brightness-state lock, so its delay-inhibitor callback cannot deadlock.
+Normal sleep inhibitors are respected; for example, an active SSH PAM session can
+block suspend. A rejected request restores the display. No deep sleep, hibernation,
+automatic logout or screen lock is added by this policy.
