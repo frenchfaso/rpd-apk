@@ -64,3 +64,33 @@ Alpine packaging, the separate statvfs fix or M10-specific changes. No upstream
 issue or pull request has been submitted. An eventual contribution should include
 the cache behaviour, test results and modest measured performance gain; Debian /
 Raspberry Pi OS validation remains separate from our Alpine/M10 checks.
+
+## Bounded cover updates
+
+`0004-batch-cover-updates.patch` keeps the existing one-item loader and adds a
+small idle callback wrapper. It processes at most 16 cached covers, or about
+100 ms of work, before yielding to GTK. A single decode/write cannot be
+preempted; the time limit is checked after each image. Missing covers and pending
+PDF requests stop the group immediately and use the original download callbacks.
+The patch also applies independently to upstream master.
+
+This avoids scheduling a complete GtkIconView relayout between every cover.
+Full startup profiling on M10 showed 36.3 seconds inside GTK frame processing,
+versus 1.55 seconds loading warm thumbnails. A preliminary fixed-16 experiment
+reduced frame work to 3.55 seconds; production additionally bounds each group's
+processing time to keep input responsive on slower/cold-cache loads.
+
+`tests/verify_bookshelf_batch.py` compiles the actual callbacks with a deterministic
+clock and catalogue fixtures. It checks item/time limits, complete ordered
+processing, slow images, pending PDF priority, missing-cover download/resume,
+failed downloads and final-item cleanup. No worker threads, catalogue changes,
+new dependencies or changes to network polling are introduced by this patch.
+
+Final time-bounded variant, same 185 warm covers on M10: 4.732 s of GTK frame
+work, 1.476 s of image loading, 6.605 s total process CPU. This run's catalogue
+request took about 5.5 s instead of the earlier ~2 s, so network variability
+still affects launch time independently of the reduced local GUI work.
+A separate instrumented GUI run changed the search and notebook page after 22
+covers, cleared the filter after 50, and verified all 185 images and both page
+models at completion (8.406 s in that run). Instrumentation remains outside the
+installed package and upstream patch.

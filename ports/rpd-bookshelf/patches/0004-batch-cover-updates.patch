@@ -1,0 +1,46 @@
+--- a/src/rp_bookshelf.c
++++ b/src/rp_bookshelf.c
+@@ -57,6 +57,8 @@
+ /*----------------------------------------------------------------------------*/
+ 
+ #define COVER_SIZE      128
++#define COVER_BATCH_SIZE 16
++#define COVER_BATCH_USEC 100000
+ #define CELL_WIDTH      150
+ 
+ #define MAGPI_URL       "https://magazine.raspberrypi.com/issues"
+@@ -546,9 +548,9 @@
+     g_object_unref (cover);
+ }
+ 
+-/* get_cover_for_item - tries to load cover for covitem from local cache; starts download if not */
+-
+-static gboolean find_cover_for_item (gpointer data)
++/* load_cover_for_item - tries to load cover for covitem from local cache; starts download if not */
++
++static gboolean load_cover_for_item (void)
+ {
+     int dl;
+     gchar *cpath, *clpath;
+@@ -583,6 +585,21 @@
+         g_free (cpath);
+         return FALSE;
+     }
++}
++
++/* find_cover_for_item - load a bounded group before allowing the views to relayout */
++
++static gboolean find_cover_for_item (gpointer data)
++{
++    gint64 end = g_get_monotonic_time () + COVER_BATCH_USEC;
++    int i;
++
++    for (i = 0; i < COVER_BATCH_SIZE; i++)
++    {
++        if (!load_cover_for_item ()) return FALSE;
++        if (g_get_monotonic_time () >= end) break;
++    }
++    return TRUE;
+ }
+ 
+ /* image_download_done - called on completed curl image download */

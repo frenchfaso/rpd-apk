@@ -43,6 +43,7 @@ for pkg in squeekboard rpd-cpu-topology-m10 rpd-backlight-m10 rpd-settings-backe
         su builder -c "cd /home/builder/rpd-build/ports/rpd-bookshelf && abuild fetch unpack prepare"
         python3 tests/verify_bookshelf_space.py /home/builder/rpd-build/ports/rpd-bookshelf/src/bookshelf/src/rp_bookshelf.c
         python3 tests/verify_bookshelf_cache.py /home/builder/rpd-build/ports/rpd-bookshelf/src/bookshelf/src/rp_bookshelf.c
+        python3 tests/verify_bookshelf_batch.py /home/builder/rpd-build/ports/rpd-bookshelf/src/bookshelf/src/rp_bookshelf.c
     fi
     apk update
     if [ "$pkg" = gtk-layer-shell ]; then apk add --upgrade gtk-layer-shell gtk-layer-shell-dev; fi
