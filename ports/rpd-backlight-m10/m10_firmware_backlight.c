@@ -13,11 +13,71 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/pm_domain.h>
 #include <linux/platform_device.h>
 
 #define BASE 0x01a94000
 #define SIZE 0x300
 #define IRQ_MASKS 0xa2220202
+/* Firmware scanout cannot be reconstructed after MDSS power collapse.
+ * Keep only its domain on through the supported genpd notifier veto. This
+ * trades suspend power for working resume until a native DRM driver takes over.
+ * Never edit genpd flags or program clocks/voltages behind their drivers.
+ */
+static struct platform_device *firmware_fb;
+static bool retain_display = true;
+module_param(retain_display, bool, 0444);
+MODULE_PARM_DESC(retain_display, "Preserve firmware display power domain across suspend");
+static bool retention_active;
+module_param(retention_active, bool, 0444);
+static unsigned int retained;
+module_param(retained, uint, 0444);
+
+static int retain_display_power(struct notifier_block *nb, unsigned long event, void *data)
+{
+ if (event != GENPD_NOTIFY_PRE_OFF) return NOTIFY_OK;
+ retained++;
+ return notifier_from_errno(-EBUSY);
+}
+static struct notifier_block retention_nb = { .notifier_call = retain_display_power };
+
+static int enable_display_retention(void)
+{
+ struct device_node *node;
+ struct generic_pm_domain *pd;
+ int ret;
+ if (!retain_display) return 0;
+ node = of_find_compatible_node(NULL, NULL, "simple-framebuffer");
+ if (!node) return -ENODEV;
+ firmware_fb = of_find_device_by_node(node);
+ of_node_put(node);
+ if (!firmware_fb) return -ENODEV;
+ if (!firmware_fb->dev.driver ||
+     strcmp(firmware_fb->dev.driver->name, "simple-framebuffer") ||
+     !dev_pm_genpd_is_on(&firmware_fb->dev)) { ret = -ENODEV; goto put; }
+ /* is_on() first validates that this device actually belongs to genpd. */
+ pd = pd_to_genpd(firmware_fb->dev.pm_domain);
+ if (strcmp(pd->name, "mdss_gdsc")) { ret = -ENODEV; goto put; }
+ ret = dev_pm_genpd_add_notifier(&firmware_fb->dev, &retention_nb);
+ if (ret) goto put;
+ retention_active = true;
+ return 0;
+put:
+ put_device(&firmware_fb->dev);
+ firmware_fb = NULL;
+ return ret;
+}
+
+static void disable_display_retention(void)
+{
+ if (!retention_active) return;
+ dev_pm_genpd_remove_notifier(&firmware_fb->dev);
+ retention_active = false;
+ put_device(&firmware_fb->dev);
+ firmware_fb = NULL;
+}
+
 static void __iomem *regs;
 static struct platform_device *pdev;
 static struct backlight_device *bl;
@@ -123,6 +183,11 @@ static int __init m10_bl_init(void)
  if (ret) { backlight_device_unregister(bl); goto device; }
  ret = backlight_update_status(bl);
  if (ret) { backlight_device_unregister(bl); goto device; }
+ ret = enable_display_retention();
+ if (ret)
+  dev_warn(&pdev->dev, "Display retention unavailable (%d); suspend may lose scanout\n", ret);
+ else if (retention_active)
+  dev_info(&pdev->dev, "Firmware display retention active; higher suspend power expected\n");
  dev_info(&pdev->dev, "Firmware DSI backlight registered, range 0..255\n");
  return 0;
 device:
@@ -135,6 +200,7 @@ region:
 }
 static void __exit m10_bl_exit(void)
 {
+ disable_display_retention();
  device_remove_file(&bl->dev, &dev_attr_display_name);
  backlight_device_unregister(bl);
  platform_device_unregister(pdev);

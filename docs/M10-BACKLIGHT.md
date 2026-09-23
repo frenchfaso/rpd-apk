@@ -29,9 +29,9 @@ This is a narrowly scoped experimental bridge, not native DRM display support.
 It retains bootloader scanout and does not initialize PHY/PLL, clocks, panel
 power or video timings. It requires the observed firmware register state and
 exclusive ownership of the DSI register range, serializes requests, and stops
-issuing commands after a timeout/error. Native DRM takeover and suspend/resume
-are not implemented. Remove this package when a proper native display driver
-becomes available.
+issuing commands after a timeout/error. Native DRM takeover and reconstruction
+of lost display state are not implemented; the retention workaround below avoids
+that loss. Remove this package when a proper native display driver becomes available.
 
 Builds use the pinned msm89x7 kernel source and target config, generate actual
 vmlinux export metadata, and reject unresolved module imports. APK signatures
@@ -67,3 +67,38 @@ remains installed, and that the backlight can be upgraded separately afterward.
 Autorotation is started explicitly by the session supervisor after the Wayland
 activation environment is imported; it no longer depends on lxsession filtering
 an OnlyShowIn=labwc XDG autostart entry.
+
+## Firmware display retention during suspend
+
+On the verified kernel, s2idle powers off `mdss_gdsc`, clearing DSI configuration.
+Simpledrm cannot reconstruct the bootloader state. The backlight bridge now
+registers a genpd notifier on the active simple-framebuffer device and vetoes
+this domain's power-off through the kernel API. It does not edit domain flags or
+program clocks/voltages. Other domains and system suspend remain independent.
+
+Registration checks the qualified board/panel, active simple-framebuffer driver,
+powered-on genpd and exact domain name. An existing notifier is never replaced.
+If registration fails, brightness still works, but a kernel warning explains
+that suspend may lose scanout. Unloading removes the notifier and releases the
+framebuffer reference. These APIs require the framebuffer to remain attached;
+native DRM takeover while this firmware bridge is loaded is unsupported.
+
+This workaround retains display-domain power and therefore costs energy. It is
+not native low-power panel suspend. No automatic suspend or change to the short
+Power binding is enabled. `/sys/module/m10_firmware_backlight/parameters/retention_active`
+reports registration; `retained` counts vetoed power-off attempts. Loading the
+module with `retain_display=0` opts out.
+
+Without retention, the live DSI CTRL changed from `0x1f3` to zero during s2idle.
+With retention, a 30-second RTC test preserved all sampled host registers and
+restored brightness without reboot; the user verified the greeter and touch.
+The project hardware notes record final packaged-driver checks. Short tests do
+not establish sleeping current, long-duration reliability or native-driver
+power efficiency. Failure-injection fixtures exercise the actual helpers for
+wrong devices/domains, notifier conflicts and balanced cleanup.
+
+The integrated `7.1.3-r27` package also passed a 90-second RTC suspend on battery:
+91.3 seconds actually suspended, unchanged sampled DSI registers and restored
+brightness without reboot. QG measured about 139 mA across the 91.7-second
+measurement interval, including transitions. This is still far above the
+hardware rest-reference threshold, and is not a long-term standby benchmark.
