@@ -1,6 +1,6 @@
 pkgname=rpd-session
 pkgver=0.1.0
-pkgrel=44
+pkgrel=45
 pkgdesc="Portable Raspberry Pi Desktop session and defaults"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
