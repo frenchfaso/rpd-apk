@@ -19,11 +19,11 @@ sudo sh install-repository.sh
 
 # Install the desktop and configure host services.
 sudo apk add rpd-desktop-m10
-sudo rpd-configure-host frenchfaso
+sudo rpd-configure-host YOUR_USERNAME
 sudo reboot
 ```
 
-Replace `frenchfaso` with your username. Sign in at the graphical login after rebooting.
+Replace `YOUR_USERNAME` with your existing username. Sign in at the graphical login after rebooting.
 
 ## Update
 
