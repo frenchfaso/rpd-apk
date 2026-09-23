@@ -60,10 +60,22 @@ provides Meson build instructions; retain the existing BSD-3-Clause notices.
 Rules for other Raspberry Pi projects are not assumed to apply to Bookshelf.
 
 The cache patch applies independently to upstream master and does not include
-Alpine packaging, the separate statvfs fix or M10-specific changes. No upstream
-issue or pull request has been submitted. An eventual contribution should include
-the cache behaviour, test results and modest measured performance gain; Debian /
-Raspberry Pi OS validation remains separate from our Alpine/M10 checks.
+Alpine packaging, the separate statvfs fix or M10-specific changes. Upstream contributions are now open:
+
+- [Issue #17: diagnosis and measured costs](https://github.com/raspberrypi-ui/bookshelf/issues/17)
+- [PR #18: bounded cover updates](https://github.com/raspberrypi-ui/bookshelf/pull/18)
+- [PR #19: scaled cover cache](https://github.com/raspberrypi-ui/bookshelf/pull/19)
+
+Each PR changes only `src/rp_bookshelf.c`, is based independently on upstream
+master, and excludes Alpine/M10 adaptations. Both disclose AI assistance, test
+scope and tradeoffs. They are submitted for review, not merged.
+
+Both independent branches built and passed their actual-function fixture tests
+on Debian Trixie aarch64 (GTK 3.24.49, GdkPixbuf 2.42.12, GLib 2.84.4).
+Unmodified upstream master also failed to compile there due to the missing
+`locale.h` include; validation therefore used `-Dc_args="-include locale.h"`.
+This workaround is disclosed in the PRs and is not included in their patches.
+No Raspberry Pi hardware or Raspberry Pi OS validation is claimed.
 
 ## Bounded cover updates
 
