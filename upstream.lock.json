@@ -279,7 +279,7 @@
     "sha512": "eef0be3b73620f0c82b51a8ab39a99b11013fd321207cb115acca0fadb997b202a160daa62e1ebadca5c9d5730277aa6339899d8d98e9c73e428a9b46d5f5d33",
     "filename": "rp-bookshelf_1.10.tar.xz",
     "directory": "bookshelf",
-    "pkgrel": 32
+    "pkgrel": 33
   },
   "rc-gui": {
     "url": "https://archive.raspberrypi.com/debian/pool/main/r/rc-gui/rc-gui_2.22.tar.xz",

@@ -1,0 +1,81 @@
+--- a/src/rp_bookshelf.c
++++ b/src/rp_bookshelf.c
+@@ -495,24 +495,68 @@
+ /* Cover art handling                                                         */
+ /*----------------------------------------------------------------------------*/
+ 
+-/* get_cover - reads in cover from filename to pixbuf and scales */
++/* get_cover - reads in cover from filename, caching the scaled pixbuf */
+ 
+ static GdkPixbuf *get_cover (const char *filename)
+ {
+     GdkPixbuf *pb, *spb;
++    GStatBuf st;
++    char *dir, *cache, *key, *stamp, *buffer;
++    gsize length;
+     int w, h;
+-    
++
++    dir = g_build_filename (g_get_user_cache_dir (), "bookshelf", "thumbnails", NULL);
++    cache = stamp = buffer = NULL;
++    if (g_stat (filename, &st) == 0)
++    {
++        stamp = g_strdup_printf ("%" G_GINT64_FORMAT ":%" G_GINT64_FORMAT ":%d",
++            (gint64) st.st_mtime, (gint64) st.st_size, COVER_SIZE);
++        key = g_compute_checksum_for_string (G_CHECKSUM_SHA256, filename, -1);
++        cache = g_strdup_printf ("%s/%s.png", dir, key);
++        g_free (key);
++        pb = gdk_pixbuf_new_from_file (cache, NULL);
++        if (pb)
++        {
++            if (g_strcmp0 (gdk_pixbuf_get_option (pb, "tEXt::Bookshelf::Source"), stamp) == 0)
++            {
++                g_free (stamp);
++                g_free (cache);
++                g_free (dir);
++                return pb;
++            }
++            g_object_unref (pb);
++        }
++    }
++
+     pb = gdk_pixbuf_new_from_file (filename, NULL);
+-    if (!pb) pb = gdk_pixbuf_new_from_file (PACKAGE_DATA_DIR "/nocover.png", NULL);
++    if (!pb)
++    {
++        g_clear_pointer (&stamp, g_free);
++        pb = gdk_pixbuf_new_from_file (PACKAGE_DATA_DIR "/nocover.png", NULL);
++    }
+ 
+     h = gdk_pixbuf_get_height (pb);
+-    if (h == COVER_SIZE) return pb;
+-    w = gdk_pixbuf_get_width (pb);
+-
+-    spb = gdk_pixbuf_scale_simple (pb, ((w > h) ? COVER_SIZE : COVER_SIZE * w / h), 
+-        ((w > h) ? COVER_SIZE * h / w : COVER_SIZE), GDK_INTERP_BILINEAR);
+-    g_object_unref (pb);
+-    return spb;
++    if (h != COVER_SIZE)
++    {
++        w = gdk_pixbuf_get_width (pb);
++        spb = gdk_pixbuf_scale_simple (pb, ((w > h) ? COVER_SIZE : COVER_SIZE * w / h),
++            ((w > h) ? COVER_SIZE * h / w : COVER_SIZE), GDK_INTERP_BILINEAR);
++        g_object_unref (pb);
++        pb = spb;
++    }
++
++    /* Save before the download status and new issue overlays are applied. */
++    if (stamp && g_mkdir_with_parents (dir, 0700) == 0 &&
++        gdk_pixbuf_save_to_buffer (pb, &buffer, &length, "png", NULL,
++            "tEXt::Bookshelf::Source", stamp, NULL))
++    {
++        g_file_set_contents (cache, buffer, length, NULL);
++    }
++    g_free (buffer);
++    g_free (stamp);
++    g_free (cache);
++    g_free (dir);
++    return pb;
+ }
+ 
+ /* update_cover_entry - uses the cover at lpath to update the cover info for covitem */
