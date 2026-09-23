@@ -27,6 +27,8 @@ mkdir -p "$config"
 for file in rc.xml autostart; do
     [ -f "$config/$file" ] || cp "/etc/xdg/rpd/labwc/$file" "$config/$file"
 done
+# The device profile opts into a short-power-key display toggle.
+rpd-screen-power configure "$config/rc.xml" || :
 # Ensure touchscreen output mapping and base calibration before starting labwc.
 if [ -f /etc/xdg/rpd/autorotate.conf ] && command -v rpd-autorotate >/dev/null; then
     RPD_CONFIG_DIR="$config" rpd-autorotate --reset-touch

@@ -197,3 +197,25 @@ PipeWire dummy sink is available; it returns with a usable audio output.
 
 See [battery telemetry](BATTERY-TELEMETRY.md) for the M10 driver and the explicitly
 estimated percentage/time integration in the original battery plugin.
+
+## M10 short power press
+
+The M10 profile opts into `rpd-screen-power` through
+`/etc/xdg/rpd/screen-power.conf`. A short Power press toggles the display and its
+backlight; a second press restores the previous brightness. It does not suspend,
+lock the session, change CPU governors, stop applications or disconnect Wi-Fi.
+Long-press hardware reset handling is unchanged. The CPU keeps its existing
+`schedutil` policy; this is display-off operation, not suspend-level power saving.
+
+The firmware-backed M10 display needs both Wayland output power control and an
+explicit backlight level of zero. The saved brightness is restored on wake and
+session cleanup, and retained across a crash until the next session restores it.
+Missing backlight support after a kernel upgrade does not prevent display power
+control, but the panel illumination then depends on the available kernel driver.
+
+The shared helper is installed with `rpd-session`; only an opted-in device profile
+replaces the `XF86PowerOff` binding. Existing desktop and private greeter configs
+are updated at session startup. Mouse and keyboard shortcuts are retained.
+The normal shutdown menu remains available. Recovery from SSH, in the graphical
+user's Wayland environment, is `rpd-screen-power on`; `rpd-screen-power restore`
+restores only saved brightness if the compositor has already exited.

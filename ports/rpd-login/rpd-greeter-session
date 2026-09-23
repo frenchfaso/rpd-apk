@@ -13,11 +13,14 @@ fi
 # Rotation writes touchscreen mappings; never grant LightDM write access to /etc.
 runtime_config=$(mktemp -d "${XDG_RUNTIME_DIR:?}/rpd-greeter.XXXXXX")
 cp -R /etc/xdg/rpd/greeter/. "$runtime_config/"
+rpd-screen-power configure "$runtime_config/rc.xml" || :
+rpd-screen-power restore || :
 export RPD_CONFIG_DIR="$runtime_config"
 setsid dbus-run-session -- labwc --config-dir "$runtime_config" &
 session=$!
 cleanup() {
     trap - EXIT HUP INT TERM
+    rpd-screen-power restore || :
     kill -TERM -- "-$session" 2>/dev/null || :
     rm -rf -- "$runtime_config"
 }

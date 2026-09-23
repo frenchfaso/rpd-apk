@@ -7,9 +7,10 @@ arch="noarch"
 license="MIT"
 depends="rpd-power rpd-cpu-topology-m10 rpd-usb-otg-m10 rpd-backlight-m10 rpd-autorotate rpd-desktop-browser labwc=0.20.2-r129"
 options="!check"
-source="autorotate.conf 61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
+source="screen-power.conf autorotate.conf 61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
 
 package() {
+    install -Dm644 "$srcdir/screen-power.conf" "$pkgdir/etc/xdg/rpd/screen-power.conf"
     install -Dm644 "$srcdir/autorotate.conf" "$pkgdir/etc/xdg/rpd/autorotate.conf"
     install -Dm644 "$srcdir/61-rpd-m10.conf" "$pkgdir/etc/lightdm/lightdm.conf.d/61-rpd-m10.conf"
     install -Dm644 "$srcdir/greeter-renderer.conf" "$pkgdir/etc/xdg/rpd/greeter-renderer.conf"
@@ -18,6 +19,7 @@ package() {
 }
 
 sha512sums="
+f0adc1e0588c3463ef7ac5e69a2f2277f2371b5eaa413be42395496e52396e5daef7a25deec1e3e997a56f5c4266e380c8cdd8c1105b74bf447fcc2eeaa8fefd  screen-power.conf
 995207ab6f03929e72affbe630cc78209968493d0d1e83717ddda0987c7620154a834b202d1cf393d28b33cc360e2b4c40a207acf5d68045f30741aacc5ceb8e  autorotate.conf
 fd593deae8923a3f2bd112b72d446603141bd2f98a7ab45cd58fd571c84822ee45acbb2fc0684af2f132a0a60ffa7d19fac02876234ac003528093ba287ca8aa  61-rpd-m10.conf
 52ff4f92db495f0c77a6f3f02aab42e696c92ca2102d46de1a5e9559c83e90361f5b835fb93a73cd39956ed32fb66dd022300ee9996578da45b27031860b6bb7  greeter-renderer.conf

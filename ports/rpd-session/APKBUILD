@@ -7,8 +7,9 @@ arch="noarch"
 license="MIT"
 depends="python3 wayvnc gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard>=1.43.1-r100 network-manager-applet mate-polkit polkit mousepad"
 options="!check"
-source="90-rpd-desktop-audio.conf rpd-idle rpd-idle.service rpd-reload-displays rpd-kanshi.service lxsession-default-apps.desktop rpd-polkit.service lxpolkit.desktop polkit-mate-authentication-agent-1.desktop desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop wf-panel-pi.ini rc.xml settings.ini"
+source="rpd-screen-power 90-rpd-desktop-audio.conf rpd-idle rpd-idle.service rpd-reload-displays rpd-kanshi.service lxsession-default-apps.desktop rpd-polkit.service lxpolkit.desktop polkit-mate-authentication-agent-1.desktop desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop wf-panel-pi.ini rc.xml settings.ini"
 package() {
+    install -Dm755 "$srcdir/rpd-screen-power" "$pkgdir/usr/bin/rpd-screen-power"
     install -Dm644 "$srcdir/90-rpd-desktop-audio.conf" "$pkgdir/etc/xdg/rpd/wireplumber/wireplumber.conf.d/90-rpd-desktop-audio.conf"
     install -Dm755 "$srcdir/rpd-idle" "$pkgdir/usr/libexec/rpd-idle"
     install -Dm644 "$srcdir/rpd-idle.service" "$pkgdir/usr/lib/systemd/user/rpd-idle.service"
@@ -37,8 +38,9 @@ package() {
 }
 
 sha512sums="
+984b2fdb249a36f03a49aa19a96301ad697b8736847c6f8a58c0445d5039b62d3e3d1f9bffb2d51dd950134fe1eb05cc4b312ea0d35a56756f2a228e45136414  rpd-screen-power
 7f3b309d7f1c293eab628b129727081d6a619b3fe10ff382dbdb3faf76847e87d6c67332649bf85f18be7ad1f7e3fb0884ea88a8939934addbf4da45b9126d2f  90-rpd-desktop-audio.conf
-8a9ce637d76076b6b0bb922d7acecac4e70700cec21ee1d424f2601ce9aab025d1b294d071ab0db6ff7f514d75ba8a90dde2fede6e7d3ce2b82222fcdadce27f  rpd-idle
+56fc8fbeff9dcdcd4f6ecf06e1400d14d419af1e8dd9d4006253c60a8e610ae2a72439f40938b65e5eef802c379943c2aa858d5b7bdd81fe912d57f63b43037a  rpd-idle
 cf7f4c759ee71d92245f054b76da82356e044f3d9046a9b722cc4d2b496c8407996efab1c040c808246bb6952dcd37e5254c5b9ed8ab8d3adf91b12bcb34d6fb  rpd-idle.service
 08809bf4bb41932685b81e20add29d1449a978d1bde0d3e4f090874e243f5b09ca67a838ab071b3f08e1743a9950b3ac2bd9643b3fedf9e410af0ddf3671b15e  rpd-reload-displays
 afe09ed290b7452d557e11499db5a50bb9a88a06953fc6400cf8cafa9341b870dc33d5d902b9a7aa86762f88c8321f610db8605cbeae58e68e2ee89a7a01958a  rpd-kanshi.service
@@ -54,7 +56,7 @@ c40744049233321c977b41b574c7e1e81ce8ce958bbb719e0fc96ed814f0a50e84e8280769815458
 e9f6ca6a9ced3181eaddac8753a5aaa6d7df181775717977574865133e56b84aac3c4148e6fac9818cea6c89f3a137fced6119216935c34d27b03411f4b94128  labwc-portals.conf
 4a69aeb9ff8f59c14e0c34e7459fa3fd8bf4f802bfae11076c77869858c8f17a2890a30942c058beec5c79e042f49db6ed5e5bb854bf81e0ec09c919b11a3dd6  nm-applet.desktop
 6c6098da54bfb088bf1bc8b9e9f53c0027bf5cda07c7fc5b195c66b9302b84101fdccbfd68697bb8391d2d397d07f1c0a76ae98570cb3c1d28425f106959127e  rpd-edit-launcher
-6a3873dc65fdc1bba85e89415365add4b5bc420c22808b9a3085559f617227d1feebb4adca5f4a271196ff0cd774852415be4f4f66793c02e1fe5e6a883bf276  rpd-session
+79d17a41e60fcea64b992a96a2de3058daa52d32882768b6239abec20cc5356b22b3fcfee9872c125c510c0687012c543c862ae2d1f38fd6fac982bce0dfe0d8  rpd-session
 78d911838fe99ec420cc1b931a550f72c5b96138920d670dbdad32a15bbc4e73766881ec731a33edf3eeb8292b5afcf8084966f0064fa00f9c3ed4523da23ffa  rpd-autostart
 5b3046c5bfac8fecca8a99fe04534e541f36af529b6ecfa7f64413aec12d9fea4ff02710becc89207c98737a723cb997e7ea82cc28559fa1495e3b9ecd760fcb  rpd-session-services
 e27b1eac94e89f723a1c7b910c60d9ccd2031ab978089d30a2091323eacded63bc85ed6b7fd5bc2473b1c9d36a5b1739475ec444e5988308c07c865d8a51a11f  rpd-panel-settings

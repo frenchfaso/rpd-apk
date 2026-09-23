@@ -2,13 +2,18 @@
 """Own one idle client; disabling blanking restores the display immediately."""
 import os,pathlib,signal,subprocess,time
 config=pathlib.Path(os.environ.get('XDG_CONFIG_HOME',str(pathlib.Path.home()/'.config')))/'rpd'
+device_power=pathlib.Path('/etc/xdg/rpd/screen-power.conf').exists()
+wake=['rpd-screen-power','on'] if device_power else ['wlopm','--on','*']
 commands={'blanking-enabled':['swayidle','-w','timeout','600','wlopm --off "*"','resume','wlopm --on "*"'],
           'remote-enabled':['wayvnc','127.0.0.1','5900']}
+if device_power:
+    commands['blanking-enabled']=['swayidle','-w','timeout','600','rpd-screen-power idle-off','resume','rpd-screen-power idle-on']
 children={};running=True
 def stop(*unused):
     global running
     running=False
 for sig in (signal.SIGTERM,signal.SIGINT):signal.signal(sig,stop)
+subprocess.run(['rpd-screen-power','on'],check=False)
 try:
     while running:
         for flag,command in commands.items():
@@ -17,9 +22,10 @@ try:
                 children[flag]=subprocess.Popen(command)
             elif not (config/flag).exists() and child is not None:
                 child.terminate();child.wait(timeout=5);del children[flag]
-                if flag=='blanking-enabled':subprocess.run(['wlopm','--on','*'],check=False)
+                if flag=='blanking-enabled':subprocess.run(wake,check=False)
         time.sleep(3)
 finally:
+    subprocess.run(['rpd-screen-power','on'],check=False)
     for flag,child in children.items():
         child.terminate();child.wait(timeout=5)
-        if flag=='blanking-enabled':subprocess.run(['wlopm','--on','*'],check=False)
+        if flag=='blanking-enabled':subprocess.run(wake,check=False)

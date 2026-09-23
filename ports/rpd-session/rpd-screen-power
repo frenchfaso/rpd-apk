@@ -1,0 +1,143 @@
+#!/usr/bin/python3
+"""Opt-in display power toggle; never suspend or change CPU/power-supply policy."""
+import configparser
+import fcntl
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+import xml.etree.ElementTree as ET
+
+CONFIG = Path('/etc/xdg/rpd/screen-power.conf')
+BACKLIGHTS = Path('/sys/class/backlight')
+
+
+def run(*command):
+    return subprocess.run(command, check=True, text=True, capture_output=True, timeout=5).stdout
+
+
+def configure(path):
+    tree = ET.parse(path)
+    root = tree.getroot()
+    namespace = root.tag.partition('}')[0][1:] if root.tag.startswith('{') else ''
+    if namespace:
+        ET.register_namespace('', namespace)
+    tag = lambda name: '{' + namespace + '}' + name if namespace else name
+    keyboard = root.find(tag('keyboard'))
+    if keyboard is None:
+        keyboard = ET.SubElement(root, tag('keyboard'))
+    binds = list(keyboard.findall(tag('keybind')))
+    if not binds and keyboard.find(tag('default')) is None:
+        ET.SubElement(keyboard, tag('default'))
+    for bind in binds:
+        if bind.get('key') == 'XF86PowerOff':
+            keyboard.remove(bind)
+    bind = ET.SubElement(keyboard, tag('keybind'), {'key': 'XF86PowerOff', 'onRelease': 'yes'})
+    ET.SubElement(bind, tag('action'), {'name': 'Execute', 'command': 'rpd-screen-power toggle'})
+    tree.write(path, encoding='UTF-8', xml_declaration=True)
+
+
+class DisplayPower:
+    def __init__(self, output, backlight, state):
+        if not backlight or Path(backlight).name != backlight or backlight in ('.', '..'):
+            raise ValueError('Invalid backlight name')
+        self.output, self.backlight, self.state = output, backlight, state
+        self.device = BACKLIGHTS / backlight
+
+    def brightness(self, value):
+        try:
+            (self.device / 'brightness').write_text(str(value))
+        except PermissionError:
+            # Active greeters can use logind without broad sysfs permissions.
+            run('busctl', '--system', 'call', 'org.freedesktop.login1',
+                '/org/freedesktop/login1/session/auto', 'org.freedesktop.login1.Session',
+                'SetBrightness', 'ssu', 'backlight', self.backlight, str(value))
+
+    def saved(self):
+        if not self.state.exists():
+            return None
+        value = json.loads(self.state.read_text())['brightness']
+        if value is not None and (type(value) is not int or value < 0):
+            raise ValueError('Invalid saved brightness')
+        return value
+
+    def restore(self):
+        value = self.saved()
+        if value is not None and self.device.exists():
+            maximum = int((self.device / 'max_brightness').read_text())
+            self.brightness(min(value, maximum))
+        self.state.unlink(missing_ok=True)
+
+    def on(self):
+        try:
+            run('wlopm', '--on', self.output)
+        finally:
+            # Also recover brightness when the compositor has already exited.
+            self.restore()
+
+    def off(self, reason='manual'):
+        if not self.state.exists():
+            value = int((self.device / 'brightness').read_text()) if self.device.exists() else None
+            self.state.parent.mkdir(parents=True, exist_ok=True)
+            temp = self.state.with_suffix('.tmp')
+            temp.write_text(json.dumps({'brightness': value, 'reason': reason}) + '\n')
+            temp.replace(self.state)
+        try:
+            if self.device.exists():
+                self.brightness(0)
+            run('wlopm', '--off', self.output)
+        except Exception:
+            self.on()
+            raise
+
+    def idle_off(self):
+        self.off(reason='idle')
+
+    def idle_on(self):
+        # An idle-resume callback must not undo a deliberate Power press.
+        if self.state.exists() and json.loads(self.state.read_text()).get('reason') == 'idle':
+            self.on()
+            self.state.with_suffix('.wake').write_text(str(time.monotonic()))
+
+    def toggle(self):
+        # A Power key-down may already wake an idle-blanked display. Do not
+        # switch it off again when the onRelease binding arrives just after it.
+        wake = self.state.with_suffix('.wake')
+        if wake.exists() and 0 <= time.monotonic() - float(wake.read_text()) < 0.75:
+            return
+        outputs = json.loads(run('wlopm', '--json'))
+        target = next(item for item in outputs if item['output'] == self.output)
+        if self.state.exists() or target['power-mode'] == 'off':
+            self.on()
+        else:
+            self.off()
+
+
+def main():
+    if not CONFIG.exists():
+        return
+    config = configparser.ConfigParser()
+    config.read(CONFIG)
+    action = sys.argv[1].replace('-', '_')
+    if action == 'configure':
+        configure(sys.argv[2])
+        return
+    runtime = Path(os.environ['XDG_RUNTIME_DIR'])
+    state_root = Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state')))
+    controller = DisplayPower(config['display']['output'], config['display']['backlight'],
+                              state_root / 'rpd/screen-power.json')
+    with (runtime / 'rpd-screen-power.lock').open('w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if action not in ('toggle', 'on', 'off', 'restore', 'idle_on', 'idle_off'):
+            raise ValueError('Expected toggle, on, off, restore or configure')
+        getattr(controller, action)()
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as error:
+        print(f'rpd-screen-power: {error}', file=sys.stderr)
+        sys.exit(1)
