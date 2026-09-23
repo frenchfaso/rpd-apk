@@ -39,6 +39,10 @@ for pkg in squeekboard rpd-cpu-topology-m10 rpd-backlight-m10 rpd-settings-backe
         su builder -c "cd /home/builder/rpd-build/ports/rpd-battery && abuild fetch unpack prepare"
         python3 tests/verify_battery_sysfs.py /home/builder/rpd-build/ports/rpd-battery/src/pplug-batt
     fi
+    if [ "$pkg" = rpd-bookshelf ]; then
+        su builder -c "cd /home/builder/rpd-build/ports/rpd-bookshelf && abuild fetch unpack prepare"
+        python3 tests/verify_bookshelf_space.py /home/builder/rpd-build/ports/rpd-bookshelf/src/bookshelf/src/rp_bookshelf.c
+    fi
     apk update
     if [ "$pkg" = gtk-layer-shell ]; then apk add --upgrade gtk-layer-shell gtk-layer-shell-dev; fi
     # The next plugin needs the panel's exported headers and pkg-config file.
