@@ -65,7 +65,7 @@ def main():
             atomic(STATE / 'state.json', json.dumps(model.state))
             atomic(RUNTIME / 'status.json', json.dumps(result, indent=2))
             atomic(RUNTIME / 'estimates.ini', '[m10-battery]\npercentage={}\ntimestamp={}\ntime_to_empty={}\ntime_to_full_at_current_rate={}\n'.format(
-                result['percentage'], int(result['timestamp']),
+                result['percentage'] if result['percentage'] is not None else -1, int(result['timestamp']),
                 result['time_to_empty_seconds'] if result['time_to_empty_seconds'] is not None else -1,
                 result['time_to_full_seconds_at_current_rate'] if result['time_to_full_seconds_at_current_rate'] is not None else -1))
             day = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')

@@ -2,9 +2,11 @@
 
 OEM OCV curves provide a rough seed, not measured SOC. Charge counting refines
 it between observations. Full-charge and rest references correct drift; capacity
-learning requires a substantial, uninterrupted full-to-rest discharge interval.
+learning requires substantial uninterrupted intervals between comparable references.
+Low-current references and voltage seeds remain unvalidated approximations.
 """
 import math
+import statistics
 
 
 def clamp(value, low, high):
@@ -61,6 +63,15 @@ class Model:
             s = self.state = {'schema': 1, 'profile': name, 'capacity_mah': profile['nominal_mah'],
                              'full_references': 0, 'capacity_updates': 0}
         s['capacity_mah'] = clamp(float(s['capacity_mah']), .5 * profile['nominal_mah'], 1.1 * profile['nominal_mah'])
+        # Migrate without discarding learned capacity or diagnostic counters.
+        if s.get('estimator_version') != 2:
+            s.update(estimator_version=2, learning_anchor=None, anchor_net_mah=None,
+                     pending_capacity=None)
+            if 'soc' in s and s['soc'] <= .5:
+                # Replace an already exhausted legacy seed once, using the new
+                # delayed window. Keep capacity and history; this is not learning.
+                s.update(seed_started=sample['elapsed'], seed_samples=[],
+                         estimate_exhausted=False)
         p = s.get('previous')
         dt = sample['elapsed'] - p['elapsed'] if p else 0
         continuous = bool(p and sample['boot_id'] == p['boot_id'] and 0 < dt <= 45)
@@ -76,13 +87,36 @@ class Model:
                       0 <= last_soc <= 100)
             s.update(soc=clamp(last_soc if resume else reference, 0, 99),
                      method='last-estimate-after-gap' if resume else 'voltage-seed',
-                     rest_seconds=0, full_seconds=0, anchor_net_mah=None, was_full=False)
+                     rest_seconds=0, full_seconds=0, anchor_net_mah=None, was_full=False,
+                     learning_anchor=None, rest_reference_taken=False)
+            if not resume:
+                s.update(seed_started=sample['elapsed'], seed_samples=[],
+                         estimate_exhausted=False)
+            elif 'seed_started' in s:
+                # A seed window must not span an unobserved interval.
+                s.update(seed_started=sample['elapsed'], seed_samples=[])
         else:
             dq = (sample['current_ua'] + p['current_ua']) / 2 * dt / 3600000
             s['soc'] = clamp(s['soc'] + dq * 100 / s['capacity_mah'], 0, 100)
             if s.get('anchor_net_mah') is not None:
                 s['anchor_net_mah'] += dq
             s['method'] = 'current-integration'
+        if 'seed_started' in s:
+            if p and (sample['usb_online'] != p['usb_online'] or
+                      (sample['current_ua'] > 20000 and p['current_ua'] < -20000) or
+                      (sample['current_ua'] < -20000 and p['current_ua'] > 20000)):
+                s.update(seed_started=sample['elapsed'], seed_samples=[])
+            age = sample['elapsed'] - s['seed_started']
+            if age >= 60:
+                s['seed_samples'].append(reference)
+            if age >= 180:
+                s['soc'] = clamp(statistics.median(s['seed_samples']), 0, 99)
+                s['method'] = 'filtered-voltage-seed'
+                del s['seed_started'], s['seed_samples']
+            else:
+                s['method'] = 'collecting-voltage-seed'
+        if sample['current_ua'] > 100000:
+            s.update(learning_anchor=None, anchor_net_mah=None)
         full = (sample['usb_online'] and sample['charger_state'] == 5 and
                 -20000 <= sample['current_ua'] <= 100000 and 10 <= sample['temp_c'] <= 45 and
                 sample['voltage_uv'] >= sample['float_voltage_uv'] - 50000)
@@ -90,7 +124,11 @@ class Model:
         if s['full_seconds'] >= 300:
             if not s.get('was_full'):
                 s['full_references'] += 1
-            s.update(soc=100., method='full-charge-reference', anchor_net_mah=0., was_full=True)
+            s.update(soc=100., method='full-charge-reference', anchor_net_mah=0., was_full=True,
+                     estimate_exhausted=False,
+                     learning_anchor={'soc': 100., 'temp_c': sample['temp_c'], 'full': True})
+            s.pop('seed_started', None)
+            s.pop('seed_samples', None)
         elif not full:
             s['was_full'] = False
         # Do not advertise 100% from integration or a terminal-voltage seed alone.
@@ -98,18 +136,30 @@ class Model:
             s['soc'] = min(s['soc'], 99.)
         resting = (not sample['usb_online'] and abs(sample['current_ua']) <= 80000 and
                    continuous and abs(sample['voltage_uv'] - p['voltage_uv']) <= 5000)
+        origin = s.get('rest_origin', sample)
+        resting = (resting and 10 <= sample['temp_c'] <= 45 and
+                   abs(sample['voltage_uv'] - origin['voltage_uv']) <= 5000 and
+                   abs(sample['temp_c'] - origin['temp_c']) <= 2)
+        if not resting or not s.get('rest_seconds'):
+            s['rest_origin'] = dict(sample)
         s['rest_seconds'] = s.get('rest_seconds', 0) + (dt if continuous else 0) if resting else 0
+        if not resting:
+            s['rest_reference_taken'] = False
         if s['rest_seconds'] >= 600:
-            s['soc'] += clamp((reference - s['soc']) * .02, -.1, .1)
+            if s.get('estimate_exhausted'):
+                s['soc'] = min(reference, 99.)
+                s['estimate_exhausted'] = False
+            else:
+                s['soc'] += clamp((reference - s['soc']) * .02, -.1, .1)
             s['method'] = 'rest-corrected'
-            used = -(s.get('anchor_net_mah') or 0)
-            if 10 <= reference <= 65 and used >= 1000:
-                candidate = used * 100 / (100 - reference)
-                nominal = profile['nominal_mah']
-                if .5 * nominal <= candidate <= 1.1 * nominal:
-                    s['capacity_mah'] = .8 * s['capacity_mah'] + .2 * candidate
-                    s['capacity_updates'] += 1
-                    s['anchor_net_mah'] = None  # One update per independent interval.
+            if not s.get('rest_reference_taken'):
+                self.rest_reference(reference, sample)
+                s['rest_reference_taken'] = True
+        # Zero from integration is not a measured empty battery. Latch the loss
+        # of reference: charging alone cannot repair the unknown starting SOC.
+        if 'seed_started' not in s and s['soc'] <= .5:
+            s['estimate_exhausted'] = True
+        available = 'seed_started' not in s and not s.get('estimate_exhausted')
         mode = 'charge' if sample['current_ua'] > 20000 else 'discharge' if sample['current_ua'] < -20000 else 'idle'
         if not continuous or mode != s.get('rate_mode'):
             s.update(rate_ua=float(sample['current_ua']), rate_seconds=0, rate_mode=mode)
@@ -118,7 +168,7 @@ class Model:
             s['rate_ua'] += alpha * (sample['current_ua'] - s['rate_ua'])
             s['rate_seconds'] += dt
         time_empty = time_full = None
-        if s['rate_seconds'] >= 180:
+        if available and s['rate_seconds'] >= 180:
             rate_ma = abs(s['rate_ua']) / 1000
             if rate_ma >= 50 and mode == 'discharge':
                 time_empty = round(s['capacity_mah'] * s['soc'] / 100 / rate_ma * 3600)
@@ -128,8 +178,51 @@ class Model:
         if s.get('was_full'):
             time_full = 0
         s['previous'] = dict(sample)
-        return {**sample, 'profile': name, 'percentage': round(s['soc']), 'estimated': True,
+        return {**sample, 'profile': name, 'percentage': round(s['soc']) if available else None, 'estimated': True,
+                'estimate_status': 'provisional' if available else
+                    'collecting-reference' if 'seed_started' in s else 'reference-exhausted',
+                'learning_status': 'waiting-for-quiet-reference' if s.get('learning_anchor') else
+                    'waiting-for-first-reference',
+                'capacity_candidates': s.get('capacity_candidates', 0),
                 'time_to_empty_seconds': time_empty, 'time_to_full_seconds_at_current_rate': time_full,
                 'method': s['method'], 'capacity_mah_estimated': round(s['capacity_mah']),
                 'full_references': s['full_references'], 'capacity_updates': s['capacity_updates'],
                 'uncertainty': 'unvalidated; terminal voltage is affected by load and ageing'}
+
+    def rest_reference(self, reference, sample):
+        """Consider one low-current endpoint per quiet period, not every sample.
+
+        These are heuristic gates, not a validated error bound. Require two
+        consistent independent intervals before changing capacity. Full-to-rest
+        and partial rest-to-rest discharge use the same measured-charge test.
+        """
+        s = self.state
+        anchor = s.get('learning_anchor')
+        used = -(s.get('anchor_net_mah') or 0)
+        if anchor:
+            span = anchor['soc'] - reference
+            comparable = (abs(sample['temp_c'] - anchor['temp_c']) <= 3 and
+                          (anchor['full'] or
+                           abs(sample['current_ua'] - anchor['current_ua']) <= 20000))
+            if comparable and 10 <= reference <= 65 and span >= 35 and used >= 1000:
+                candidate = used * 100 / span
+                nominal = self.profiles[s['profile']]['nominal_mah']
+                if .5 * nominal <= candidate <= 1.1 * nominal:
+                    s['capacity_candidates'] = s.get('capacity_candidates', 0) + 1
+                    pending = s.get('pending_capacity')
+                    if pending and abs(candidate / pending - 1) <= .1:
+                        s['capacity_mah'] = .9 * s['capacity_mah'] + .1 * (candidate + pending) / 2
+                        s['capacity_updates'] += 1
+                        s['pending_capacity'] = None
+                    else:
+                        s['pending_capacity'] = candidate
+                # Consume the interval even if its candidate is implausible.
+                anchor = None
+            elif not comparable:
+                anchor = None
+        if anchor is None:
+            s.update(learning_anchor=None, anchor_net_mah=None)
+        if anchor is None and 10 <= reference <= 95:
+            s['learning_anchor'] = {'soc': reference, 'temp_c': sample['temp_c'],
+                                    'current_ua': sample['current_ua'], 'full': False}
+            s['anchor_net_mah'] = 0.

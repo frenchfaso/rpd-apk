@@ -6,14 +6,18 @@ try:
         raise ValueError('stale sample')
 except (OSError,ValueError,KeyError):
     raise SystemExit('Battery estimate unavailable; check rpd-power-monitor.service')
-print(f"Estimated charge: ≈{data['percentage']}% ({data['method']})")
+if data['percentage'] is None:
+    print('Estimated charge: unavailable ('+data['estimate_status']+')')
+else:
+    print(f"Estimated charge: ≈{data['percentage']}% ({data['method']})")
+print('Capacity learning: '+data.get('learning_status', 'unknown'))
 print(f"Battery: {data['voltage_uv']/1e6:.3f} V, {data['current_ua']/1000:+.0f} mA, {data['temp_c']:.1f} °C")
 print(f"External power: {'connected' if data['usb_online'] else 'disconnected'}")
 print(f"Calibration: {data['full_references']} full-charge references, {data['capacity_updates']} capacity updates")
 print('Estimate only. Automatic shutdown based on this percentage is disabled.')
 
 def duration(seconds):
-    if seconds is None: return 'calculating'
+    if seconds is None: return 'unavailable' if data['percentage'] is None else 'calculating'
     minutes=round(seconds/60)
     return f'{minutes//60} h {minutes%60:02d} min'
 print('Estimated runtime: '+duration(data.get('time_to_empty_seconds')))

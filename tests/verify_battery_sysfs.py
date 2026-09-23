@@ -56,6 +56,9 @@ int main(void) {
     put("capacity", NULL);
     assert(g_file_set_contents(runtime, "[BAT0]\npercentage=67\ntimestamp=1\n", -1, NULL));
     battery_update(b); assert(b->percentage == -1); assert(!b->estimated);
+    estimate = g_strdup_printf("[BAT0]\npercentage=-1\ntime_to_empty=-1\ntime_to_full_at_current_rate=-1\ntimestamp=%" G_GINT64_FORMAT "\n", g_get_real_time()/G_USEC_PER_SEC);
+    assert(g_file_set_contents(runtime, estimate, -1, NULL)); g_free(estimate);
+    battery_update(b); assert(b->percentage == -1); assert(b->seconds == -1); assert(!b->estimated);
     g_free(runtime);
     battery_free(b); return 0;
 }

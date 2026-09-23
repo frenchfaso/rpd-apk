@@ -7,8 +7,10 @@ while True:
         d=json.loads(pathlib.Path('/run/rpd-power/status.json').read_text())
         fresh=-5 <= time.time()-d['timestamp'] <= 90
         messages={}
-        if fresh and not d['usb_online'] and d['percentage'] <= 15:
+        if fresh and not d['usb_online'] and d.get('percentage') is not None and d['percentage'] <= 15:
             messages['low']='Estimated battery charge is low (≈{}%). Connect the charger.'.format(d['percentage'])
+        if fresh and d.get('estimate_status') == 'reference-exhausted':
+            messages['reference']='Battery estimate unavailable: waiting for a new reference. Remaining charge is unknown.'
         if fresh and d['voltage_uv'] < 3500000 and d['current_ua'] < 0:
             messages['voltage']='Battery voltage is low. Save your work and connect the charger.'
         if fresh and d['temp_c'] >= 45:
