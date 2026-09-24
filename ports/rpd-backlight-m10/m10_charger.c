@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/* Board-specific OEM termination and ATL soft-hot thresholds.
- * ONLY 0x1067-68 and 0x1094-95 are writable. Lenovo revision
+/* Board-specific OEM termination and qualified ATL thermal thresholds.
+ * ONLY 0x1067-68, 0x1094-97 and 0x109a-9b are writable. Lenovo revision
  * 115aa7f0b35f16fda3c7f3b9b08715471849cc25, qpnp-smb5.c/smb5-lib.c.
- * Hard thermal stops, soft-cold, JEITA enables and current/voltage limits
- * stay unchanged. This is not a complete charger/thermal-policy driver.
+ * Hard-hot, JEITA enables and current/voltage limits stay unchanged.
+ * Cold thresholds match ATL; hard-hot is deliberately still more restrictive.
+ * This is not a complete charger/thermal-policy driver.
  * Loading is read-only; existing supply events trigger qualified writes.
  */
 #include <linux/module.h>
@@ -49,6 +50,26 @@ static int warm_write(const unsigned char *value)
 	return regmap_bulk_write(map, 0x1094, value, 2);
 }
 
+static int cold_read(unsigned char *value)
+{
+	return regmap_bulk_read(map, 0x1096, value, 2);
+}
+
+static int cold_write(const unsigned char *value)
+{
+	return regmap_bulk_write(map, 0x1096, value, 2);
+}
+
+static int cold_stop_read(unsigned char *value)
+{
+	return regmap_bulk_read(map, 0x109a, value, 2);
+}
+
+static int cold_stop_write(const unsigned char *value)
+{
+	return regmap_bulk_write(map, 0x109a, value, 2);
+}
+
 /* -170 * 10000 / 1525 = -1114 = fba6, signed big-endian. */
 static struct charger_transaction transaction = {
 	.read = threshold_read, .write = threshold_write,
@@ -61,13 +82,30 @@ static struct charger_transaction warm_transaction = {
 	.baseline = {0x1b, 0xff}, .target = {0x0f, 0xb3},
 };
 
+/* Stock ATL soft-cold and hard-cold, respectively. Hardware comparison
+ * remains active while CPUs sleep; no userspace temperature loop is needed.
+ */
+static struct charger_transaction cold_transaction = {
+	.read = cold_read, .write = cold_write,
+	.baseline = {0x44, 0xc7}, .target = {0x25, 0x7d},
+};
+
+static struct charger_transaction cold_stop_transaction = {
+	.read = cold_stop_read, .write = cold_stop_write,
+	.baseline = {0x4a, 0xff}, .target = {0x37, 0x33},
+};
+
 static struct charger_transaction *settings[] = {
-	&transaction, &warm_transaction,
+	&transaction, &warm_transaction, &cold_transaction, &cold_stop_transaction,
 };
 
 static bool dirty(void)
 {
-	return transaction.dirty || warm_transaction.dirty;
+	unsigned int i;
+	for (i = 0; i < ARRAY_SIZE(settings); i++)
+		if (settings[i]->dirty)
+			return true;
+	return false;
 }
 
 static void release_reference(void)
@@ -96,9 +134,7 @@ static int guards(void)
 		{0x1070, 0xff, 0x4b}, {0x1051, 0xff, 0x2c},
 		{0x1090, 0xff, 0x1f}, {0x1140, 0x01, 0x00},
 		{0x110b, 0x51, 0x11},
-		{0x1096, 0xff, 0x44}, {0x1097, 0xff, 0xc7},
 		{0x1098, 0xff, 0x15}, {0x1099, 0xff, 0xaa},
-		{0x109a, 0xff, 0x4a}, {0x109b, 0xff, 0xff},
 		{0x1007, 0x02, 0x00}, {0x100d, 0x0f, 0x00},
 	};
 	struct iio_channel *channel;
@@ -113,7 +149,8 @@ static int guards(void)
 	}
 	/* Configuration uses the OEM value without a charge-state/current
 	 * requirement. The comparator must already be configured when a charge
-	 * finishes while CPUs are suspended. Hard thermal protection and JEITA enable bits are not changed.
+	 * finishes while CPUs are suspended. Hard-hot protection and JEITA enable
+	 * bits are not changed.
 	 */
 	ret = range(POWER_SUPPLY_PROP_TEMP, 200, 350);
 	if (ret)
@@ -138,7 +175,7 @@ static void restore_locked(void)
 {
 	int i, ret;
 	restore_result = 0;
-	/* Restore soft-hot before termination. Attempt both even on failure. */
+	/* Restore thermal thresholds before termination. Attempt all on failure. */
 	for (i = ARRAY_SIZE(settings) - 1; i >= 0; i--) {
 		ret = charger_restore(settings[i]);
 		if (ret && !restore_result)
@@ -171,7 +208,7 @@ static void update_locked(void)
 	int ret;
 	if (!enabled)
 		return;
-	/* Read both before any write. Defaults may reset independently; preserve
+	/* Read every setting before any write. Defaults may reset independently; preserve
 	 * ownership of the other setting across an unpowered waiting interval.
 	 */
 	for (i = 0; i < ARRAY_SIZE(settings); i++) {
@@ -228,9 +265,11 @@ static void update_locked(void)
 		if (ret)
 			break;
 	}
-	pr_info("m10_charger: apply=%d term=%02x%02x warm=%02x%02x\n",
+	pr_info("m10_charger: apply=%d term=%02x%02x warm=%02x%02x cold=%02x%02x cold_stop=%02x%02x\n",
 		result, transaction.observed[0], transaction.observed[1],
-		warm_transaction.observed[0], warm_transaction.observed[1]);
+		warm_transaction.observed[0], warm_transaction.observed[1],
+		cold_transaction.observed[0], cold_transaction.observed[1],
+		cold_stop_transaction.observed[0], cold_stop_transaction.observed[1]);
 	if (ret) {
 		enabled = false;
 		restore_locked();
@@ -304,12 +343,16 @@ static int status_get(char *buf, const struct kernel_param *kp)
 	int n;
 	mutex_lock(&lock);
 	n = scnprintf(buf, PAGE_SIZE,
-		"applied=%d enabled=%d dirty=%d apply_result=%d restore_result=%d original=%02x%02x observed=%02x%02x warm_original=%02x%02x warm_observed=%02x%02x\n",
+		"applied=%d enabled=%d dirty=%d apply_result=%d restore_result=%d original=%02x%02x observed=%02x%02x warm_original=%02x%02x warm_observed=%02x%02x cold_original=%02x%02x cold_observed=%02x%02x cold_stop_original=%02x%02x cold_stop_observed=%02x%02x\n",
 		applied, enabled, dirty(), result, restore_result,
 		transaction.original[0], transaction.original[1],
 		transaction.observed[0], transaction.observed[1],
 		warm_transaction.original[0], warm_transaction.original[1],
-		warm_transaction.observed[0], warm_transaction.observed[1]);
+		warm_transaction.observed[0], warm_transaction.observed[1],
+		cold_transaction.original[0], cold_transaction.original[1],
+		cold_transaction.observed[0], cold_transaction.observed[1],
+		cold_stop_transaction.original[0], cold_stop_transaction.original[1],
+		cold_stop_transaction.observed[0], cold_stop_transaction.observed[1]);
 	mutex_unlock(&lock);
 	return n;
 }
@@ -385,4 +428,4 @@ static void __exit charger_exit(void)
 module_init(charger_init);
 module_exit(charger_exit);
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Guarded Lenovo M10 OEM termination and ATL soft-hot thresholds");
+MODULE_DESCRIPTION("Guarded Lenovo M10 OEM termination and ATL thermal thresholds");

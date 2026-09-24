@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Apply qualified M10 termination and ATL soft-hot thresholds; never pin the kernel."""
+"""Apply qualified M10 termination and qualified ATL thermal thresholds; never pin the kernel."""
 import errno
 import json
 from pathlib import Path

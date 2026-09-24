@@ -35,26 +35,24 @@ class ChargerPolicyTests(unittest.TestCase):
 #define pr_err(...) ((void)0)
 static bool enabled, pinned, applied;
 static int result, restore_result, wake, map, system_wq, rollback_work;
-static int refs, writes, usb, fault, guard_error, queued, fail_warm, read_error;
-static unsigned char bus[2] = {0x7b, 0xa4}, warm[2] = {0x1b, 0xff};
-static int threshold_read(unsigned char *v) { if (read_error) return -EIO; v[0]=bus[0]; v[1]=bus[1]; return 0; }
-static int threshold_write(const unsigned char *v) {
-    writes++;
-    if (fault) return -EIO;
-    bus[0]=v[0]; bus[1]=v[1]; return 0;
+static int refs, writes, usb, fault=-1, guard_error, queued, read_error;
+static unsigned char bus[4][2];
+static int read_setting(unsigned int i, unsigned char *v) {
+    if (read_error) return -EIO;
+    v[0]=bus[i][0]; v[1]=bus[i][1]; return 0;
 }
-static int warm_read(unsigned char *v) { v[0]=warm[0]; v[1]=warm[1]; return 0; }
-static int warm_write(const unsigned char *v) {
-    writes++;
-    warm[0]=v[0];
-    if (fail_warm) return -EIO; /* partial write */
-    warm[1]=v[1]; return 0;
+static int write_setting(unsigned int i, const unsigned char *v) {
+    writes++; bus[i][0]=v[0];
+    if ((int)i==fault) return -EIO;
+    bus[i][1]=v[1]; return 0;
 }
-static struct charger_transaction transaction = {
- .read=threshold_read,.write=threshold_write,.baseline={0x7b,0xa4},.target={0xfb,0xa6}};
-static struct charger_transaction warm_transaction = {
- .read=warm_read,.write=warm_write,.baseline={0x1b,0xff},.target={0x0f,0xb3}};
-static struct charger_transaction *settings[] = {&transaction,&warm_transaction};
+#define CALLBACKS(name, index) \
+static int name##_read(unsigned char *v) { return read_setting(index,v); } \
+static int name##_write(const unsigned char *v) { return write_setting(index,v); }
+CALLBACKS(threshold,0)
+CALLBACKS(warm,1)
+CALLBACKS(cold,2)
+CALLBACKS(cold_stop,3)
 static int regmap_read(int m, unsigned int address, unsigned int *v) {
     (void)m; assert(address==0x1310); *v=usb ? BIT(4) : 0; return 0;
 }
@@ -67,63 +65,83 @@ static void mod_delayed_work(int w, int *job, int delay) {
     (void)w; (void)job; assert(delay==5); queued++;
 }
 '''
+        harness += source[source.index('/* -170 *'):source.index('static bool dirty(void)')]
         harness += function(source, 'static bool dirty(void)')
         harness += function(source, 'static void release_reference(void)')
         harness += function(source, 'static void restore_locked(void)')
         harness += function(source, 'static void update_locked(void)')
         harness += r'''
+static void reset(void) {
+    assert(refs==0);
+    enabled=applied=pinned=false; result=restore_result=0;
+    writes=usb=guard_error=queued=read_error=wake=0; fault=-1;
+    for (unsigned int i=0;i<ARRAY_SIZE(settings);i++) {
+        struct charger_transaction *t=settings[i];
+        t->dirty=t->verified=0;
+        bus[i][0]=t->baseline[0]; bus[i][1]=t->baseline[1];
+    }
+}
+static void assert_original(void) {
+    for (unsigned int i=0;i<ARRAY_SIZE(settings);i++) {
+        assert(bus[i][0]==settings[i]->baseline[0]);
+        assert(bus[i][1]==settings[i]->baseline[1]);
+    }
+}
+static void apply(void) {
+    enabled=true; usb=1; update_locked();
+    assert(applied && refs==1 && !wake && writes==4);
+}
 int main(void) {
-    update_locked(); assert(writes==0);
-    enabled=true;
-    update_locked(); assert(writes==0 && enabled && result==-EAGAIN);
-    usb=1; guard_error=-ERANGE;
-    update_locked(); assert(writes==0 && enabled && result==-ERANGE);
-    guard_error=0;
-    update_locked(); assert(writes==2 && applied && refs==1 && wake==0);
-    assert(transaction.dirty && warm_transaction.dirty);
-    update_locked(); assert(writes==2 && refs==1);
-    usb=0;
-    update_locked(); assert(writes==2 && applied && refs==1);
-    bus[0]=0x7b; bus[1]=0xa4; /* One setting resets, the other stays owned. */
-    update_locked(); assert(writes==2 && !applied && refs==1 && enabled);
-    assert(!transaction.dirty && warm_transaction.dirty);
-    usb=1;
-    update_locked(); assert(writes==3 && applied && refs==1 && !wake);
-    enabled=false; restore_locked();
-    assert(!dirty() && refs==0 && !wake && bus[0]==0x7b && warm[0]==0x1b);
-    bus[0]=0xfb; bus[1]=0xa6; warm[0]=0x0f; warm[1]=0xb3; enabled=true;
-    update_locked(); assert(applied && refs==0 && !dirty());
-    int previous_writes=writes;
-    update_locked(); assert(writes==previous_writes && refs==0);
-    warm[1]=0xb4; /* Future/native driver's different value. */
-    update_locked(); assert(!enabled && result==-ESTALE && writes==previous_writes);
-    assert(warm[1]==0xb4);
-    bus[0]=0x7b; bus[1]=0xa4; warm[0]=0x1b; warm[1]=0xff;
-    enabled=true; fault=1;
-    update_locked(); assert(!enabled && dirty() && refs==1 && wake && queued==1);
-    update_locked(); assert(refs==1 && wake);
-    fault=0; restore_locked(); assert(!dirty() && refs==0 && !wake);
-    /* Second-setting partial failure must roll back the first too. */
-    enabled=true; fail_warm=1;
-    update_locked(); assert(!enabled && warm_transaction.dirty && !transaction.dirty);
-    assert(bus[0]==0x7b && bus[1]==0xa4 && refs==1 && wake);
-    fail_warm=0; restore_locked();
-    assert(!dirty() && refs==0 && !wake && warm[0]==0x1b && warm[1]==0xff);
-    /* Unknown warm value must be rejected before touching termination. */
-    enabled=true; warm[1]=0xfe; previous_writes=writes;
-    update_locked(); assert(result==-ESTALE && writes==previous_writes && !enabled);
-    warm[1]=0xff; enabled=true; update_locked(); assert(applied && refs==1);
-    /* A new warm owner causes restoration only of our termination value. */
-    warm[1]=0xb4; previous_writes=writes;
-    update_locked(); assert(!enabled && result==-ESTALE && !dirty() && refs==0);
-    assert(writes==previous_writes+1 && bus[0]==0x7b && warm[1]==0xb4);
-    /* Read failures preserve owned snapshots and permit a later clean read. */
-    warm[0]=0x1b; warm[1]=0xff; enabled=true; update_locked();
-    read_error=1; previous_writes=writes; update_locked();
-    assert(result==-EIO && refs==1 && dirty() && writes==previous_writes);
+    assert(transaction.target[0]==0xfb && transaction.target[1]==0xa6);
+    assert(warm_transaction.target[0]==0x0f && warm_transaction.target[1]==0xb3);
+    assert(cold_transaction.target[0]==0x25 && cold_transaction.target[1]==0x7d);
+    assert(cold_stop_transaction.target[0]==0x37 && cold_stop_transaction.target[1]==0x33);
+    reset(); update_locked(); assert(writes==0);
+    enabled=true; update_locked(); assert(writes==0 && result==-EAGAIN);
+    usb=1; guard_error=-ERANGE; update_locked();
+    assert(writes==0 && enabled && result==-ERANGE);
+    guard_error=0; update_locked(); assert(writes==4 && applied && refs==1 && !wake);
+    update_locked(); assert(writes==4 && refs==1);
+    enabled=false; restore_locked(); assert(!dirty() && refs==0 && !wake); assert_original();
+    /* Any one register may reset while the other three remain owned. */
+    for (unsigned int i=0;i<ARRAY_SIZE(settings);i++) {
+        reset(); apply(); usb=0;
+        bus[i][0]=settings[i]->baseline[0]; bus[i][1]=settings[i]->baseline[1];
+        update_locked(); assert(writes==4 && !applied && refs==1 && enabled);
+        usb=1; update_locked(); assert(writes==5 && applied && refs==1 && !wake);
+        enabled=false; restore_locked(); assert(!dirty() && refs==0 && !wake); assert_original();
+    }
+    /* Complete power-cycle reset drops ownership without extra writes. */
+    reset(); apply(); usb=0;
+    for (unsigned int i=0;i<ARRAY_SIZE(settings);i++) {
+        bus[i][0]=settings[i]->baseline[0]; bus[i][1]=settings[i]->baseline[1];
+    }
+    update_locked(); assert(writes==4 && refs==0 && !dirty() && !applied);
+    reset(); enabled=true; usb=1;
+    for (unsigned int i=0;i<ARRAY_SIZE(settings);i++) {
+        bus[i][0]=settings[i]->target[0]; bus[i][1]=settings[i]->target[1];
+    }
+    update_locked(); assert(applied && refs==0 && !dirty() && writes==0);
+    /* Fault at any write rolls back every previously owned setting. */
+    for (int i=0;i<4;i++) {
+        reset(); enabled=true; usb=1; fault=i; update_locked();
+        assert(!enabled && dirty() && refs==1 && wake && queued==1);
+        int n=writes; update_locked(); assert(writes==n);
+        fault=-1; restore_locked(); assert(!dirty() && refs==0 && !wake); assert_original();
+    }
+    /* Unknown values are refused before applying, or preserved on teardown. */
+    for (unsigned int i=0;i<ARRAY_SIZE(settings);i++) {
+        reset(); enabled=true; usb=1; bus[i][1]^=1; update_locked();
+        assert(!enabled && result==-ESTALE && !dirty() && writes==0 && refs==0);
+        reset(); apply(); bus[i][1]^=1; unsigned char foreign=bus[i][1];
+        update_locked(); assert(!enabled && result==-ESTALE && !dirty() && refs==0);
+        assert(writes==7 && bus[i][1]==foreign);
+    }
+    reset(); apply(); read_error=1; update_locked();
+    assert(result==-EIO && refs==1 && dirty() && writes==4);
     read_error=0; update_locked(); assert(applied && result==0);
-    enabled=false; restore_locked(); assert(!dirty() && refs==0 && !wake);
-    puts("PASS: two-setting policy, USB deferral, independent reset, ownership, partial-write rollback and retry");
+    enabled=false; restore_locked(); assert(!dirty() && refs==0 && !wake); assert_original();
+    puts("PASS: actual four-setting policy and OEM bytes, independent reset, ownership, partial-write rollback and retry");
     return 0;
 }
 '''
