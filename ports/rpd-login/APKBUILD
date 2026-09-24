@@ -1,6 +1,6 @@
 pkgname=rpd-login
 pkgver=0.1.0
-pkgrel=61
+pkgrel=62
 pkgdesc="LightDM with the Raspberry Pi Wayland greeter and on-screen keyboard"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
