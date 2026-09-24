@@ -4,3 +4,6 @@ obj-m += m10_otg_vbus.o
 obj-m += m10_battery.o
 obj-m += m10_adc5_battery.o
 obj-m += m10_charger.o
+obj-m += m10_audio_pmic.o
+obj-m += m10_wcd_analog.o
+obj-m += m10_speaker_amp.o

@@ -1,0 +1,3 @@
+#!/bin/sh
+# The topology hook runs first; failure must never retain an old audio DTB.
+exec python3 /usr/lib/rpd-audio-m10/audio-dtb.py

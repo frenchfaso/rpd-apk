@@ -1,16 +1,16 @@
 pkgname=rpd-backlight-m10
 pkgver=7.1.3
-pkgrel=44
+pkgrel=45
 pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="GPL-2.0-only"
-subpackages="rpd-usb-otg-m10:otg rpd-battery-m10:battery rpd-charger-m10:charger"
-install="rpd-charger-m10.post-install rpd-charger-m10.post-upgrade rpd-charger-m10.pre-deinstall rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
+subpackages="rpd-usb-otg-m10:otg rpd-battery-m10:battery rpd-charger-m10:charger rpd-audio-m10:audio"
+install="rpd-audio-m10.post-install rpd-audio-m10.post-upgrade rpd-audio-m10.post-deinstall rpd-charger-m10.post-install rpd-charger-m10.post-upgrade rpd-charger-m10.pre-deinstall rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
 _kernel_apk_version=7.1.3-r0
 depends="kmod brightnessctl brightnessctl-udev"
-makedepends="clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3"
-source="m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
+makedepends="clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3 py3-libfdt dtc rpd-cpu-topology-m10"
+source="m10_wcd_analog.c m10_speaker_amp.c m10-audio-pmic.diff m10-audio.dtsi audio-dtb.py test-audio.py 95-rpd-audio-m10 Lenovo-M10.conf HiFi.conf 51-rpd-m10-audio.conf m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
     kernel.config Makefile m10_firmware_backlight.c
     rpd-backlight-m10.service rpd-backlight-m10-load
     m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset
@@ -39,7 +39,18 @@ build() {
     # .diff avoids abuild applying this to the kernel during default_prepare.
     # Only the standalone module copy receives the battery ADC changes.
     patch -d "$srcdir/backlight-module" -p0 < "$srcdir/m10-adc5-battery.diff"
+    cp "$srcdir/m10_wcd_analog.c" "$srcdir/m10_speaker_amp.c" "$srcdir/backlight-module/"
+    cp drivers/mfd/qcom-spmi-pmic.c "$srcdir/backlight-module/m10_audio_pmic.c"
+    patch -d "$srcdir/backlight-module" -p0 < "$srcdir/m10-audio-pmic.diff"
     make LLVM=1 M="$srcdir/backlight-module" modules
+    # Build from this kernel's board source; never ship an old full board tree.
+    make LLVM=1 qcom/sdm429-lenovo-tbx505x.dtb
+    cp arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dtb "$srcdir/base.dtb"
+    printf '%s\n' '#include "sdm429-lenovo-tbx505x.dts"' '#include "m10-audio.dtsi"' > "$srcdir/audio.dts"
+    clang -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp \
+        -Iscripts/dtc/include-prefixes -Iarch/arm64/boot/dts/qcom -I"$srcdir" \
+        "$srcdir/audio.dts" -o "$srcdir/audio.pp.dts"
+    dtc -I dts -O dtb -o "$srcdir/audio.dtb" "$srcdir/audio.pp.dts"
 }
 
 check() {
@@ -59,6 +70,7 @@ PY
     "$srcdir/test-charger"
     sh -n "$srcdir/rpd-backlight-m10-load"
     python3 "$srcdir/test-otg.py"
+    python3 "$srcdir/test-audio.py" "$srcdir/base.dtb" "$srcdir/audio.dtb"
 }
 
 package() {
@@ -116,7 +128,37 @@ charger() {
         > "$subpkgdir/usr/lib/rpd-charger-m10/kernel.json"
 }
 
+audio() {
+    pkgdesc="Lenovo M10 PM8953 internal stereo speakers"
+    depends="kmod python3 py3-libfdt alsa-ucm-conf rpd-cpu-topology-m10"
+    for module in m10_audio_pmic m10_wcd_analog m10_speaker_amp; do
+        install -Dm644 "$srcdir/backlight-module/$module.ko" \
+            "$subpkgdir/usr/lib/modules/$pkgver-msm89x7/extra/$module.ko"
+    done
+    for file in audio-dtb.py base.dtb audio.dtb; do
+        install -Dm644 "$srcdir/$file" "$subpkgdir/usr/lib/rpd-audio-m10/$file"
+    done
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" \
+        > "$subpkgdir/usr/lib/rpd-audio-m10/kernel.json"
+    install -Dm755 "$srcdir/95-rpd-audio-m10" "$subpkgdir/usr/share/boot-deploy/hooks/95-rpd-audio-m10"
+    install -Dm644 "$srcdir/Lenovo-M10.conf" "$subpkgdir/usr/share/alsa/ucm2/conf.d/Lenovo-M10/Lenovo-M10.conf"
+    install -Dm644 "$srcdir/HiFi.conf" "$subpkgdir/usr/share/alsa/ucm2/Lenovo/M10/HiFi.conf"
+    install -Dm644 "$srcdir/51-rpd-m10-audio.conf" "$subpkgdir/etc/wireplumber/wireplumber.conf.d/51-rpd-m10-audio.conf"
+    mkdir -p "$subpkgdir/usr/share/mkinitfs-triggers"
+    touch "$subpkgdir/usr/share/mkinitfs-triggers/rpd-audio-m10"
+}
+
 sha512sums="
+ac99841a50068ad2f22ffa3d492b8ba57681bbe52d4d83d602d0808cfb961adbef8bc8852aa9b829fc4e5108d0814af99c3ae6450de65067ffe5e4110f2f5a78  m10_wcd_analog.c
+db18236b22b432919e025e24c48fb0c9cdc43e44402d9e56746acc90600a43a3753fe6d74ba6de8559e035292d6a7a7a073c943ad88023892ff65dd0d859189d  m10_speaker_amp.c
+57dd5a3a583c2c4126bf22dd210e2dc429d79ad8f876d66ba6eb60b5bcef6166dfa006240e96651886fcd79b2559fdf402c7afbde231d33ae72ae191fcd1d8a1  m10-audio-pmic.diff
+7d7809f6317adeec56c0d4bd81b45578a5026e201ace7e03d042e49c5ffc9c11db4500570ed657a9d88d70e07cdf115f0af1c083993ce0f30c7c445a218f8b72  m10-audio.dtsi
+3b4c4ad34ca99b4bef5e7f1a996f06ed0de686f56d07eed7a4d2a527b4758938f24e2fef743e28667dc8350bdf65464e6953c53186fc012fefcdbb56e5d6681b  audio-dtb.py
+bfc2f6eb82b79dd1e90801ff9bc403259ccb375aad368e752b7b55a278b829db5ab2f827c274043d2c39e2d28bef28f9d0b20e69a042c9734c02f8093f23a56c  test-audio.py
+b3a69d391e7b181573e2b4b3247269e650fe5f78951f01de6bcdbeee2f02a724097df8e3ef5b71f6f0fb7a3c8c2bbf2232443281f5d6f002499f3a4c0bebc48f  95-rpd-audio-m10
+60574c17a54fc1fe58fe4bb7c21312ce7741fa04b50e8c24e129ecbc304df1db7090a7fabe56a8da87bad9647732fcc091938511d698a6d112b0ddc513ad1697  Lenovo-M10.conf
+4d2f8e5650b507878f4aacf0ce08111282c8fac3be55753b5a5de04178fc0dfc4da95963204acd1b95b8d7439aee8d10ffaaea15a0b77c6d4b2f680f03c9945a  HiFi.conf
+92124893f19b564bd0eda003f536085194296f8ca0878d594d0daf3abda0a009696326c1062089f6e7a86a73e9ba54a4eca56289320594db31b7953174155a23  51-rpd-m10-audio.conf
 5785d6ffc29bb2efcfa267a69cda50c3ccb69289f37002ed6be61ddbc13804f45028ec539d33fc4c08821403e740cb29daa4f3530208326fea450c1dcef15d3b  m10_charger.c
 92131a7234382b9e95849ee4a0292f668610b8417cc23a00165d88248a7996e95122e11fc1a10b2150d968bd21f80253da7c1aef09c7c65de291e6e770fdfd8b  m10_charger_transaction.h
 dc02cb4b7174ab1f91840a94c7b1436cf16c2ccd36fa3e2ee7460c48a640dc12e2b3ecf513fa8ff3555d20d5a418210ea3d7e1dde4371361b1893296f0d54c6a  test-charger.c
@@ -126,7 +168,7 @@ f2b7a0d953e799c4eb17dcee05aadc5d8dd3f6ae856c36cb0abae54ce432928b633e32aaab5b1158
 42b72db375438a3b354ad858068bbe92de80eb4655554d5ef20cdd30b0ea249c157965919616220d9e85cd447eb2afe9a05a48378b946648c47656750cbf147b  80-rpd-battery-m10.preset
 c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a  linux-v7.1.3-r1.tar.gz
 ffe6bd375fecf5d69c586d821605af94f8d5665ce51fb9471627b52ff54712f1de3bf1e64f65125f7fae9a961f8b9818f870db22029d5185c2caf7e1f7f97354  kernel.config
-e6c7ad118dbd05a74fb91372b8663a3b543cfb7048db86ac4fc3f2a2312aec755d33fcd354edce1d1a53b3ef0d899ecf912d7be202c1af4184646fd8da69ddd8  Makefile
+50d41a6feb9ec50985e8238ac15029cf83d1dd4a94be1f303e21a3fe86c547744fb1fa865258e8f2e43ffd553ba609af614de4d0ba913653ece855e8e8a50dcf  Makefile
 1188ee7f0af003d2640a4ab0682dec111beab9d5b5aa669d8f5198b9dc609b5e7b8dc1b4cd48cc09a9bb9d7aafc2b4ed90d77e578d758626f4f0e6f9a862df57  m10_firmware_backlight.c
 c6a52f9fdef8e19515aa7bf1de0bd6ec848901f8985445d8043296d17cda0e94548a27695bf18196bfbdcc8682e956681630b22706613773339935b9dbe2350b  rpd-backlight-m10.service
 436bc87d387c383779e59ae887e0998f42c2861ff91d9a4bbafd7217f114346404d79e3ab3a19d4db71b9542b0be1023b07020afb3a4a205385070eef63e2b4b  rpd-backlight-m10-load

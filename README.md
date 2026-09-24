@@ -2,7 +2,7 @@
 
 The **Raspberry Pi OS ARM Trixie** desktop on postmarketOS/Alpine, with its menu,
 theme, LightDM login, Chromium, VLC and essential utilities. Includes M10 support
-for touch, rotation, the on-screen keyboard, Bluetooth, USB OTG, brightness and battery.
+for touch, rotation, the on-screen keyboard, Bluetooth, USB OTG, internal speakers, brightness and battery.
 This ports the desktop; the underlying OS remains postmarketOS, managed through APK.
 
 ## Install
@@ -41,5 +41,5 @@ The metapackage restores the desktop and integrations, not personal files, Wi-Fi
 credentials or battery calibration history. Battery charge and runtime are estimates.
 
 Details: [desktop](docs/DESKTOP.md), [battery](docs/BATTERY-TELEMETRY.md),
-[USB OTG](docs/M10-USB-OTG.md), [optional LVM storage](docs/LVM-M10.md),
+[audio](docs/M10-AUDIO.md), [USB OTG](docs/M10-USB-OTG.md), [optional LVM storage](docs/LVM-M10.md),
 [building and publishing](docs/REPOSITORY.md).
