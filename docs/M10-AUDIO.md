@@ -8,7 +8,8 @@ enabled by this profile.
 The PM8953 codec feeds two external amplifiers through HPHL/HPHR. Their enable
 pins use the two-pulse sequence found in the matching Lenovo Android driver.
 The amplifier part number is not known. ALSA DAPM powers them only while needed.
-Codec gain is limited to -12 dB; PipeWire controls both channels in software.
+RX1/RX2 codec gain is fixed at 0 dB (84), matching the original Android mixer
+configuration; PipeWire controls both channels in software.
 
 ## Kernel integration
 
