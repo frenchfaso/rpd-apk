@@ -5,7 +5,7 @@
 # Local patch is opt-in; the greeter retains upstream visibility behavior.
 pkgname=squeekboard
 pkgver=1.43.1
-pkgrel=120
+pkgrel=121
 pkgdesc="The final Phosh keyboard"
 # loongarch64: nix error: sys/ioctl/linux.rs:51: could not find `consts` in `self`
 # s390x: fails with nix/libc errors
