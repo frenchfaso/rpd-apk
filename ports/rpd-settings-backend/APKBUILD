@@ -1,6 +1,6 @@
 pkgname=rpd-settings-backend
 pkgver=0.1.0
-pkgrel=46
+pkgrel=47
 pkgdesc="Portable settings integration for Raspberry Pi Desktop"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
