@@ -47,7 +47,8 @@ def customize(recipe, patches, revision):
 
 def main():
     commit = json.loads(fetch(API + 'commits?path=main%2Fmesa&per_page=1'))[0]['id']
-    recipe = fetch(API + 'files/main%2Fmesa%2FAPKBUILD/raw?ref=' + commit).decode()
+    raw = 'https://gitlab.alpinelinux.org/alpine/aports/-/raw/' + commit + '/main/mesa/'
+    recipe = fetch(raw + 'APKBUILD').decode()
     reference = (PORT / 'upstream-APKBUILD.reference').read_text()
     if recipe == reference:
         print('Reviewed Alpine Mesa recipe unchanged')
