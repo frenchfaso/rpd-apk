@@ -1,17 +1,19 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /* Two-byte transaction, shared by the charger module and fault tests.
- * The callbacks can access only CHGR_ADC_ITERM_UP_THD_MSB/LSB.
+ * Each callback pair accesses one fixed, qualified two-byte register.
  */
-struct term_transaction {
+struct charger_transaction {
 	int (*read)(unsigned char *value);
 	int (*write)(const unsigned char *value);
+	unsigned char baseline[2];
+	unsigned char target[2];
 	unsigned char original[2];
 	unsigned char observed[2];
 	int dirty;
 	int verified;
 };
 
-static int term_restore(struct term_transaction *t)
+static int charger_restore(struct charger_transaction *t)
 {
 	unsigned char value[2];
 	int ret;
@@ -26,7 +28,7 @@ static int term_restore(struct term_transaction *t)
 			t->dirty = 0;
 			return 0;
 		}
-		if (value[0] != 0xfb || value[1] != 0xa6) {
+		if (value[0] != t->target[0] || value[1] != t->target[1]) {
 			t->dirty = 0;
 			return -ESTALE;
 		}
@@ -45,12 +47,9 @@ static int term_restore(struct term_transaction *t)
 	return 0;
 }
 
-static int term_apply(struct term_transaction *t)
+static int charger_apply(struct charger_transaction *t)
 {
-	/* Exact signed Lenovo PMI632 conversion, C division truncates to zero. */
-	int raw = -170 * 10000 / 1525;
-	unsigned int word = (unsigned int)raw & 0xffff;
-	unsigned char target[2] = { word >> 8, word & 0xff };
+
 	int ret;
 	if (t->dirty)
 		return -EBUSY;
@@ -58,23 +57,23 @@ static int term_apply(struct term_transaction *t)
 	if (ret)
 		return ret;
 	/* Already OEM-configured: observe, do not acquire write ownership. */
-	if (t->original[0] == target[0] && t->original[1] == target[1]) {
-		t->observed[0] = target[0];
-		t->observed[1] = target[1];
+	if (t->original[0] == t->target[0] && t->original[1] == t->target[1]) {
+		t->observed[0] = t->target[0];
+		t->observed[1] = t->target[1];
 		return 0;
 	}
-	if (t->original[0] != 0x7b || t->original[1] != 0xa4)
+	if (t->original[0] != t->baseline[0] || t->original[1] != t->baseline[1])
 		return -EINVAL;
 	t->verified = 0;
 	/* A failed bus write can still have modified one byte. */
 	t->dirty = 1;
-	ret = t->write(target);
+	ret = t->write(t->target);
 	if (ret)
 		return ret;
 	ret = t->read(t->observed);
 	if (ret)
 		return ret;
-	if (t->observed[0] != target[0] || t->observed[1] != target[1])
+	if (t->observed[0] != t->target[0] || t->observed[1] != t->target[1])
 		return -EIO;
 	t->verified = 1;
 	return 0;

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/* Board-specific OEM ADC termination threshold, not a full charger driver.
- * ONLY 0x1067-68 is writable. Lenovo revision
- * 115aa7f0b35f16fda3c7f3b9b08715471849cc25, qpnp-smb5.c, -170 mA.
- * Loading is read-only; the service applies after checking kernel ownership.
- * Existing power-supply events trigger configuration when USB is powered.
- * No dedicated polling or held wake lock is needed during normal operation.
+/* Board-specific OEM termination and ATL soft-hot thresholds.
+ * ONLY 0x1067-68 and 0x1094-95 are writable. Lenovo revision
+ * 115aa7f0b35f16fda3c7f3b9b08715471849cc25, qpnp-smb5.c/smb5-lib.c.
+ * Hard thermal stops, soft-cold, JEITA enables and current/voltage limits
+ * stay unchanged. This is not a complete charger/thermal-policy driver.
+ * Loading is read-only; existing supply events trigger qualified writes.
  */
 #include <linux/module.h>
 #include <linux/of.h>
@@ -39,9 +39,44 @@ static int threshold_write(const unsigned char *value)
 	return regmap_bulk_write(map, 0x1067, value, 2);
 }
 
-static struct term_transaction transaction = {
+static int warm_read(unsigned char *value)
+{
+	return regmap_bulk_read(map, 0x1094, value, 2);
+}
+
+static int warm_write(const unsigned char *value)
+{
+	return regmap_bulk_write(map, 0x1094, value, 2);
+}
+
+/* -170 * 10000 / 1525 = -1114 = fba6, signed big-endian. */
+static struct charger_transaction transaction = {
 	.read = threshold_read, .write = threshold_write,
+	.baseline = {0x7b, 0xa4}, .target = {0xfb, 0xa6},
 };
+
+/* Exact ATL soft-hot value from the stock M10 battery profile. */
+static struct charger_transaction warm_transaction = {
+	.read = warm_read, .write = warm_write,
+	.baseline = {0x1b, 0xff}, .target = {0x0f, 0xb3},
+};
+
+static struct charger_transaction *settings[] = {
+	&transaction, &warm_transaction,
+};
+
+static bool dirty(void)
+{
+	return transaction.dirty || warm_transaction.dirty;
+}
+
+static void release_reference(void)
+{
+	if (!dirty() && pinned) {
+		pinned = false;
+		module_put(THIS_MODULE);
+	}
+}
 
 static int range(enum power_supply_property prop, int low, int high)
 {
@@ -60,7 +95,7 @@ static int guards(void)
 		{0x106a, 0xff, 0x46}, {0x1061, 0xff, 0x14},
 		{0x1070, 0xff, 0x4b}, {0x1051, 0xff, 0x2c},
 		{0x1090, 0xff, 0x1f}, {0x1140, 0x01, 0x00},
-		{0x1094, 0xff, 0x1b}, {0x1095, 0xff, 0xff},
+		{0x110b, 0x51, 0x11},
 		{0x1096, 0xff, 0x44}, {0x1097, 0xff, 0xc7},
 		{0x1098, 0xff, 0x15}, {0x1099, 0xff, 0xaa},
 		{0x109a, 0xff, 0x4a}, {0x109b, 0xff, 0xff},
@@ -78,7 +113,7 @@ static int guards(void)
 	}
 	/* Configuration uses the OEM value without a charge-state/current
 	 * requirement. The comparator must already be configured when a charge
-	 * finishes while CPUs are suspended. Thermal policy is not changed.
+	 * finishes while CPUs are suspended. Hard thermal protection and JEITA enable bits are not changed.
 	 */
 	ret = range(POWER_SUPPLY_PROP_TEMP, 200, 350);
 	if (ret)
@@ -101,16 +136,19 @@ static int guards(void)
  */
 static void restore_locked(void)
 {
-	restore_result = term_restore(&transaction);
-	pr_info("m10_charger: restore=%d dirty=%d\n",
-		restore_result, transaction.dirty);
-	if (!transaction.dirty) {
+	int i, ret;
+	restore_result = 0;
+	/* Restore soft-hot before termination. Attempt both even on failure. */
+	for (i = ARRAY_SIZE(settings) - 1; i >= 0; i--) {
+		ret = charger_restore(settings[i]);
+		if (ret && !restore_result)
+			restore_result = ret;
+	}
+	pr_info("m10_charger: restore=%d dirty=%d\n", restore_result, dirty());
+	if (!dirty()) {
 		applied = false;
 		__pm_relax(wake);
-		if (pinned) {
-			pinned = false;
-			module_put(THIS_MODULE);
-		}
+		release_reference();
 	} else {
 		__pm_stay_awake(wake);
 		mod_delayed_work(system_wq, &rollback_work, 5 * HZ);
@@ -120,7 +158,7 @@ static void restore_locked(void)
 static void rollback_run(struct work_struct *work)
 {
 	mutex_lock(&lock);
-	if (transaction.dirty)
+	if (dirty())
 		restore_locked();
 	mutex_unlock(&lock);
 }
@@ -128,48 +166,45 @@ static void rollback_run(struct work_struct *work)
 static void update_locked(void)
 {
 	unsigned char value[2];
-	unsigned int usb_status;
+	unsigned int i, usb_status;
+	bool complete = true;
 	int ret;
 	if (!enabled)
 		return;
-	if (transaction.dirty && !applied) {
-		enabled = false;
-		result = -EBUSY;
-		return;
-	}
-	/* A charger power cycle can restore defaults. Never overwrite a third
-	 * value: that belongs to another owner or an unqualified configuration.
+	/* Read both before any write. Defaults may reset independently; preserve
+	 * ownership of the other setting across an unpowered waiting interval.
 	 */
-	if (applied) {
-		ret = threshold_read(value);
+	for (i = 0; i < ARRAY_SIZE(settings); i++) {
+		struct charger_transaction *t = settings[i];
+		ret = t->read(value);
 		if (ret) {
 			result = ret;
 			return;
 		}
-		if (value[0] == 0xfb && value[1] == 0xa6)
-			return;
-		transaction.dirty = 0;
-		transaction.verified = 0;
-		applied = false;
-		if (pinned) {
-			pinned = false;
-			module_put(THIS_MODULE);
-		}
-		if (value[0] != 0x7b || value[1] != 0xa4) {
+		if (value[0] == t->target[0] && value[1] == t->target[1])
+			continue;
+		t->dirty = 0;
+		t->verified = 0;
+		complete = false;
+		if (value[0] != t->baseline[0] || value[1] != t->baseline[1]) {
 			enabled = false;
 			result = -ESTALE;
-			pr_err("m10_charger: threshold ownership changed; no write\n");
+			restore_locked();
+			pr_err("m10_charger: threshold ownership changed; foreign value preserved\n");
 			return;
 		}
 	}
+	release_reference();
+	if (applied && complete) {
+		result = 0;
+		return;
+	}
+	applied = false;
 	ret = regmap_read(map, 0x1310, &usb_status);
 	if (ret) {
 		result = ret;
 		return;
 	}
-	/* The real device ignores configuration writes with USB input absent.
-	 * Wait for existing m10-usb notifications; do not hold CPUs awake.
-	 */
 	if (!(usb_status & BIT(4))) {
 		result = -EAGAIN;
 		return;
@@ -177,27 +212,32 @@ static void update_locked(void)
 	result = ret = guards();
 	if (ret)
 		return;
-	if (!try_module_get(THIS_MODULE)) {
-		result = -ENODEV;
-		return;
+	if (!pinned) {
+		if (!try_module_get(THIS_MODULE)) {
+			result = -ENODEV;
+			return;
+		}
+		pinned = true;
 	}
-	pinned = true;
 	__pm_stay_awake(wake);
-	result = ret = term_apply(&transaction);
-	pr_info("m10_charger: apply=%d original=%02x%02x observed=%02x%02x\n",
-		result, transaction.original[0], transaction.original[1],
-		transaction.observed[0], transaction.observed[1]);
+	for (i = 0; i < ARRAY_SIZE(settings); i++) {
+		/* A retained owned setting must not lose its original snapshot. */
+		if (settings[i]->dirty)
+			continue;
+		result = ret = charger_apply(settings[i]);
+		if (ret)
+			break;
+	}
+	pr_info("m10_charger: apply=%d term=%02x%02x warm=%02x%02x\n",
+		result, transaction.observed[0], transaction.observed[1],
+		warm_transaction.observed[0], warm_transaction.observed[1]);
 	if (ret) {
-		/* A real write failure is latched until the service is restarted. */
 		enabled = false;
 		restore_locked();
 	} else {
 		applied = true;
 		__pm_relax(wake);
-		if (!transaction.dirty) {
-			pinned = false;
-			module_put(THIS_MODULE);
-		}
+		release_reference();
 	}
 }
 
@@ -264,10 +304,12 @@ static int status_get(char *buf, const struct kernel_param *kp)
 	int n;
 	mutex_lock(&lock);
 	n = scnprintf(buf, PAGE_SIZE,
-		"applied=%d enabled=%d dirty=%d apply_result=%d restore_result=%d original=%02x%02x observed=%02x%02x\n",
-		applied, enabled, transaction.dirty, result, restore_result,
+		"applied=%d enabled=%d dirty=%d apply_result=%d restore_result=%d original=%02x%02x observed=%02x%02x warm_original=%02x%02x warm_observed=%02x%02x\n",
+		applied, enabled, dirty(), result, restore_result,
 		transaction.original[0], transaction.original[1],
-		transaction.observed[0], transaction.observed[1]);
+		transaction.observed[0], transaction.observed[1],
+		warm_transaction.original[0], warm_transaction.original[1],
+		warm_transaction.observed[0], warm_transaction.observed[1]);
 	mutex_unlock(&lock);
 	return n;
 }
@@ -343,4 +385,4 @@ static void __exit charger_exit(void)
 module_init(charger_init);
 module_exit(charger_exit);
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Guarded Lenovo M10 OEM ADC charge-termination threshold");
+MODULE_DESCRIPTION("Guarded Lenovo M10 OEM termination and ATL soft-hot thresholds");

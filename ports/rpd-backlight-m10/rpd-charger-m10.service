@@ -1,5 +1,5 @@
 [Unit]
-Description=Lenovo M10 OEM charge-termination threshold
+Description=Lenovo M10 OEM termination and ATL soft-hot thresholds
 BindsTo=rpd-battery-m10.service
 PartOf=rpd-battery-m10.service
 After=rpd-battery-m10.service

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Apply only the qualified M10 termination threshold; never pin the kernel."""
+"""Apply qualified M10 termination and ATL soft-hot thresholds; never pin the kernel."""
 import errno
 import json
 from pathlib import Path
@@ -81,7 +81,7 @@ def main():
         raise RuntimeError('Qualified M10 telemetry is not ready')
     if PARAMS.exists():
         if status()['enabled'] == '1':
-            print('M10 termination service already enabled')
+            print('M10 charger service already enabled')
             return
         stop()
     run('modprobe', 'm10_charger')
@@ -92,7 +92,7 @@ def main():
     except Exception:
         stop()
         raise
-    print('M10 termination service enabled; applied=' + status()['applied'] + '; waits for powered USB/qualified conditions without a sleep inhibitor')
+    print('M10 charger service enabled; applied=' + status()['applied'] + '; waits for powered USB/qualified conditions without a sleep inhibitor')
 
 
 if __name__ == '__main__':
