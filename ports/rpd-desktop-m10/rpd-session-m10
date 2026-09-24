@@ -1,5 +1,4 @@
 #!/bin/sh
 export RPD_SOFTWARE_RENDERING=1
-[ ! -f /usr/lib/rpd-gpu-m10/renderer.sh ] || . /usr/lib/rpd-gpu-m10/renderer.sh
 export RPD_TWO_FINGER_RIGHT_CLICK=1
 exec rpd-session "$@"

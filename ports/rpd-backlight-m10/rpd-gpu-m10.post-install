@@ -1,6 +1,0 @@
-#!/bin/sh
-set -eu
-if command -v systemctl >/dev/null; then
-    systemctl daemon-reload || :
-    systemctl preset rpd-gpu-m10.service || :
-fi

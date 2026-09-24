@@ -5,7 +5,7 @@ pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-gpu-m10 rpd-audio-m10 rpd-lvm-m10 rpd-charger-m10 rpd-power rpd-cpu-topology-m10 rpd-usb-otg-m10 rpd-backlight-m10 rpd-autorotate rpd-desktop-browser labwc=0.20.2-r151"
+depends="rpd-audio-m10 rpd-lvm-m10 rpd-charger-m10 rpd-power rpd-cpu-topology-m10 rpd-usb-otg-m10 rpd-backlight-m10 rpd-autorotate rpd-desktop-browser labwc=0.20.2-r151"
 options="!check"
 source="99-rpd-m10-storage.rules screen-power.conf autorotate.conf 61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
 
@@ -24,7 +24,7 @@ sha512sums="
 e826e93e677b254fedce323605c85fca78634d158936bcf272b2b03e02ef22aeaded02d7c9950f771a46965ad6e3dd0bd3d81c6ee0a569a0cb515c3d946d64ef  screen-power.conf
 995207ab6f03929e72affbe630cc78209968493d0d1e83717ddda0987c7620154a834b202d1cf393d28b33cc360e2b4c40a207acf5d68045f30741aacc5ceb8e  autorotate.conf
 fd593deae8923a3f2bd112b72d446603141bd2f98a7ab45cd58fd571c84822ee45acbb2fc0684af2f132a0a60ffa7d19fac02876234ac003528093ba287ca8aa  61-rpd-m10.conf
-a1245b3d981fc1f165e0d94d9a92461ab335c9fad888a348b15f8d9a1f5a3b4aae93c77dad97e991cd065ede7b3f45d4091a6d3e1984123977c7b5dd83eae388  greeter-renderer.conf
-4dec4d88485367aaaced00f46399563affefc35161a180c5884850309428607fa40d36725882b51715ebf24d1aa0c8b0e00e9f3bae4b9696b5ad5e073a066d15  rpd-session-m10
+52ff4f92db495f0c77a6f3f02aab42e696c92ca2102d46de1a5e9559c83e90361f5b835fb93a73cd39956ed32fb66dd022300ee9996578da45b27031860b6bb7  greeter-renderer.conf
+0eb87698ca63ddc1ff007af4b5a6525faaf0f6bdfb7f927478479431369bdfaf0ea28df3de50cccc93c85297cac8865cdf7cb1c7cda3902303d06e2690c229c6  rpd-session-m10
 7faf90d4b415b6e4f66f1b76aa9a60997f380cb0202b3a28cf29ccd150aa10a2c624b6d19c01b97a605bb6ca77528ca787ee92f961d941afbb024bbbc58a972f  rpd-session-m10.desktop
 "

@@ -25,8 +25,8 @@ jobs:
       - name: Check signed upstream releases and allocate APK revision
         run: |
           python3 -m unittest discover -s tests -p 'test_*.py'
-          docker run --rm -v "$PWD:/work" -w /work alpine:edge sh -ec 'apk add --no-cache python3; python3 scripts/update-m10-kernel.py; python3 scripts/update-mesa.py'
-          sudo chown -R "$(id -u):$(id -g)" ports/rpd-backlight-m10 ports/mesa
+          docker run --rm -v "$PWD:/work" -w /work alpine:edge sh -ec 'apk add --no-cache python3; python3 scripts/update-m10-kernel.py'
+          sudo chown -R "$(id -u):$(id -g)" ports/rpd-backlight-m10
           python3 scripts/update-upstream.py
           python3 scripts/bump-revision.py
           git config user.name 'github-actions[bot]'
@@ -39,7 +39,7 @@ jobs:
   build:
     needs: prepare
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 180
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

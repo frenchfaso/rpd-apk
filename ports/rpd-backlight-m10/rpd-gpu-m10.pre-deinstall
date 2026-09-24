@@ -1,3 +1,0 @@
-#!/bin/sh
-# Leave loaded modules alone; the next boot uses the official kernel tree.
-systemctl disable rpd-gpu-m10.service 2>/dev/null || :
