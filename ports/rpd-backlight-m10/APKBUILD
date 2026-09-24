@@ -1,16 +1,16 @@
 pkgname=rpd-backlight-m10
 pkgver=7.1.3
-pkgrel=33
+pkgrel=34
 pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="GPL-2.0-only"
-subpackages="rpd-usb-otg-m10:otg rpd-battery-m10:battery"
-install="rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
+subpackages="rpd-usb-otg-m10:otg rpd-battery-m10:battery rpd-charger-m10:charger"
+install="rpd-charger-m10.post-install rpd-charger-m10.post-upgrade rpd-charger-m10.pre-deinstall rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
 _kernel_apk_version=7.1.3-r0
 depends="kmod brightnessctl brightnessctl-udev"
 makedepends="clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3"
-source="80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
+source="m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
     kernel.config Makefile m10_firmware_backlight.c
     rpd-backlight-m10.service rpd-backlight-m10-load
     m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset
@@ -33,6 +33,7 @@ build() {
     make LLVM=1 modules_prepare
     mkdir -p "$srcdir/backlight-module"
     cp "$srcdir/Makefile" "$srcdir/m10_firmware_backlight.c" "$srcdir/m10_otg_id.c" "$srcdir/m10_otg_vbus.c" "$srcdir/backlight-module/"
+    cp "$srcdir/m10_charger.c" "$srcdir/m10_charger_transaction.h" "$srcdir/backlight-module/"
     cp "$srcdir/m10_battery.c" "$srcdir/m10_battery_temperature.h" "$srcdir/backlight-module/"
     cp drivers/iio/adc/qcom-spmi-adc5.c "$srcdir/backlight-module/m10_adc5_battery.c"
     # .diff avoids abuild applying this to the kernel during default_prepare.
@@ -54,6 +55,8 @@ exports={s.split()[1] for s in open(sys.argv[2]) if s.strip()}
 missing=imports-exports
 assert not missing, f'Unresolved kernel exports: {sorted(missing)}'
 PY
+    clang -std=c11 -Wall -Wextra -Werror "$srcdir/test-charger.c" -o "$srcdir/test-charger"
+    "$srcdir/test-charger"
     sh -n "$srcdir/rpd-backlight-m10-load"
     python3 "$srcdir/test-otg.py"
 }
@@ -99,11 +102,31 @@ battery() {
         > "$subpkgdir/usr/lib/rpd-battery-m10/kernel.json"
 }
 
+
+charger() {
+    pkgdesc="Guarded Lenovo M10 OEM charge-termination threshold"
+    depends="python3 kmod rpd-battery-m10=$pkgver-r$pkgrel"
+    install -Dm644 "$srcdir/backlight-module/m10_charger.ko" \
+        "$subpkgdir/usr/lib/modules/$pkgver-msm89x7/extra/m10_charger.ko"
+    install -Dm755 "$srcdir/rpd-charger-m10-load" "$subpkgdir/usr/libexec/rpd-charger-m10-load"
+    install -Dm644 "$srcdir/rpd-charger-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-charger-m10.service"
+    install -Dm644 "$srcdir/80-rpd-charger-m10.preset" "$subpkgdir/usr/lib/systemd/system-preset/80-rpd-charger-m10.preset"
+    mkdir -p "$subpkgdir/usr/lib/rpd-charger-m10"
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" \
+        > "$subpkgdir/usr/lib/rpd-charger-m10/kernel.json"
+}
+
 sha512sums="
+83b8888ef008168375a36cfcacb6a8f6cbd056976468b67c8f46a37db67308ee094e0fce227e19ef42b4a11a0e4e995deb43ee7edbcb4023933c1f2b6301b11e  m10_charger.c
+959390111e9d8d40c3d1fbd2e86710be5308323ceaae28b10848cccea0f21366002888663976170f13eae48570e1d39a06592792a40ef5ea225ee8400506eb47  m10_charger_transaction.h
+b4809369226d1812312aff45fb2131011aef80c28a2e7c9585499ee49d3252f89f2f68402bc0949d7c1b0a89cb2ee4dd7d53536d8180d0b4323266cbff71fec4  test-charger.c
+3013d23fb1ed49d56c5e3c8db93455ef8a761107c834a037da817a381693390f95e0b37607908b0251e44eaae3b2462d42554124fde809ffa745e4bfd81027aa  rpd-charger-m10-load
+5c86b0083512257d9424af980968907e7e2e2293d394fd9ee07b2b0fc642f66015cd0406d81df8bf01509e0453ba87985f283c5108baa3a007019e2768206632  rpd-charger-m10.service
+f2b7a0d953e799c4eb17dcee05aadc5d8dd3f6ae856c36cb0abae54ce432928b633e32aaab5b1158473178a1d0ae5e6019175dee8e1e561daef160186213f3e7  80-rpd-charger-m10.preset
 42b72db375438a3b354ad858068bbe92de80eb4655554d5ef20cdd30b0ea249c157965919616220d9e85cd447eb2afe9a05a48378b946648c47656750cbf147b  80-rpd-battery-m10.preset
 c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a  linux-v7.1.3-r1.tar.gz
 ffe6bd375fecf5d69c586d821605af94f8d5665ce51fb9471627b52ff54712f1de3bf1e64f65125f7fae9a961f8b9818f870db22029d5185c2caf7e1f7f97354  kernel.config
-1fb1532a7ffcc2d247aba71368e3cef14a543787e01a5ece0ce55238d04b8ebc280991018b263a867e9430b46478e308adc0f7de6a3836ac8ebe1f37756f5d16  Makefile
+e6c7ad118dbd05a74fb91372b8663a3b543cfb7048db86ac4fc3f2a2312aec755d33fcd354edce1d1a53b3ef0d899ecf912d7be202c1af4184646fd8da69ddd8  Makefile
 1188ee7f0af003d2640a4ab0682dec111beab9d5b5aa669d8f5198b9dc609b5e7b8dc1b4cd48cc09a9bb9d7aafc2b4ed90d77e578d758626f4f0e6f9a862df57  m10_firmware_backlight.c
 c6a52f9fdef8e19515aa7bf1de0bd6ec848901f8985445d8043296d17cda0e94548a27695bf18196bfbdcc8682e956681630b22706613773339935b9dbe2350b  rpd-backlight-m10.service
 436bc87d387c383779e59ae887e0998f42c2861ff91d9a4bbafd7217f114346404d79e3ab3a19d4db71b9542b0be1023b07020afb3a4a205385070eef63e2b4b  rpd-backlight-m10-load

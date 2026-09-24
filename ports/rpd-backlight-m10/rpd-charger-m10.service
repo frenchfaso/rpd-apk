@@ -1,0 +1,19 @@
+[Unit]
+Description=Lenovo M10 OEM charge-termination threshold
+BindsTo=rpd-battery-m10.service
+PartOf=rpd-battery-m10.service
+After=rpd-battery-m10.service
+ConditionPathExists=/proc/device-tree/compatible
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/rpd-charger-m10-load
+ExecStop=/usr/libexec/rpd-charger-m10-load stop
+Restart=on-failure
+RestartSec=60
+TimeoutStartSec=90
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target

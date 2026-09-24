@@ -1,0 +1,90 @@
+#!/usr/bin/python3
+"""Apply only the qualified M10 termination threshold; never pin the kernel."""
+import errno
+import json
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+PARAMS = Path('/sys/module/m10_charger/parameters')
+META = Path('/usr/lib/rpd-charger-m10/kernel.json')
+SUPPLIES = Path('/sys/class/power_supply')
+COMPATIBLE = Path('/proc/device-tree/compatible')
+
+
+def run(*args, check=True):
+    return subprocess.run(args, check=check, capture_output=True, text=True, timeout=25)
+
+
+def status():
+    return dict(field.split('=', 1) for field in (PARAMS / 'status').read_text().split())
+
+
+def stop():
+    if not PARAMS.exists():
+        return
+    deadline = time.monotonic() + 30
+    while True:
+        try:
+            (PARAMS / 'control').write_text('0\n')
+        except OSError as error:
+            if error.errno == errno.ESTALE and status()['dirty'] == '0':
+                print('Charger threshold ownership changed; newer value preserved')
+            elif time.monotonic() >= deadline:
+                raise RuntimeError('Charger rollback not verified; module retained') from error
+            else:
+                time.sleep(1)
+                continue
+        break
+    if status()['dirty'] != '0':
+        raise RuntimeError('Charger rollback pending; module retained')
+    run('modprobe', '-r', 'm10_charger')
+
+
+def matching():
+    meta = json.loads(META.read_text())
+    return (run('uname', '-r').stdout.strip() == meta['release'] and
+            run('apk', 'info', '-e', 'linux-postmarketos-qcom-msm89x7=' + meta['apk'],
+                check=False).returncode == 0)
+
+
+def native_provider():
+    # Limit the conflict check to providers on this PMIC bus. A USB peripheral
+    # or Bluetooth accessory's battery must not disable the tablet integration.
+    return any(s.name not in ('m10-battery', 'm10-usb') and
+               '200f000.spmi' in str(s.resolve()) for s in SUPPLIES.glob('*'))
+
+
+def main():
+    if sys.argv[1:] == ['stop']:
+        stop()
+        return
+    if sys.argv[1:]:
+        raise ValueError('Usage: rpd-charger-m10-load [stop]')
+    if b'lenovo,tbx505x' not in COMPATIBLE.read_bytes().split(b'\0') or not matching():
+        print('Charger correction skipped: board/kernel mismatch; kernel upgrades unrestricted')
+        return
+    if native_provider():
+        print('Native PMIC power-supply provider present; charger correction skipped')
+        return
+    if not (SUPPLIES / 'm10-battery').exists():
+        raise RuntimeError('Qualified M10 telemetry is not ready')
+    if PARAMS.exists():
+        if status()['applied'] == '1':
+            print('M10 OEM termination threshold already configured')
+            return
+        stop()
+    run('modprobe', 'm10_charger')
+    try:
+        (PARAMS / 'control').write_text('1\n')
+        if status()['applied'] != '1':
+            raise RuntimeError('Charger threshold application not verified')
+    except Exception:
+        stop()
+        raise
+    print('M10 OEM termination threshold verified; no sleep inhibitor or polling')
+
+
+if __name__ == '__main__':
+    main()

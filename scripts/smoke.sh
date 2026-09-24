@@ -15,10 +15,10 @@ for path in usr/lib/rpd-cpu-topology-m10/topology.py usr/share/boot-deploy/hooks
 done
 # The M10 metapackage must carry the complete battery integration, not merely
 # the panel plugin. Check the clean installation including service presets.
-for path in usr/bin/rpd-battery-status usr/libexec/rpd-battery-m10-load usr/libexec/rpd-power-monitor usr/lib/rpd-power/power_model.py usr/share/rpd-power/m10-profiles.json usr/lib/systemd/system/rpd-battery-m10.service usr/lib/systemd/system/rpd-power-monitor.service usr/lib/systemd/system-preset/80-rpd-battery-m10.preset usr/lib/systemd/system-preset/80-rpd-power-monitor.preset; do
+for path in usr/libexec/rpd-charger-m10-load usr/lib/systemd/system/rpd-charger-m10.service usr/lib/systemd/system-preset/80-rpd-charger-m10.preset usr/lib/rpd-charger-m10/kernel.json usr/bin/rpd-battery-status usr/libexec/rpd-battery-m10-load usr/libexec/rpd-power-monitor usr/lib/rpd-power/power_model.py usr/share/rpd-power/m10-profiles.json usr/lib/systemd/system/rpd-battery-m10.service usr/lib/systemd/system/rpd-power-monitor.service usr/lib/systemd/system-preset/80-rpd-battery-m10.preset usr/lib/systemd/system-preset/80-rpd-power-monitor.preset; do
     test -f "$root/$path" || { echo "Missing battery integration: $path" >&2; exit 1; }
 done
-for module in m10_battery m10_adc5_battery; do
+for module in m10_battery m10_adc5_battery m10_charger; do
     find "$root/usr/lib/modules" -name "$module.ko" | grep -q .
 done
 apk --root "$root" info -s > out/installed-sizes.txt
