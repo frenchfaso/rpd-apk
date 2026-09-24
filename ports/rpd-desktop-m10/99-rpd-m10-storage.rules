@@ -1,0 +1,6 @@
+# Keep M10 firmware and system storage out of desktop volume lists.
+# Removable SD cards (type SD) and USB disks remain visible.
+SUBSYSTEM=="block", KERNEL=="mmcblk*", ATTRS{type}=="MMC", ENV{UDISKS_IGNORE}="1"
+# pmOS maps the nested boot/root partitions inside the original userdata.
+SUBSYSTEM=="block", KERNEL=="loop*", ATTRS{loop/backing_file}=="/dev/mmcblk0p58", ENV{UDISKS_IGNORE}="1"
+SUBSYSTEM=="block", ENV{DM_VG_NAME}=="m10linux", ENV{DM_LV_NAME}=="root", ENV{UDISKS_IGNORE}="1"

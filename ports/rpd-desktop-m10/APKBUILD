@@ -1,15 +1,16 @@
 pkgname=rpd-desktop-m10
 pkgver=0.1.0
-pkgrel=67
+pkgrel=68
 pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
 depends="rpd-lvm-m10 rpd-charger-m10 rpd-power rpd-cpu-topology-m10 rpd-usb-otg-m10 rpd-backlight-m10 rpd-autorotate rpd-desktop-browser labwc=0.20.2-r147"
 options="!check"
-source="screen-power.conf autorotate.conf 61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
+source="99-rpd-m10-storage.rules screen-power.conf autorotate.conf 61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
 
 package() {
+    install -Dm644 "$srcdir/99-rpd-m10-storage.rules" "$pkgdir/usr/lib/udev/rules.d/99-rpd-m10-storage.rules"
     install -Dm644 "$srcdir/screen-power.conf" "$pkgdir/etc/xdg/rpd/screen-power.conf"
     install -Dm644 "$srcdir/autorotate.conf" "$pkgdir/etc/xdg/rpd/autorotate.conf"
     install -Dm644 "$srcdir/61-rpd-m10.conf" "$pkgdir/etc/lightdm/lightdm.conf.d/61-rpd-m10.conf"
@@ -19,6 +20,7 @@ package() {
 }
 
 sha512sums="
+28cea16e548323487d1fe2a2e8ea774eb58b15d8acfd31bcd2e488eb3ed679d00fefa03afcf70e3320acdba9e9df326010b5eebad2ed32288051a18b6e24468f  99-rpd-m10-storage.rules
 e826e93e677b254fedce323605c85fca78634d158936bcf272b2b03e02ef22aeaded02d7c9950f771a46965ad6e3dd0bd3d81c6ee0a569a0cb515c3d946d64ef  screen-power.conf
 995207ab6f03929e72affbe630cc78209968493d0d1e83717ddda0987c7620154a834b202d1cf393d28b33cc360e2b4c40a207acf5d68045f30741aacc5ceb8e  autorotate.conf
 fd593deae8923a3f2bd112b72d446603141bd2f98a7ab45cd58fd571c84822ee45acbb2fc0684af2f132a0a60ffa7d19fac02876234ac003528093ba287ca8aa  61-rpd-m10.conf

@@ -219,3 +219,12 @@ are updated at session startup. Mouse and keyboard shortcuts are retained.
 The normal shutdown menu remains available. Recovery from SSH, in the graphical
 user's Wayland environment, is `rpd-screen-power on`; `rpd-screen-power restore`
 restores only saved brightness if the compositor has already exited.
+
+## M10 internal volumes
+
+The M10 profile uses the standard UDisks `UDISKS_IGNORE` hint to hide internal
+eMMC firmware partitions, the userdata-backed loop partitions and the optional
+`m10linux/root` LV from desktop volume lists. Home and the normal filesystem
+browser remain available. SD cards and USB disks are not matched; partitions
+remain visible to administrative tools such as `lsblk`. No mount, partition or
+filesystem is changed. See the [UDisks device properties](https://storaged.org/udisks/docs/udisks.8.html).
