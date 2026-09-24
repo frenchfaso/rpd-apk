@@ -1,6 +1,6 @@
 pkgname=rpd-power
 pkgver=0.1.0
-pkgrel=28
+pkgrel=29
 pkgdesc="Explicit battery estimates, local calibration and desktop notifications"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
