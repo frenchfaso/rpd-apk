@@ -1,11 +1,11 @@
 pkgname=rpd-desktop-m10
 pkgver=0.1.0
-pkgrel=59
+pkgrel=60
 pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-charger-m10 rpd-power rpd-cpu-topology-m10 rpd-usb-otg-m10 rpd-backlight-m10 rpd-autorotate rpd-desktop-browser labwc=0.20.2-r141"
+depends="rpd-charger-m10 rpd-power rpd-cpu-topology-m10 rpd-usb-otg-m10 rpd-backlight-m10 rpd-autorotate rpd-desktop-browser labwc=0.20.2-r142"
 options="!check"
 source="screen-power.conf autorotate.conf 61-rpd-m10.conf greeter-renderer.conf rpd-session-m10 rpd-session-m10.desktop"
 
