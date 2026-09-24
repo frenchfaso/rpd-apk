@@ -1,4 +1,5 @@
 import copy
+import json
 import unittest
 from qg_model import charge_delta, decode_snapshot
 from test_power_model import Model, PROFILES, sample
@@ -28,6 +29,104 @@ def decode(r):
 
 
 class GaugeTests(unittest.TestCase):
+    def ready_model(self, ticks=1000):
+        model=Model(PROFILES);reading=sample()
+        for n in range(13):
+            reading.update(elapsed=n*15,awake_elapsed=n*15,timestamp=100000+n*15,
+                           qg=frame(ticks-600+n*50))
+            model.update(reading)
+        return model,reading
+
+    def test_sleep_charge_is_measured_across_blocks_wrap_and_restart(self):
+        for seconds in (30,180,300,600):
+            for raw in (2000,-2000):
+                model,reading=self.ready_model()
+                reading['qg']=frame(1000,raw)
+                model.state['previous']=copy.deepcopy(reading)
+                model.state.update(learning_anchor={'soc':85,'temp_c':25,'full':False,
+                                                   'current_ua':-50000},anchor_net_mah=-100)
+                before=model.state['soc']
+                # The persisted snapshot must work across a monitor restart too.
+                model=Model(PROFILES,json.loads(json.dumps(model.state)))
+                reading.update(elapsed=180+seconds,awake_elapsed=181,timestamp=100180+seconds,
+                               current_ua=-50000,qg=frame(1000+round(seconds/.3),raw))
+                result=model.update(reading)
+                delta=-raw*.152588*seconds/3600
+                self.assertAlmostEqual(model.state['soc'],before+delta*100/4850)
+                self.assertAlmostEqual(model.state['anchor_net_mah'],-100+delta)
+                self.assertAlmostEqual(result['charge_delta_mah'],delta)
+                self.assertEqual(result['integration_source'],'qg-fifo')
+                self.assertIsNotNone(result['percentage'])
+                self.assertEqual(model.state['rate_seconds'],0)
+                self.assertIsNone(result['time_to_empty_seconds'])
+                self.assertIsNone(result['time_to_full_seconds_at_current_rate'])
+
+    def test_sleep_cannot_qualify_full_or_quiet_reference(self):
+        for full in (False,True):
+            model,reading=self.ready_model()
+            model.state.update(full_seconds=285,rest_seconds=585)
+            reading.update(elapsed=780,awake_elapsed=181,timestamp=100780,
+                           current_ua=0,qg=frame(952),usb_online=full,
+                           charger_state=5 if full else 7,
+                           voltage_uv=4350000 if full else reading['voltage_uv'])
+            result=model.update(reading)
+            self.assertEqual(result['integration_source'],'qg-fifo')
+            self.assertEqual(result['full_references'],0)
+            self.assertEqual(model.state['full_seconds'],0)
+            self.assertEqual(model.state['rest_seconds'],0)
+
+    def test_missing_overwritten_stopped_or_reconfigured_fifo_is_not_integrated(self):
+        for seconds,qg in [(630,frame(1052)),(300,None),(300,frame(1000)),
+                           (300,{**frame(2000),'config':0})]:
+            model,reading=self.ready_model()
+            model.state.update(learning_anchor={'soc':85},anchor_net_mah=-100)
+            reading.update(elapsed=180+seconds,awake_elapsed=181,timestamp=100180+seconds,qg=qg)
+            result=model.update(reading)
+            self.assertEqual(result['integration_source'],'none')
+            self.assertIsNone(result['charge_delta_mah'])
+            self.assertIsNone(result['percentage'])
+            self.assertIsNone(model.state['learning_anchor'])
+
+    def test_even_short_sleep_must_not_extrapolate_endpoint_current(self):
+        model,reading=self.ready_model();before=model.state['soc']
+        reading.update(elapsed=210,awake_elapsed=181,timestamp=100210,qg=None)
+        result=model.update(reading)
+        self.assertEqual(model.state['soc'],before)
+        self.assertEqual(result['integration_source'],'none')
+        self.assertEqual(model.state['rate_seconds'],0)
+
+    def test_matching_fifo_in_a_different_boot_is_not_charge_evidence(self):
+        model,reading=self.ready_model()
+        reading.update(elapsed=480,awake_elapsed=480,timestamp=100480,
+                       boot_id='boot2',qg=frame(2000))
+        result=model.update(reading)
+        self.assertEqual(result['integration_source'],'none')
+        self.assertIsNone(result['percentage'])
+
+    def test_seed_window_cannot_be_completed_by_sleep(self):
+        model=Model(PROFILES);reading=sample(qg=frame(0))
+        model.update(reading)
+        reading.update(elapsed=300,timestamp=100300,qg=frame(1000))
+        result=model.update(reading)
+        self.assertEqual(result['integration_source'],'qg-fifo')
+        self.assertEqual(result['estimate_status'],'collecting-reference')
+        self.assertIsNone(result['percentage'])
+
+    def test_long_interval_must_not_hide_a_partially_stopped_gauge(self):
+        self.assertIsNone(charge_delta(frame(0),frame(1900),600))
+        self.assertIsNone(charge_delta(frame(0),frame(1950),600))
+        self.assertIsNotNone(charge_delta(frame(0),frame(2000),600.3))
+
+    def test_m10_s2idle_trace_with_clock_skew_and_fifo_wrap(self):
+        # 2026-09-24, 180.655 s in s2idle within a 195.857 s poll interval.
+        # QG clock and BOOTTIME differ by 0.943 s; no inferred sleep current.
+        p=frame(7*256+114);q=frame(2*256+2)
+        p.update(accum_current_raw=-134067,
+                 fifo_current_raw=[-1461,-1412,-1365,-1322,-1286,-1242,-1205,-1510])
+        q.update(accum_current_raw=0,
+                 fifo_current_raw=[-1131,-442,-1365,-1322,-1286,-1242,-1205,-1166])
+        self.assertAlmostEqual(charge_delta(p,q,195.85679653700208),7.211270733)
+
     def test_units_and_low_load_power_on_reference(self):
         q=decode(raw_snapshot())
         self.assertEqual(q['samples_per_slot'],256)

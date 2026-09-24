@@ -63,8 +63,10 @@ def charge_delta(previous, current, elapsed):
     before = p['completed'] * count + p['accum_count']
     after = q['completed'] * count + q['accum_count']
     samples = (after - before) % window
+    # Allow endpoint quantization and a small clock drift, not a percentage
+    # large enough to hide tens of seconds of stopped sampling during sleep.
     if (not 0 < elapsed < window * period or not samples or
-            abs(samples * period - elapsed) > max(2 * period, .05 * elapsed)):
+            abs(samples * period - elapsed) > 2 * period + .01 * elapsed):
         return None
     if after >= before:
         indices = range(p['completed'], q['completed'])

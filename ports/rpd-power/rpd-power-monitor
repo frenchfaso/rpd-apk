@@ -43,6 +43,7 @@ def read_sample():
             except (OSError, ValueError, KeyError):
                 pass  # Older/unsupported or moving hardware window: keep telemetry.
     return {'qg': qg, 'timestamp': time.time(), 'elapsed': time.clock_gettime(time.CLOCK_BOOTTIME),
+            'awake_elapsed': time.monotonic(),
             'boot_id': pathlib.Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
             'voltage_uv': int((b / 'voltage_now').read_text()),
             'current_ua': int((b / 'current_now').read_text()),

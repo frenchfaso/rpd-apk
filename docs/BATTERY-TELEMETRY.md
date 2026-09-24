@@ -52,15 +52,30 @@ samples per FIFO entry and retains eight entries (614.4 seconds). Successive
 snapshots count only newly measured samples, including across FIFO wrap and
 charge/discharge transitions. Both charge integration and the smoothed rate used
 for ETAs use this interval measurement. Missing, inconsistent or mismatched
-windows fall back explicitly to the periodic instantaneous samples.
+windows fall back to periodic instantaneous samples only during uninterrupted
+awake sampling (at most 45 seconds). Endpoint currents are never extrapolated
+across a detected suspend interval.
 
 The driver exposes a root-only, read-only `qg_snapshot`. It checks FIFO and
 accumulator counters before and after reading; moving snapshots are retried.
-The decoder checks configuration, cadence and coverage. It never holds, resets
+The decoder checks configuration, cadence and coverage. Cadence must match
+within two sample periods plus 1% clock disagreement; this bound is not a
+validated current-measurement accuracy specification. It never holds, resets
 or clears the gauge and never counts a repeated window twice. This is continuous
 hardware sampling with software integration of its bounded window, not a
-persistent lifetime charge counter. Sampling gaps/reboots still invalidate
-capacity-learning intervals.
+persistent lifetime charge counter. Within the same boot, a sampling gap or
+suspend can retain charge accounting and the learning interval only when the
+hardware covers the entire interval. The 614.4-second window is a strict upper
+bound, including time between the last poll and suspension/resume. A reboot,
+changed configuration, stopped gauge or overwritten window cannot supply
+charge continuity. Such unobserved gaps invalidate the learning interval.
+
+Suspend is detected by comparing BOOTTIME and MONOTONIC, including short sleeps.
+Measured sleep charge updates SOC immediately. Full/quiet observation timers and
+awake ETA smoothing restart; unobserved temperature/current cannot qualify a
+full or quiet reference, and a low sleep current must not inflate desktop runtime.
+An unfinished voltage-seed window also restarts. Runtime JSON exposes the
+interval duration and measured charge delta for verification.
 
 Changed hardware power-on voltage/current may supply a better initial reference
 only early in a new boot, when a brief resume cannot preserve the prior estimate.
@@ -83,7 +98,7 @@ Capacity learning accepts full-to-rest or partial rest-to-rest discharge interva
 at least 35 percentage points and 1000 mAh, endpoint temperatures within 3 C,
 and partial-reference currents within 20 mA. Two independent capacity candidates
 must agree within 10%; only then does the model apply a 10% correction. Reboots,
-sampling gaps and substantial charging invalidate the integration interval.
+uncovered sampling gaps and substantial charging invalidate the integration interval.
 Implausible capacities outside 50..110% of nominal are rejected. No deep discharge
 is requested. The thresholds are conservative heuristics, not a validated fuel
 gauge algorithm. **Partial cycles can provide references, but arbitrary daily
@@ -92,7 +107,7 @@ The first retained M10 traces never reached the low-current reference condition;
 capacity remained nominal with zero updates. Counters report actual accepted
 candidates/updates, rather than assuming that collecting samples is learning.
 
-Gaps up to three minutes preserve the last estimate without integrating
+Uncovered gaps up to three minutes preserve the last estimate without integrating
 unobserved current; longer gaps start a new filtered seed. Learned capacity and
 calibration counts persist. An exhausted estimate (which would round to zero)
 is marked unavailable, including both ETAs, until a new reference is available.
@@ -181,3 +196,14 @@ a fresh three-minute estimate window; charge then returned to approximately
 99%. The observed hardware state was not termination, so this did not establish
 a full-charge reference or calibrate capacity. The near-full status regression
 is covered by a fixture compiling the actual C helper.
+
+
+A 2026-09-24 M10 trial verified 180.655 seconds of real s2idle with the charger
+connected. Across a 195.857-second monitor interval and FIFO wrap, the monitor
+integrated +7.211 mAh and kept the provisional percentage available immediately.
+Full/quiet qualification and awake ETA timers restarted. The display woke by RTC;
+Wi-Fi reconnected automatically about 40 seconds later. Captured QG counters had
+0.943 seconds of clock disagreement with BOOTTIME and are included in a regression
+test. This verifies bounded sleep accounting, not overnight continuity or learned
+capacity accuracy. There is still one full-charge reference and zero learned
+capacity updates in the verified device state.

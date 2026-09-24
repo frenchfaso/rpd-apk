@@ -75,11 +75,25 @@ class Model:
                          estimate_exhausted=False)
         p = s.get('previous')
         dt = sample['elapsed'] - p['elapsed'] if p else 0
-        continuous = bool(p and sample['boot_id'] == p['boot_id'] and 0 < dt <= 45)
+        same_boot = bool(p and sample['boot_id'] == p['boot_id'] and dt > 0)
+        # BOOTTIME includes suspend; MONOTONIC does not. Charge measured during
+        # sleep is useful, but endpoint temperature/current cannot qualify the
+        # unobserved period as quiet, fully charged or representative awake load.
+        slept = (same_boot and 'awake_elapsed' in sample and 'awake_elapsed' in p and
+                 dt - (sample['awake_elapsed'] - p['awake_elapsed']) > 1)
+        continuous = same_boot and dt <= 45 and not slept
+        dq = charge_delta(p.get('qg'), sample.get('qg'), dt) if same_boot else None
+        accounted = continuous or dq is not None
+        resume = False
         reference = curve_soc(profile, sample['voltage_uv'], sample['temp_c'], sample['current_ua'] > 0)
         integration_source = 'none'
         interval_current = float(sample['current_ua'])
         if not continuous:
+            s.update(rest_seconds=0, full_seconds=0, was_full=False,
+                     rest_reference_taken=False, pending_hardware_rest=None)
+            if 'seed_started' in s:
+                s.update(seed_started=sample['elapsed'], seed_samples=[])
+        if not accounted:
             # A brief reboot provides no new charge measurement. Preserve the
             # last estimate, without integrating unobserved current or using
             # boot-load terminal voltage as a new OCV reference.
@@ -99,7 +113,6 @@ class Model:
                 # A seed window must not span an unobserved interval.
                 s.update(seed_started=sample['elapsed'], seed_samples=[])
         else:
-            dq = charge_delta(p.get('qg'), sample.get('qg'), dt)
             integration_source = 'qg-fifo' if dq is not None else 'instantaneous-samples'
             if dq is None:
                 dq = (sample['current_ua'] + p['current_ua']) / 2 * dt / 3600000
@@ -230,7 +243,9 @@ class Model:
                     'waiting-for-first-reference',
                 'capacity_candidates': s.get('capacity_candidates', 0),
                 'integration_source': integration_source,
-                'interval_current_ua': round(interval_current) if continuous else None,
+                'interval_current_ua': round(interval_current) if accounted else None,
+                'interval_seconds': dt if same_boot else None,
+                'charge_delta_mah': dq if accounted else None,
                 'hardware_intervals': s.get('hardware_intervals', 0),
                 'reference_source': s.get('reference_source', 'legacy-voltage'),
                 'hardware_references': s.get('hardware_references', 0),
