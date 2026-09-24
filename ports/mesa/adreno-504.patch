@@ -1,0 +1,10 @@
+--- a/src/freedreno/common/freedreno_devices.py
++++ b/src/freedreno/common/freedreno_devices.py
+@@ -67,6 +67,7 @@
+     ))
+ 
+ add_gpus([
++        GPUId(504),
+         GPUId(505),
+         GPUId(506),
+         GPUId(508),

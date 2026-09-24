@@ -24,10 +24,15 @@ done
 for module in m10_battery m10_adc5_battery m10_charger m10_audio_pmic m10_wcd_analog m10_speaker_amp; do
     find "$root/usr/lib/modules" -name "$module.ko" | grep -q .
 done
+for path in usr/lib/rpd-gpu-m10/msm.ko usr/lib/rpd-gpu-m10/ubwc_config.ko usr/lib/rpd-gpu-m10/renderer.sh usr/libexec/rpd-gpu-m10-probe usr/libexec/rpd-gpu-m10-load usr/share/boot-deploy/hooks/96-rpd-gpu-m10; do
+    test -f "$root/$path" || { echo "Missing GPU integration: $path" >&2; exit 1; }
+done
+# No render node exists in the clean test root: verify the actual fallback.
+chroot "$root" /bin/sh -ec '. /usr/lib/rpd-gpu-m10/renderer.sh; test "$RPD_SOFTWARE_RENDERING" = 1; test "$WLR_RENDERER" = pixman'
 apk --root "$root" info -s > out/installed-sizes.txt
 apk --root "$root" info > out/installed-packages.txt
 # Alpine and postmarketOS differ in whether /sbin is merged into /usr.
-chroot "$root" /bin/sh -c 'command -v lvm >/dev/null'
+chroot "$root" /bin/sh -c 'command -v lvm' >/dev/null
 # Version and shared-library load checks in the native clean root.
 chroot "$root" /usr/bin/labwc --version
 chroot "$root" /usr/bin/pcmanfm --help >/dev/null
