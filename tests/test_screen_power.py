@@ -157,6 +157,31 @@ class ScreenPowerTests(unittest.TestCase):
         self.assertEqual(binds[-1].get('onRelease'), 'yes')
         self.assertIsNotNone(root.find('./keyboard/default'))
 
+    @patch.object(module.subprocess, 'run')
+    def test_manual_suspend_without_automatic_suspend(self, run):
+        config = self.root / 'screen-power.conf'
+        config.write_text('[display]\noutput=Unknown-1\nbacklight=panel\n'
+                          '[sleep]\npower_button_suspend=true\nafter_blank_seconds=0\n')
+        with patch.object(module, 'CONFIG', config), \
+             patch.dict(module.os.environ, {'XDG_RUNTIME_DIR': str(self.root),
+                                           'XDG_STATE_HOME': str(self.root)}), \
+             patch.object(module.sys, 'argv', ['rpd-screen-power', 'power']), \
+             patch.object(module.DisplayPower, 'power', return_value=True) as power:
+            module.main()
+            power.assert_called_once()
+            self.assertEqual(run.call_args.args[0][-2:], ['b', 'false'])
+            self.assertIn('Suspend', run.call_args.args[0])
+            run.reset_mock()
+            module.sys.argv = ['rpd-screen-power', 'idle-suspend']
+            module.main()
+            run.assert_not_called()
+            path = self.root / 'rc.xml'
+            path.write_text('<labwc_config/>')
+            module.sys.argv = ['rpd-screen-power', 'configure', str(path)]
+            module.main()
+            command = ET.parse(path).find('keyboard/keybind/action').get('command')
+            self.assertEqual(command, 'rpd-screen-power power')
+
     def test_namespaced_config_keeps_default_shortcuts(self):
         path = self.root / 'rc.xml'
         path.write_text('<openbox_config xmlns="http://openbox.org/3.4/rc"><theme/></openbox_config>')

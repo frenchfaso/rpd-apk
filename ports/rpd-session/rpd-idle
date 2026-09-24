@@ -11,9 +11,10 @@ if device_power:
 settings=configparser.ConfigParser()
 settings.read('/etc/xdg/rpd/screen-power.conf')
 sleep_delay=settings.getint('sleep','after_blank_seconds',fallback=0)
+power_suspend=settings.getboolean('sleep','power_button_suspend',fallback=sleep_delay>0)
 state=pathlib.Path(os.environ.get('XDG_STATE_HOME',str(pathlib.Path.home()/'.local/state')))/'rpd/screen-power.json'
 greeter='--greeter' in sys.argv
-if device_power and sleep_delay>0:
+if device_power and (power_suspend or sleep_delay>0):
     commands['sleep-events']=['swayidle','-w','before-sleep','rpd-screen-power before-sleep',
                               'after-resume','rpd-screen-power after-resume']
 children={};running=True

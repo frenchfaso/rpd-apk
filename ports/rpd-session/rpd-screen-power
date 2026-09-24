@@ -181,8 +181,9 @@ def main():
     config.read(CONFIG)
     action = sys.argv[1].replace('-', '_')
     sleep_delay = config.getint('sleep', 'after_blank_seconds', fallback=0)
+    power_suspend = config.getboolean('sleep', 'power_button_suspend', fallback=sleep_delay > 0)
     if action == 'configure':
-        configure(sys.argv[2], suspend=sleep_delay > 0)
+        configure(sys.argv[2], suspend=power_suspend)
         return
     runtime = Path(os.environ['XDG_RUNTIME_DIR'])
     state_root = Path(os.environ.get('XDG_STATE_HOME', str(Path.home() / '.local/state')))
@@ -192,7 +193,7 @@ def main():
     with (runtime / 'rpd-screen-power.lock').open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         if action == 'power':
-            requested = controller.power() if sleep_delay > 0 else controller.toggle()
+            requested = controller.power() if power_suspend else controller.toggle()
         elif action == 'idle_suspend':
             requested = controller.idle_suspend(sleep_delay)
         elif action in ('toggle', 'on', 'off', 'restore', 'idle_on', 'idle_off',

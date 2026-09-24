@@ -112,15 +112,16 @@ The M10 configuration enables guarded s2idle through logind:
   suppressed briefly so it cannot immediately suspend again.
 - The existing Screen Blanking setting still blanks the desktop after ten
   minutes of inactivity. Touch or other input wakes this blanked display.
-- After another twenty minutes continuously blank, the desktop requests s2idle.
-  Input cancels the pending request. Disabling Screen Blanking also disables
-  automatic suspend; manual Power remains available.
+- Automatic suspend after blanking is disabled. The screen stays blank until
+  input wakes it; a deliberate Power press can still request s2idle.
 - The greeter handles Power and display restoration through the same helper.
   Its existing lack of automatic blanking is unchanged.
 
-`after_blank_seconds=1200` in `/etc/xdg/rpd/screen-power.conf` controls the delay
-from the actual blank event, not from the start of inactivity. The shared desktop
-keeps its previous behavior on targets without this configuration.
+In `/etc/xdg/rpd/screen-power.conf`, `power_button_suspend=true` enables manual
+s2idle independently of `after_blank_seconds=0`, which disables automatic sleep.
+A positive delay would count from the actual blank event. Older configurations
+without `power_button_suspend` retain their previous behavior; targets without
+this configuration are unchanged.
 
 The helper requires the firmware display-retention module to report active and
 `/sys/power/mem_sleep` to contain only `[s2idle]`. Otherwise automatic suspend is

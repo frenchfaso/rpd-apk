@@ -1,6 +1,6 @@
 pkgname=rpd-desktop-m10
 pkgver=0.1.0
-pkgrel=62
+pkgrel=63
 pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-m10)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
@@ -19,7 +19,7 @@ package() {
 }
 
 sha512sums="
-6a0cc9d5f261cf6d108470e685b4cd80bc0e7f5b718a480b91fbf0e8a970880a7bac0174015a34be80f8b12ba652b70e578c49cf3529e7cbaf8e1edd69052970  screen-power.conf
+e826e93e677b254fedce323605c85fca78634d158936bcf272b2b03e02ef22aeaded02d7c9950f771a46965ad6e3dd0bd3d81c6ee0a569a0cb515c3d946d64ef  screen-power.conf
 995207ab6f03929e72affbe630cc78209968493d0d1e83717ddda0987c7620154a834b202d1cf393d28b33cc360e2b4c40a207acf5d68045f30741aacc5ceb8e  autorotate.conf
 fd593deae8923a3f2bd112b72d446603141bd2f98a7ab45cd58fd571c84822ee45acbb2fc0684af2f132a0a60ffa7d19fac02876234ac003528093ba287ca8aa  61-rpd-m10.conf
 52ff4f92db495f0c77a6f3f02aab42e696c92ca2102d46de1a5e9559c83e90361f5b835fb93a73cd39956ed32fb66dd022300ee9996578da45b27031860b6bb7  greeter-renderer.conf
