@@ -1,0 +1,14 @@
+[Unit]
+Description=Verified Lenovo M10 Adreno 504 driver
+After=systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+Before=display-manager.service
+ConditionPathExists=/proc/device-tree/soc@0/gpu@1c00000
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/rpd-gpu-m10-load
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

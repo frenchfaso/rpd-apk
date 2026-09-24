@@ -5,12 +5,12 @@ pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="GPL-2.0-only"
-subpackages="rpd-usb-otg-m10:otg rpd-battery-m10:battery rpd-charger-m10:charger rpd-audio-m10:audio"
-install="rpd-audio-m10.post-install rpd-audio-m10.post-upgrade rpd-audio-m10.post-deinstall rpd-charger-m10.post-install rpd-charger-m10.post-upgrade rpd-charger-m10.pre-deinstall rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
+subpackages="rpd-gpu-m10:gpu rpd-usb-otg-m10:otg rpd-battery-m10:battery rpd-charger-m10:charger rpd-audio-m10:audio"
+install="rpd-gpu-m10.post-install rpd-gpu-m10.post-upgrade rpd-gpu-m10.pre-deinstall rpd-audio-m10.post-install rpd-audio-m10.post-upgrade rpd-audio-m10.post-deinstall rpd-charger-m10.post-install rpd-charger-m10.post-upgrade rpd-charger-m10.pre-deinstall rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
 _kernel_apk_version=7.1.3-r0
 depends="kmod brightnessctl brightnessctl-udev"
-makedepends="clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3 py3-libfdt dtc rpd-cpu-topology-m10"
-source="m10_wcd_analog.c m10_speaker_amp.c m10-audio-pmic.diff m10-audio.dtsi audio-dtb.py test-audio.py 95-rpd-audio-m10 Lenovo-M10.conf HiFi.conf 51-rpd-m10-audio.conf m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
+makedepends="mesa-dev clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3 py3-libfdt py3-lxml py3-jinja2 dtc rpd-cpu-topology-m10"
+source="rpd-gpu-m10.files gpu-probe.c gpu-renderer.sh test-gpu.py build-gpu.sh gpu-dtb.py 96-rpd-gpu-m10 rpd-gpu-m10-load rpd-gpu-m10.service rpd-gpu-m10.conf 80-rpd-gpu-m10.preset 0002-a5xx-gpmu-registers.diff 0003-adreno-504-rpm-domain.diff 0001-adreno-504-bringup.diff m10_wcd_analog.c m10_speaker_amp.c m10-audio-pmic.diff m10-audio.dtsi audio-dtb.py test-audio.py 95-rpd-audio-m10 Lenovo-M10.conf HiFi.conf 51-rpd-m10-audio.conf m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
     kernel.config Makefile m10_firmware_backlight.c
     rpd-backlight-m10.service rpd-backlight-m10-load
     m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset
@@ -31,6 +31,7 @@ build() {
     cp vmlinux.symvers Module.symvers
     # vmlinux alone does not generate scripts/module.lds for external modules.
     make LLVM=1 modules_prepare
+    srcdir="$srcdir" sh "$srcdir/build-gpu.sh"
     mkdir -p "$srcdir/backlight-module"
     cp "$srcdir/Makefile" "$srcdir/m10_firmware_backlight.c" "$srcdir/m10_otg_id.c" "$srcdir/m10_otg_vbus.c" "$srcdir/backlight-module/"
     cp "$srcdir/m10_charger.c" "$srcdir/m10_charger_transaction.h" "$srcdir/backlight-module/"
@@ -43,6 +44,7 @@ build() {
     cp drivers/mfd/qcom-spmi-pmic.c "$srcdir/backlight-module/m10_audio_pmic.c"
     patch -d "$srcdir/backlight-module" -p0 < "$srcdir/m10-audio-pmic.diff"
     make LLVM=1 M="$srcdir/backlight-module" modules
+    cc -O2 -Wall -Wextra "$srcdir/gpu-probe.c" -lEGL -lGLESv2 -lgbm -o "$srcdir/gpu-probe"
     # Build from this kernel's board source; never ship an old full board tree.
     make LLVM=1 qcom/sdm429-lenovo-tbx505x.dtb
     cp arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dtb "$srcdir/base.dtb"
@@ -71,6 +73,8 @@ PY
     sh -n "$srcdir/rpd-backlight-m10-load"
     python3 "$srcdir/test-otg.py"
     python3 "$srcdir/test-audio.py" "$srcdir/base.dtb" "$srcdir/audio.dtb"
+    python3 "$srcdir/test-gpu.py" "$srcdir/base.dtb" "$srcdir/audio.dtb"
+    sh -n "$srcdir/gpu-renderer.sh"
 }
 
 package() {
@@ -148,7 +152,46 @@ audio() {
     touch "$subpkgdir/usr/share/mkinitfs-triggers/rpd-audio-m10"
 }
 
+
+gpu() {
+    pkgdesc="Verified Adreno 504 support for Lenovo M10, with kernel upgrade fallback"
+    depends="mesa-egl mesa-gles mesa-gbm mesa-dri-gallium kmod python3 py3-libfdt rpd-audio-m10=$pkgver-r$pkgrel"
+    install -Dm644 "$srcdir/gpu-module/drivers/gpu/drm/msm/msm.ko" "$subpkgdir/usr/lib/rpd-gpu-m10/msm.ko"
+    install -Dm644 "$srcdir/gpu-module/drivers/soc/qcom/ubwc_config.ko" "$subpkgdir/usr/lib/rpd-gpu-m10/ubwc_config.ko"
+    install -Dm755 "$srcdir/gpu-probe" "$subpkgdir/usr/libexec/rpd-gpu-m10-probe"
+    install -Dm644 "$srcdir/gpu-renderer.sh" "$subpkgdir/usr/lib/rpd-gpu-m10/renderer.sh"
+    for file in gpu-dtb.py base.dtb; do
+        install -Dm644 "$srcdir/$file" "$subpkgdir/usr/lib/rpd-gpu-m10/$file"
+    done
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" > "$subpkgdir/usr/lib/rpd-gpu-m10/kernel.json"
+    install -Dm755 "$srcdir/96-rpd-gpu-m10" "$subpkgdir/usr/share/boot-deploy/hooks/96-rpd-gpu-m10"
+    install -Dm755 "$srcdir/rpd-gpu-m10-load" "$subpkgdir/usr/libexec/rpd-gpu-m10-load"
+    install -Dm644 "$srcdir/rpd-gpu-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-gpu-m10.service"
+    install -Dm644 "$srcdir/rpd-gpu-m10.files" "$subpkgdir/usr/share/mkinitfs/files/rpd-gpu-m10.files"
+    install -Dm644 "$srcdir/rpd-gpu-m10.conf" "$subpkgdir/etc/modprobe.d/rpd-gpu-m10.conf"
+    install -Dm644 "$srcdir/80-rpd-gpu-m10.preset" "$subpkgdir/usr/lib/systemd/system-preset/80-rpd-gpu-m10.preset"
+    mkdir -p "$subpkgdir/usr/share/mkinitfs-triggers"
+    touch "$subpkgdir/usr/share/mkinitfs-triggers/rpd-gpu-m10"
+}
+
 sha512sums="
+27ed43d1f821c284c099d75992720e0412ebf861e6cddacbfe085c6f3fcaf05cd724c1f5918b206e150921b1b914af1dbdd31759d9e98c0dc18c09e03187e06c  rpd-gpu-m10.files
+
+2eaa4011f2427cf3d9c518967d4afc3efec88187b4029afb51b2d17ab7934690a8aefb57af48420669f98751adb7e0de3435fdf0be2886009b3d12bc7bdf2366  gpu-probe.c
+7319acf41940b5fcdb70cecb1d15a89fda484c17e9910ae760a32466c64d27ba0b80ec1ec3a61164b0c106d2aa6875e9e9880b4b4aeb736bed6bf013597caab9  gpu-renderer.sh
+40c673bcc67d8b9746df4c996754ab1f66d29d6b34d3cd0101c266208ae013c6a2b104926103cf5c886544dc6f8164d19402bc904b0e9f9a9001c02c3b7385be  test-gpu.py
+
+0ef7765ce0034cb8875d2de2a25fd98e6b6ac63894bad08e6f00dd4887038ac8b7df19dfb957a4db82d9fbe15b6cb697760a867bdfaddb4a916bb8368ab0cf8c  build-gpu.sh
+8be9f6e6e20dac10c59c927e9314e32deb9b6cee91d93d7e0fdf3300dfc8fd0f3975a1cf8245f1fcc9f48a1da4704ed78684656747490ea260b4d5307c0f41a9  gpu-dtb.py
+5b9a7ed534e93b558f1e7545dce084b49d202a0f4ac64a94fb5f74d1a91b3ea6329e91dbdaa790b6b64dc9b68a7daf037c5c71fbf68dab59e6b75c6502c38fc4  96-rpd-gpu-m10
+5410a91b5fa56681d64f13af2dd35b53f802dceb65aa88cb2837b88f844061e8760ce280e7e9ba1decd42e8a41b647038ff59be2253f76a7c717b9d9406007a4  rpd-gpu-m10-load
+dcd3a650258620e2a0ec419fa7f82eeb016f2327efa3414a8804bf1152aca99df9f02ab07b39fd41bbcfa79606dea660fdf09b653b1ff6bb5a8eaf3a5f75087b  rpd-gpu-m10.service
+ef1e18a5b158dcb80dc9bc5f7a59f0a85fb8e0f697d4ed9b6ae5f7566cc944d7dc087e1c596d436249b048ceefd2c5abdf7f3aa52c965ebb4d65479601c0524d  rpd-gpu-m10.conf
+95dfc71b331e84660dafaa383478570adec9bdd99282b6774b559657a0b22909b1dafdce8c36a038a54a980422e9993f65a70636acc29055646d34cd880b388a  80-rpd-gpu-m10.preset
+b491f2d72fd871bd179bc557dc80cdaee6ee1f5e56b3c7b2bb6af7271d3d9ba87b548b146b88c1a3cb246183d8e136577bcf8a7ec10c591c884edfc2a3eda641  0002-a5xx-gpmu-registers.diff
+01f12f0cab568deeeb0a25d82dcebc3ed6e96bedefe0d807180241e733cb79305ccfc561c3667f220a9a74c7f28d3a733268bf79ca0cc50a9d33379d1b78030d  0003-adreno-504-rpm-domain.diff
+e241f49690f014e11219e95e02dcac9b1f8b4c6cdb8b7a0183bf13e1d00d04fe5dd520ee17853ad6f71058a754a031937d8b383447f8f1880fcac694ce8c0b4c  0001-adreno-504-bringup.diff
+
 ac99841a50068ad2f22ffa3d492b8ba57681bbe52d4d83d602d0808cfb961adbef8bc8852aa9b829fc4e5108d0814af99c3ae6450de65067ffe5e4110f2f5a78  m10_wcd_analog.c
 db18236b22b432919e025e24c48fb0c9cdc43e44402d9e56746acc90600a43a3753fe6d74ba6de8559e035292d6a7a7a073c943ad88023892ff65dd0d859189d  m10_speaker_amp.c
 57dd5a3a583c2c4126bf22dd210e2dc429d79ad8f876d66ba6eb60b5bcef6166dfa006240e96651886fcd79b2559fdf402c7afbde231d33ae72ae191fcd1d8a1  m10-audio-pmic.diff
