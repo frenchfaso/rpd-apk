@@ -27,7 +27,7 @@ done
 apk --root "$root" info -s > out/installed-sizes.txt
 apk --root "$root" info > out/installed-packages.txt
 # Alpine and postmarketOS differ in whether /sbin is merged into /usr.
-chroot "$root" /bin/sh -c 'command -v lvm >/dev/null'
+chroot "$root" /bin/sh -c 'command -v lvm' >/dev/null
 # Version and shared-library load checks in the native clean root.
 chroot "$root" /usr/bin/labwc --version
 chroot "$root" /usr/bin/pcmanfm --help >/dev/null
