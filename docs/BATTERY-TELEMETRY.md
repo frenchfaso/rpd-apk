@@ -25,6 +25,13 @@ serialized with OTG, refuses unexpected kernel consumers, and restores the
 original ADC driver on failure. OTG finds its voltage channel by device path,
 not an unstable IIO device index.
 
+Charging status uses the SMB5 state and charge-enable bits, following Lenovo's
+charger driver for trickle/precharge/fast/taper phases. In particular, taper
+remains `Charging` below 20 mA; low current alone previously yielded `Unknown`.
+Measured discharge still takes precedence. Inhibit/pause/disable report
+`Not charging`; only real termination with the existing current checks reports
+`Full`. This is a read-only interpretation change, not a change to charger policy.
+
 Systemd presets enable both services on postmarketOS. No UPower percentage or
 kernel CAPACITY is fabricated: the estimated charge/time currently appears in
 the Raspberry Pi panel tooltip and `rpd-battery-status` only.
@@ -162,3 +169,12 @@ and missing regmap; host sanitizer checks pass. The read-only module was built
 against the running kernel and its imports audited for register writes.
 Hardware OCV acceptance and learned-capacity accuracy still require real-device
 validation; unit tests alone do not validate electrochemical estimates.
+
+
+After an overnight s2idle interval (10 h 37 min), live telemetry resumed with
+USB online, approximately 4.374 V, +10–17 mA, 24.2 C, SMB5 state 4 (taper) and
+STATUS_5=0x99 (charging enabled). A long unobserved interval correctly triggered
+a fresh three-minute estimate window; charge then returned to approximately
+99%. The observed hardware state was not termination, so this did not establish
+a full-charge reference or calibrate capacity. The near-full status regression
+is covered by a fixture compiling the actual C helper.

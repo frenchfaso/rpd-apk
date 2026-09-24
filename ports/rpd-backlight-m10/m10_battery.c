@@ -47,11 +47,32 @@ static int read_iio_voltage(struct power_supply *psy, const char *name, int *val
  return ret;
 }
 
+/* SMB5 STATUS_1 states and STATUS_5 enable bits, as in Lenovo's smb5-lib.
+ * Taper is still charging even when its current drops below our noise floor.
+ * Keep Full restricted to real termination; inhibit alone is not a reference.
+ */
+static int m10_charge_status(int current_ua, unsigned int state,
+                             bool usb_online, unsigned int enabled)
+{
+ state &= 7;
+ if (usb_online && state == 5 && current_ua >= -20000 && current_ua <= 100000)
+  return POWER_SUPPLY_STATUS_FULL;
+ if (current_ua < -20000)
+  return POWER_SUPPLY_STATUS_DISCHARGING;
+ if (usb_online) {
+  if (state >= 1 && state <= 4)
+   return enabled & 7 ? POWER_SUPPLY_STATUS_CHARGING : POWER_SUPPLY_STATUS_NOT_CHARGING;
+  if (state == 0 || state == 6 || state == 7)
+   return POWER_SUPPLY_STATUS_NOT_CHARGING;
+ }
+ return current_ua > 20000 ? POWER_SUPPLY_STATUS_CHARGING : POWER_SUPPLY_STATUS_UNKNOWN;
+}
+
 static int battery_get(struct power_supply *psy, enum power_supply_property prop,
                        union power_supply_propval *value)
 {
  int ret, current_ua, id_uv, therm_uv;
- unsigned int charge_state, usb_status;
+ unsigned int charge_state, usb_status, charge_enabled;
  switch (prop) {
  case POWER_SUPPLY_PROP_TEMP:
   ret = read_iio_voltage(psy, "battery-id-voltage", &id_uv);
@@ -69,20 +90,14 @@ static int battery_get(struct power_supply *psy, enum power_supply_property prop
  case POWER_SUPPLY_PROP_STATUS:
   ret = gauge_value(0x48c2, true, &current_ua);
   if (ret) return ret;
-  /* Only a real firmware termination state can report Full. */
   ret = regmap_read(map, 0x1006, &charge_state);
   if (ret) return ret;
   ret = regmap_read(map, 0x1310, &usb_status);
   if (ret) return ret;
-  if ((charge_state & 7) == 5 && (usb_status & BIT(4)) &&
-      current_ua >= -20000 && current_ua <= 100000) {
-   value->intval = POWER_SUPPLY_STATUS_FULL;
-   return 0;
-  }
-  /* Never infer full charge from a small current alone. */
-  value->intval = current_ua > 20000 ? POWER_SUPPLY_STATUS_CHARGING :
-                  current_ua < -20000 ? POWER_SUPPLY_STATUS_DISCHARGING :
-                  POWER_SUPPLY_STATUS_UNKNOWN;
+  ret = regmap_read(map, 0x100b, &charge_enabled);
+  if (ret) return ret;
+  value->intval = m10_charge_status(current_ua, charge_state,
+                                    usb_status & BIT(4), charge_enabled);
   return 0;
  default:
   return -EINVAL;
