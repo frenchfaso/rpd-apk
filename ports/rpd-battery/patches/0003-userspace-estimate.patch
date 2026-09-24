@@ -87,7 +87,7 @@
 +            g_snprintf (str + strlen(str), sizeof str - strlen(str), "\n%s: ~%d h %02d min",
 +                status == STAT_CHARGING ? "Time to full (current rate)" : "Estimated runtime", time / 60, time % 60);
 +        else
-+            g_strlcat (str, "\nTime estimate: calculating", sizeof str);
++            g_strlcat (str, "\nTime estimate unavailable", sizeof str);
 +    }
 +
      // set the tooltip

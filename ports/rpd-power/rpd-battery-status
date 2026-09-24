@@ -19,7 +19,7 @@ print(f"Calibration: {data['full_references']} full-charge references, {data['ca
 print('Estimate only. Automatic shutdown based on this percentage is disabled.')
 
 def duration(seconds):
-    if seconds is None: return 'unavailable' if data['percentage'] is None else 'calculating'
+    if seconds is None: return 'unavailable'
     minutes=round(seconds/60)
     return f'{minutes//60} h {minutes%60:02d} min'
 print('Estimated runtime: '+duration(data.get('time_to_empty_seconds')))

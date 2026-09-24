@@ -101,8 +101,11 @@ The schema-compatible upgrade replaces an already exhausted legacy seed once
 with the new delayed seed, retaining capacity and measurement history. This
 reinitialization is not a capacity calibration.
 
-After three minutes of consistent current direction, runtime uses remaining
-estimated charge and recent average consumption. Charging time extrapolates the
+After three minutes of consistent current direction and an average current of
+at least 50 mA, runtime uses remaining estimated charge and recent average
+consumption. Missing time estimates are displayed as unavailable, including
+during warmup and near-full taper; the UI does not imply that a calculation
+will necessarily finish if the user keeps waiting. Charging time extrapolates the
 recent rate: taper, device load and charger changes can alter it substantially.
 The panel shows "Percentage unavailable" while collecting a seed or after an
 exhausted reference; `rpd-battery-status` also explains the estimation and learning
