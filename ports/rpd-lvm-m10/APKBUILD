@@ -1,6 +1,6 @@
 pkgname=rpd-lvm-m10
 pkgver=0.1.0
-pkgrel=4
+pkgrel=5
 pkgdesc="Opt-in LVM root activation for Lenovo M10 postmarketOS"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"

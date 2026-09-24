@@ -1,6 +1,6 @@
 pkgname=rpd-cpu-topology-m10
 pkgver=0.1.0
-pkgrel=29
+pkgrel=30
 pkgdesc="Correct Lenovo M10 SDM429 CPU topology using the current official DTB"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
