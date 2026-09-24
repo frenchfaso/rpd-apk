@@ -3,7 +3,8 @@
  * ONLY 0x1067-68 is writable. Lenovo revision
  * 115aa7f0b35f16fda3c7f3b9b08715471849cc25, qpnp-smb5.c, -170 mA.
  * Loading is read-only; the service applies after checking kernel ownership.
- * The setting persists through s2idle without polling or a held wake lock.
+ * Existing power-supply events trigger configuration when USB is powered.
+ * No dedicated polling or held wake lock is needed during normal operation.
  */
 #include <linux/module.h>
 #include <linux/of.h>
@@ -15,6 +16,7 @@
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
 #include <linux/iio/consumer.h>
+#include <linux/suspend.h>
 #include "m10_charger_transaction.h"
 
 static struct platform_device *anchor;
@@ -23,7 +25,8 @@ static struct regmap *map;
 static struct wakeup_source *wake;
 static DEFINE_MUTEX(lock);
 static struct delayed_work rollback_work;
-static bool ready, attempted, pinned, applied;
+static bool ready, enabled, pinned, applied;
+static struct work_struct supply_work;
 static int result, restore_result;
 
 static int threshold_read(unsigned char *value)
@@ -73,7 +76,7 @@ static int guards(void)
 		if ((value & checks[i].mask) != checks[i].value)
 			return -EPERM;
 	}
-	/* Initial configuration, like the OEM init path: no USB/state/current
+	/* Configuration uses the OEM value without a charge-state/current
 	 * requirement. The comparator must already be configured when a charge
 	 * finishes while CPUs are suspended. Thermal policy is not changed.
 	 */
@@ -122,6 +125,115 @@ static void rollback_run(struct work_struct *work)
 	mutex_unlock(&lock);
 }
 
+static void update_locked(void)
+{
+	unsigned char value[2];
+	unsigned int usb_status;
+	int ret;
+	if (!enabled)
+		return;
+	if (transaction.dirty && !applied) {
+		enabled = false;
+		result = -EBUSY;
+		return;
+	}
+	/* A charger power cycle can restore defaults. Never overwrite a third
+	 * value: that belongs to another owner or an unqualified configuration.
+	 */
+	if (applied) {
+		ret = threshold_read(value);
+		if (ret) {
+			result = ret;
+			return;
+		}
+		if (value[0] == 0xfb && value[1] == 0xa6)
+			return;
+		transaction.dirty = 0;
+		transaction.verified = 0;
+		applied = false;
+		if (pinned) {
+			pinned = false;
+			module_put(THIS_MODULE);
+		}
+		if (value[0] != 0x7b || value[1] != 0xa4) {
+			enabled = false;
+			result = -ESTALE;
+			pr_err("m10_charger: threshold ownership changed; no write\n");
+			return;
+		}
+	}
+	ret = regmap_read(map, 0x1310, &usb_status);
+	if (ret) {
+		result = ret;
+		return;
+	}
+	/* The real device ignores configuration writes with USB input absent.
+	 * Wait for existing m10-usb notifications; do not hold CPUs awake.
+	 */
+	if (!(usb_status & BIT(4))) {
+		result = -EAGAIN;
+		return;
+	}
+	result = ret = guards();
+	if (ret)
+		return;
+	if (!try_module_get(THIS_MODULE)) {
+		result = -ENODEV;
+		return;
+	}
+	pinned = true;
+	__pm_stay_awake(wake);
+	result = ret = term_apply(&transaction);
+	pr_info("m10_charger: apply=%d original=%02x%02x observed=%02x%02x\n",
+		result, transaction.original[0], transaction.original[1],
+		transaction.observed[0], transaction.observed[1]);
+	if (ret) {
+		/* A real write failure is latched until the service is restarted. */
+		enabled = false;
+		restore_locked();
+	} else {
+		applied = true;
+		__pm_relax(wake);
+		if (!transaction.dirty) {
+			pinned = false;
+			module_put(THIS_MODULE);
+		}
+	}
+}
+
+static void supply_changed(struct work_struct *work)
+{
+	mutex_lock(&lock);
+	update_locked();
+	mutex_unlock(&lock);
+}
+
+static int supply_notify(struct notifier_block *nb, unsigned long event, void *data)
+{
+	struct power_supply *psy = data;
+	if (event == PSY_EVENT_PROP_CHANGED &&
+	    !strcmp(psy->desc->name, "m10-usb"))
+		queue_work(system_freezable_wq, &supply_work);
+	return NOTIFY_OK;
+}
+
+static struct notifier_block supply_notifier = { .notifier_call = supply_notify };
+
+static int power_notify(struct notifier_block *nb, unsigned long event, void *data)
+{
+	/* Close the interval between plugging USB and the next gauge notification
+	 * when Power is pressed immediately afterwards. IIO is still available.
+	 */
+	if (event == PM_SUSPEND_PREPARE || event == PM_POST_SUSPEND) {
+		mutex_lock(&lock);
+		update_locked();
+		mutex_unlock(&lock);
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block power_notifier = { .notifier_call = power_notify };
+
 static int control_set(const char *text, const struct kernel_param *kp)
 {
 	bool start;
@@ -133,38 +245,14 @@ static int control_set(const char *text, const struct kernel_param *kp)
 		ret = -ENODEV;
 		goto out;
 	}
+	enabled = start;
 	if (!start) {
 		restore_locked();
 		ret = restore_result;
-		goto out;
-	}
-	if (attempted) {
-		ret = -EALREADY;
-		goto out;
-	}
-	attempted = true;
-	result = ret = guards();
-	if (ret)
-		goto out;
-	if (!try_module_get(THIS_MODULE)) {
-		ret = -ENODEV;
-		goto out;
-	}
-	pinned = true;
-	__pm_stay_awake(wake);
-	result = ret = term_apply(&transaction);
-	pr_info("m10_charger: apply=%d original=%02x%02x observed=%02x%02x\n",
-		result, transaction.original[0], transaction.original[1],
-		transaction.observed[0], transaction.observed[1]);
-	if (ret) {
-		restore_locked();
 	} else {
-		applied = true;
-		__pm_relax(wake);
-		if (!transaction.dirty) {
-			pinned = false;
-			module_put(THIS_MODULE);
-		}
+		update_locked();
+		/* Waiting for USB or guard conditions is not an apply failure. */
+		ret = enabled ? 0 : result;
 	}
 out:
 	mutex_unlock(&lock);
@@ -176,8 +264,8 @@ static int status_get(char *buf, const struct kernel_param *kp)
 	int n;
 	mutex_lock(&lock);
 	n = scnprintf(buf, PAGE_SIZE,
-		"applied=%d attempted=%d dirty=%d apply_result=%d restore_result=%d original=%02x%02x observed=%02x%02x\n",
-		applied, attempted, transaction.dirty, result, restore_result,
+		"applied=%d enabled=%d dirty=%d apply_result=%d restore_result=%d original=%02x%02x observed=%02x%02x\n",
+		applied, enabled, transaction.dirty, result, restore_result,
 		transaction.original[0], transaction.original[1],
 		transaction.observed[0], transaction.observed[1]);
 	mutex_unlock(&lock);
@@ -218,6 +306,21 @@ static int __init charger_init(void)
 		goto fail;
 	}
 	INIT_DELAYED_WORK(&rollback_work, rollback_run);
+	INIT_WORK(&supply_work, supply_changed);
+	ret = power_supply_reg_notifier(&supply_notifier);
+	if (ret) {
+		wakeup_source_unregister(wake);
+		power_supply_put(battery);
+		goto fail;
+	}
+	ret = register_pm_notifier(&power_notifier);
+	if (ret) {
+		power_supply_unreg_notifier(&supply_notifier);
+		cancel_work_sync(&supply_work);
+		wakeup_source_unregister(wake);
+		power_supply_put(battery);
+		goto fail;
+	}
 	ready = true;
 	pr_info("m10_charger: loaded without changing hardware\n");
 	return 0;
@@ -229,6 +332,9 @@ fail:
 static void __exit charger_exit(void)
 {
 	/* Active or unverified rollback holds a module reference: rmmod is busy. */
+	unregister_pm_notifier(&power_notifier);
+	power_supply_unreg_notifier(&supply_notifier);
+	cancel_work_sync(&supply_work);
 	cancel_delayed_work_sync(&rollback_work);
 	wakeup_source_unregister(wake);
 	power_supply_put(battery);

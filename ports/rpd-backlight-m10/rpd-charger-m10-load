@@ -21,13 +21,22 @@ def status():
     return dict(field.split('=', 1) for field in (PARAMS / 'status').read_text().split())
 
 
+def control(value):
+    # A buffered flush can retry a failed sysfs write during close, hiding the
+    # original error behind EALREADY. Each request must reach the kernel once.
+    data = (value + '\n').encode()
+    with (PARAMS / 'control').open('wb', buffering=0) as stream:
+        if stream.write(data) != len(data):
+            raise OSError(errno.EIO, 'Short charger control write')
+
+
 def stop():
     if not PARAMS.exists():
         return
     deadline = time.monotonic() + 30
     while True:
         try:
-            (PARAMS / 'control').write_text('0\n')
+            control('0')
         except OSError as error:
             if error.errno == errno.ESTALE and status()['dirty'] == '0':
                 print('Charger threshold ownership changed; newer value preserved')
@@ -71,19 +80,19 @@ def main():
     if not (SUPPLIES / 'm10-battery').exists():
         raise RuntimeError('Qualified M10 telemetry is not ready')
     if PARAMS.exists():
-        if status()['applied'] == '1':
-            print('M10 OEM termination threshold already configured')
+        if status()['enabled'] == '1':
+            print('M10 termination service already enabled')
             return
         stop()
     run('modprobe', 'm10_charger')
     try:
-        (PARAMS / 'control').write_text('1\n')
-        if status()['applied'] != '1':
+        control('1')
+        if status()['enabled'] != '1':
             raise RuntimeError('Charger threshold application not verified')
     except Exception:
         stop()
         raise
-    print('M10 OEM termination threshold verified; no sleep inhibitor or polling')
+    print('M10 termination service enabled; applied=' + status()['applied'] + '; waits for powered USB/qualified conditions without a sleep inhibitor')
 
 
 if __name__ == '__main__':

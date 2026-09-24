@@ -13,17 +13,26 @@ charger configuration.
 
 ## Operation
 
-The oneshot service starts after M10 battery telemetry. Before writing, it
+The service starts after M10 battery telemetry and enables a small kernel
+listener for the existing `m10-usb` power-supply notifications. Before writing, it
 checks the Lenovo board, exact kernel/package match, PMI632 identity, ATL
 battery ID, valid temperature/voltage, inactive OTG, fault flags and known charger
 configuration. Unknown upper thresholds are refused; an already correct value
 is accepted without writing or taking ownership. A native PMIC power-supply
 provider causes the service to skip this integration.
 
-Configuration happens before charge completion, including when running from
-battery. This follows the OEM initialization model: the hardware comparator
-must already be configured when charging completes during s2idle. Normal
-operation has **no polling, held wake lock or sleep inhibitor**.
+On this unit a write without USB input was ignored; readback detected the
+mismatch and rollback passed. The integration therefore waits without writing
+while USB is absent, and applies the threshold on an existing supply notification
+once USB and the guard conditions are valid. It also checks immediately before
+suspend and after resume, covering a Power press soon after connecting a charger.
+No dedicated polling timer or sleep inhibitor is used in normal operation.
+
+Repeated notifications only verify a configured value. If the hardware restores
+the known default after an input-power cycle, the next qualified USB event
+reapplies the correction. Unknown values are preserved and disable further
+writes. A write/readback failure is latched until service restart; the original
+bytes are restored, with retries only if that rollback fails.
 
 Stopping the service verifies restoration before unloading. An active change
 pins only this small module, **not the kernel APK**. Failed or partial writes
@@ -51,10 +60,12 @@ ownership conflicts and loader exclusion/cleanup paths. Clean-root packaging
 tests require the module, loader and enabled-service preset in the metapackage.
 
 Full charge/discharge/recharge and overnight s2idle validation of the permanent
-integration remain separate device tests. Initial configuration is deliberately
+integration remain separate device tests. Configuration is deliberately
 restricted to 20–35 C and the observed ATL hardware setup. Conditions outside
-the startup guards are reported as a service failure and retried once a minute;
-none of the existing hardware protection settings is relaxed.
+the guards defer application until the next existing supply notification. A
+service-level failure is retried once a minute. Plugging in while the tablet is
+already asleep is not yet qualified; configure while awake before a long
+s2idle charging test. Existing hardware protections are never relaxed.
 
 Useful diagnostics:
 

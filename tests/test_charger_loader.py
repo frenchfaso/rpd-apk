@@ -57,14 +57,14 @@ class ChargerLoaderTests(unittest.TestCase):
 
     def test_successful_start_and_repeated_start(self):
         self.m.PARAMS.mkdir()
-        (self.m.PARAMS / 'status').write_text('applied=1 dirty=1')
+        (self.m.PARAMS / 'status').write_text('enabled=1 applied=1 dirty=1')
         with patch.object(self.m, 'matching', return_value=True):
             self.main()
         self.assertEqual(self.calls, [])
 
     def test_failed_apply_runs_verified_cleanup(self):
         self.m.PARAMS.mkdir()
-        (self.m.PARAMS / 'status').write_text('applied=0 dirty=0')
+        (self.m.PARAMS / 'status').write_text('enabled=0 applied=0 dirty=0')
         with patch.object(self.m, 'matching', return_value=True), patch.object(self.m, 'stop') as stop:
             with self.assertRaises(RuntimeError):
                 self.main()
@@ -81,7 +81,7 @@ class ChargerLoaderTests(unittest.TestCase):
 
     def test_stop_unloads_after_verified_rollback(self):
         self.m.PARAMS.mkdir()
-        (self.m.PARAMS / 'status').write_text('applied=0 dirty=0')
+        (self.m.PARAMS / 'status').write_text('enabled=0 applied=0 dirty=0')
         with patch.object(self.m, 'run', self.run_cmd):
             self.m.stop()
         self.assertEqual(self.calls, [('modprobe', '-r', 'm10_charger')])
