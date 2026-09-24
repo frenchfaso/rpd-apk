@@ -41,4 +41,5 @@ The metapackage restores the desktop and integrations, not personal files, Wi-Fi
 credentials or battery calibration history. Battery charge and runtime are estimates.
 
 Details: [desktop](docs/DESKTOP.md), [battery](docs/BATTERY-TELEMETRY.md),
-[USB OTG](docs/M10-USB-OTG.md), [building and publishing](docs/REPOSITORY.md).
+[USB OTG](docs/M10-USB-OTG.md), [optional LVM storage](docs/LVM-M10.md),
+[building and publishing](docs/REPOSITORY.md).

@@ -1,0 +1,28 @@
+pkgname=rpd-lvm-m10
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Opt-in LVM root activation for Lenovo M10 postmarketOS"
+url="https://github.com/frenchfaso/rpd-apk"
+arch="noarch"
+license="MIT"
+depends="lvm2 losetup"
+makedepends="python3"
+source="20-rpd-lvm-m10.sh 20-rpd-lvm-m10.files 20-rpd-lvm-m10.modules test-hook.py"
+check() {
+    sh -n "$srcdir/20-rpd-lvm-m10.sh"
+    python3 "$srcdir/test-hook.py"
+}
+package() {
+    install -Dm755 "$srcdir/20-rpd-lvm-m10.sh" "$pkgdir/usr/share/mkinitfs/hooks/20-rpd-lvm-m10.sh"
+    install -Dm644 "$srcdir/20-rpd-lvm-m10.files" "$pkgdir/usr/share/mkinitfs/files/20-rpd-lvm-m10.files"
+    install -Dm644 "$srcdir/20-rpd-lvm-m10.modules" "$pkgdir/usr/share/mkinitfs/modules/20-rpd-lvm-m10.modules"
+    mkdir -p "$pkgdir/usr/share/mkinitfs-triggers"
+    touch "$pkgdir/usr/share/mkinitfs-triggers/rpd-lvm-m10"
+}
+
+sha512sums="
+1baccb444b378765cc8a62397ac638b2247076a1d50343f671dc594d5305f60114c352f5f23b5cfcc493cde5108d05c364f16d39a7a34d2dc0b573521bc13295  20-rpd-lvm-m10.sh
+411ae7854eb2e0e5a1a4a56a50bbb89550a10d6876753820df930d671c2ece61eac596b5989846db844c80c6c9c6e289400e33ee62b2342b582ff0486dea7757  20-rpd-lvm-m10.files
+71a930b4035e13d2e8ac13303ee30acbd0eac42630539f4d3b285633a6a673694ae76ccb5f322bccfc038a4c4e68c28c04d5206d298cbab257cbdd04f3b75489  20-rpd-lvm-m10.modules
+9bbadc92dae55f896e8ab35b4ed32f821f0d6f891cf36b6173ba85f9547a92356c676b46e9be99a3099baf0318baf5539866fb5a4dfbb6984718e6883cd93bc8  test-hook.py
+"
