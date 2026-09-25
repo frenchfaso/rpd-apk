@@ -1,0 +1,15 @@
+--- a/src/gallium/drivers/freedreno/a5xx/fd5_draw.c
++++ b/src/gallium/drivers/freedreno/a5xx/fd5_draw.c
+@@ -225,6 +225,12 @@
+    struct fd_ringbuffer *ring = ctx->batch->draw;
+    struct pipe_framebuffer_state *pfb = &ctx->batch->framebuffer;
+ 
++   /* Fast clears leave stale pixels with A504 bypass rendering.  Use the
++    * generic clear path until the fast-clear interaction is understood.
++    */
++   if (ctx->screen->gpu_id == 504)
++      return false;
++
+    if ((buffers & (FD_BUFFER_DEPTH | FD_BUFFER_STENCIL)) &&
+        is_z32(pfb->zsbuf.format))
+       return false;
