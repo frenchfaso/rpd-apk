@@ -1,14 +1,17 @@
 # Lenovo M10 Adreno 504
 
-Integration is under validation; these changes have not been published yet.
+Experimental integration under validation; not yet published. Physical desktop
+checks pass, but Khronos CTS, Piglit and trace replay qualification is pending.
 
 The M10 uses its real Adreno 504 identity. Kernel support extends the existing
 small-A5xx paths, supplies the SDM429 UBWC configuration, and attaches the RPM
-voltage domain through the kernel power-domain API. GPU clocks are initially
-limited to 320 MHz. The firmware display controller remains unchanged.
+voltage domain through the kernel power-domain API. This tablet reports factory
+speed bin 10, whose Lenovo limit is 320 MHz; the integration respects that limit
+(no overclock). The firmware display controller remains unchanged.
 
-Mesa follows Alpine's complete recipe, including llvmpipe, with two patches:
-Adreno 504 identification and corrected depth/stencil MSAA tile sizing. Hardware
+Mesa follows Alpine's complete recipe, including llvmpipe, with three patches:
+Adreno 504 identification, corrected depth/stencil MSAA tile sizing, and A504-only
+bypass rendering to avoid excessive geometry replay across its 136 KiB GMEM. Hardware
 GLES 3.1 and Chromium WebGL 1/2 have passed shader and pixel-readback tests.
 This does not establish full API conformance. WebGPU adapters are unavailable;
 video decoding is a separate Venus driver task.
@@ -25,8 +28,17 @@ If the test fails, the session uses pixman and Mesa software rendering. This
 also handles a newer official Mesa release arriving before our patches.
 
 Build checks cover real board DT composition and kernel/DT/module mismatch
-fallbacks. Hardware checks must additionally cover reboot, Chromium, rotation,
-brightness, audio, and suspend/resume before a release is considered validated.
+fallbacks. The full Mesa APK passed 600 browser rendering frames, 6 resizes,
+86 pixel comparisons with 4x MSAA, and 11 Three.js scenes on the physical GPU
+desktop after resume. Chromium reported FD504 and no GPU process crashes.
+These used the factory 320 MHz clock and original 500 ms hangcheck.
+
+Reboot, login, rotation/touch/window drawing were confirmed by the user. A 20-second s2idle
+cycle blanked and restored the backlight correctly; an earlier missed sleep
+callback remains unexplained. Earlier headless stress also failed, so these
+results apply to the physical desktop and do not establish general stability.
+Official CTS/Piglit and compatible trace replay results are required before
+claiming broader qualification; do not interpret Three.js passes as conformance.
 
 Sources:
 - [Alpine Mesa recipe](https://gitlab.alpinelinux.org/alpine/aports/-/tree/5be9d1d4593ed639fe9e1905cee3a791de36bff3/main/mesa)
