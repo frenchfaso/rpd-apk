@@ -2,7 +2,7 @@
 maintainer="team/alpine-desktop <achill@achill.org>"
 pkgname=mesa
 pkgver=26.2.3
-pkgrel=1001
+pkgrel=1003
 pkgdesc="Mesa DRI OpenGL library"
 url="https://www.mesa3d.org"
 arch="aarch64"
@@ -79,6 +79,7 @@ source="https://mesa.freedesktop.org/archive/mesa-${pkgver/_/-}.tar.xz
 	llvm23.patch
 	adreno-504.patch
 	freedreno-msaa-gmem.patch
+	freedreno-504-bypass.patch
 	"
 builddir="$srcdir/mesa-${pkgver/_/-}"
 options="!check" # TODO
@@ -434,4 +435,5 @@ ce1887fb7d425b94c375a0547bee40c308809c01f5ce1bcddabcc69a7fcb445efb9d5f5c7bac49b2
 0ca39282aa42d0b10a5d88a49cc91aea94caa6a9785e7bf75071d101c09ec5debd63a4478053657e163c94007d765d1f05c98a12fe16ad044c3fc10ef1fc27e9  llvm23.patch
 990e1891cfdb4710821c7fffba9ef8afbc3dbc55cc5f6ec27d14f64f0a8fc13cd1ef58c2fe71e3f76a2b4879ed30c76cadf3508a89acbc0db3d75684eb7e810f  adreno-504.patch
 57572f72adaa938fa4e3c93dff41aeb873ba79f0defc5dafecc184b23921feebb1c213f6a44eb5b3a493af3cdf701ec2598f649e3d059f883cf61d1b2374dcf0  freedreno-msaa-gmem.patch
+5548f9618240bf13e88ab5d471d72d47e5bf9c9496b058ff17cd294bee3a0d099e7dc5b39bfc28c8c2a735febfe630026e9a6755c65c90ea67ff0b98e1ba018b  freedreno-504-bypass.patch
 "
