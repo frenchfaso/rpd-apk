@@ -30,3 +30,8 @@ remains unchanged.
 Validated on TB-X505L with GLES2/GLES3 and 4x MSAA pixel readback, Chromium
 WebGL 1/2 and the physical labwc greeter. This is not a conformance claim.
 Kernel upgrades remain independent; software rendering remains available.
+
+A broader GLES2 run subsequently hit a GPU command-processor fault after more
+than 7,000 reported passes. The run was stopped and its last CTS case/group
+saved for isolated reproduction. This remains a release blocker; the targeted
+passes do not establish driver stability.
