@@ -1,0 +1,30 @@
+--- a/src/gallium/drivers/freedreno/a5xx/fd5_screen.c
++++ b/src/gallium/drivers/freedreno/a5xx/fd5_screen.c
+@@ -114,6 +114,18 @@
+ };
+ /* clang-format on */
+ 
++static unsigned
++fd504_tile_mode(const struct pipe_resource *tmpl)
++{
++   /* A504 bypass depth writes use tiled storage.  Keep color resources
++    * linear: enabling general A5xx texture tiling breaks fragment tests.
++    */
++   if (util_format_is_depth_or_stencil(tmpl->format))
++      return fd5_tile_mode(tmpl);
++
++   return 0;
++}
++
+ void
+ fd5_screen_init(struct pipe_screen *pscreen)
+ {
+@@ -123,6 +135,8 @@
+    pscreen->is_format_supported = fd5_screen_is_format_supported;
+ 
+    screen->layout_resource = fd5_layout_resource;
++   if (screen->gpu_id == 504)
++      screen->tile_mode = fd504_tile_mode;
+    if (FD_DBG(TTILE))
+       screen->tile_mode = fd5_tile_mode;
+ 

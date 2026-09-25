@@ -2,7 +2,7 @@
 maintainer="team/alpine-desktop <achill@achill.org>"
 pkgname=mesa
 pkgver=26.2.3
-pkgrel=1004
+pkgrel=1005
 pkgdesc="Mesa DRI OpenGL library"
 url="https://www.mesa3d.org"
 arch="aarch64"
@@ -81,6 +81,7 @@ source="https://mesa.freedesktop.org/archive/mesa-${pkgver/_/-}.tar.xz
 	freedreno-msaa-gmem.patch
 	freedreno-504-bypass.patch
 	freedreno-504-clear.patch
+	freedreno-504-depth-tile.patch
 	"
 builddir="$srcdir/mesa-${pkgver/_/-}"
 options="!check" # TODO
@@ -438,4 +439,5 @@ ce1887fb7d425b94c375a0547bee40c308809c01f5ce1bcddabcc69a7fcb445efb9d5f5c7bac49b2
 57572f72adaa938fa4e3c93dff41aeb873ba79f0defc5dafecc184b23921feebb1c213f6a44eb5b3a493af3cdf701ec2598f649e3d059f883cf61d1b2374dcf0  freedreno-msaa-gmem.patch
 5548f9618240bf13e88ab5d471d72d47e5bf9c9496b058ff17cd294bee3a0d099e7dc5b39bfc28c8c2a735febfe630026e9a6755c65c90ea67ff0b98e1ba018b  freedreno-504-bypass.patch
 8b4a8bff9c04d700d972869d4954bc19dae9f63933338713d05ebb97b8b5c78897d3d5a417d7f374cfaceb526c2cb5d2b78aac295267bd874eae8f262b147ee7  freedreno-504-clear.patch
+ff11dfcbdd13c052ed4f8e1d589051d39543fd0a7eddfd8ad78c9f0a4504f3fc705b2d923157d411ba8f7cf32a20ae2b5e8962bfa3d910c5f9851ecd243f5ce9  freedreno-504-depth-tile.patch
 "
