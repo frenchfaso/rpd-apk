@@ -14,9 +14,12 @@ GitHub Actions checks the signed official Trixie source index daily, selects our
 
 Every run allocates increasing package revisions in Git before building, so `apk upgrade` can install ABI rebuilds. Failed builds leave a skipped revision but do not deploy. Scheduled runs can be delayed or disabled by GitHub's inactivity policy; the Actions page shows their status. The workflow can also be started manually.
 
+Push-triggered builds use the pushed commit's pinned sources, so a reviewed
+device checkpoint is not silently mixed with new upstream releases. Scheduled
+and manually dispatched builds still check upstream releases before building.
+
 This follows *published source packages*, not development commits. Unknown layouts, unsupported version formats, archive changes without version bumps, patch failures and failed tests stop publication. Changes to the official desktop dependency/recommendation set stop publication until `upstream-desktop-components.json` is reviewed; they do not automatically enter the hardware-independent allowlist. A maintainer must adapt incompatible upstream changes. Headless tests do not qualify physical touch/GPU/display behavior.
 
 Public key: `keys/rpd-apk.rsa.pub`. The private counterpart is held as an encrypted GitHub Actions secret, with a local backup outside Git. Repository write access and workflow changes must therefore be trusted. Actions are pinned to commit IDs. Local builds use a throwaway key by default.
 
 Client updates use `apk update && apk upgrade`. No unattended root upgrades or reboots are enabled on the tablet. Alpine and postmarketOS packages keep their original repositories.
-

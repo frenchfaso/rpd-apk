@@ -1,8 +1,23 @@
 # Lenovo M10 Adreno 504
 
-Experimental integration under qualification; not yet published. The draft
-checkpoint now uses Mesa 26.2.3-r1010 and the matching kernel-module bundle r55.
-Installed M10 packages remain on the earlier release during isolated tests.
+Experimental integration for the Lenovo M10. The qualified local checkpoint
+uses Mesa 26.2.3-r1010, kernel-module bundle r56 and labwc r156. These APKs
+are permanently installed on the M10; a clean reboot verifies the packaged
+module and accelerated greeter without temporary overrides. Publication builds
+allocate a newer APK revision while retaining these pinned source changes.
+The exact-package full Piglit run exposed a false hangcheck in
+`shaders@glsl-predication-on-large-array`. The candidate fragment-instruction
+activity counter passes three isolated repeats, maximum-framebuffer regression
+and deliberate-hang recovery. The full exact-Mesa-package Piglit repeat completes all 18,018 cases with
+identical outcomes and no crashes, timeouts or GPU errors. The actual signed
+r56 module also passes isolated predication and maximum-framebuffer checks.
+Public replay produces repeatable images with no GPU errors: Glyphy exactly
+matches A530; Triangle and Plot3D retain strict checksum failures, limited to
+eight and six pixels respectively differing by one 8-bit level out of 655,360.
+No expected hashes or tolerances were changed. The actual r56-module/r1010
+Khronos repeat also reproduces all 4,101 outcomes with an empty kernel log.
+The packaged greeter survives a 20-second s2idle cycle with automatic wake,
+unchanged process/mappings and no GPU errors. The user confirms login, desktop drawing, rotation and touch on this stack.
 
 The `shared-max` hardware fault is fixed in a production-form candidate by
 bounding A504 barrier register residency. All 195 dEQP compute cases pass;
@@ -14,9 +29,15 @@ Piglit quick_shader completed 18,018 cases with 5,880 Pass / 12,127 Skip /
 7 Fail / 2 Crash / 2 Warn. Both crashes are IR3 compiler worker stack exhaustion
 on musl, independently reproduced on r1008 and r1009 packages. Chimera's pinned
 thread-stack patch makes both unchanged UBO tests pass in 37--41 seconds,
-without GPU errors. The combined candidate is undergoing the full profile
-again, using the upstream A530 180-second timeout. Public traces, exact final
-APK checks and device lifecycle checks still gate publication.
+without GPU errors. The full repeat completes
+5,882 Pass / 12,127 Skip / 7 Fail / 2 Warn, with zero crashes/timeouts or GPU
+errors. Only those two Crash-to-Pass outcomes change. The final signed r1010
+APK libraries pass both UBO regressions and all 195 compute cases; their full
+Khronos run reproduces all 4,101 outcomes above, without GPU errors.
+The completed quick_shader run uses the active upstream A530 CI profile.
+Extra quick_gl investigation
+is incomplete; unsupported Vulkan and legacy edge-flag cases are not GLES
+or WebGL acceptance requirements.
 
 The driver uses the real Adreno 504 identity, SDM429 UBWC configuration and
 kernel power-domain APIs. This tablet's factory speed bin 10 selects 320 MHz.
@@ -31,16 +52,15 @@ compute compilation. See the Mesa port README for the exact patch series.
 
 Kernel changes cover retained-state reset, recovery ordering and reference
 ownership, CX dependency lifetime and shadow mapping teardown. A504's bounded
-progress callback samples the reserved SP0 fragment-discard counter through
+progress callback samples the reserved SP0 fragment-instruction counter through
 RBBM. This lets long legitimate draws complete while retaining the common
 three-retry recovery bound. The watchdog does not read the SP selector register:
 that diagnostic version restarted the M10 in the recovery probe.
 
 The RBBM-only trial passes deliberate-hang recovery, subsequent rendering and
 the maximum-framebuffer case at normal policy. That framebuffer case also
-passes with the actual Mesa APK libraries in an isolated prefix. Full packaged GLES 3.1 passes with17,403 Pass /20,399 Skip. Remaining
-regression and device lifecycle checks are still pending; these gates do not
-establish production readiness or Khronos conformance.
+passes with the actual Mesa APK libraries in an isolated prefix. Full packaged GLES 3.1 passes with 17,403 Pass / 20,399 Skip. These finite qualification checks do not establish Khronos conformance or
+guarantee fault-free operation for every workload.
 
 Earlier unchanged dEQP selections produced the totals below. GLES2 used the
 register-series candidate, as did a later complete GLES3 run; GLES3.1 has
@@ -59,9 +79,10 @@ without crashes, timeouts or GPU errors:
 No imported A530 failure baseline was used. The GLES2/3 failure names also occur
 in Mesa's pinned A530 failure list; this does not prove an A504 hardware limit.
 EGL's eight GPU faults overlapped robustness tests and did not restart that run.
-The earlier selector-read kernel still failed the separate recovery probe,
-which is why passing suite totals alone did not permit a release. Piglit,
-public trace replay and final package/lifecycle qualification remain required.
+The earlier selector-read kernel failed the separate recovery probe,
+which is why passing suite totals alone did not permit a release. The newer
+RBBM-only candidate passes that recovery probe and the packaged lifecycle
+checks described above.
 
 The first full EGL run on the exact r55/r1008 package payloads recorded
 2,635 Pass, 1,152 Skip, 1 Flake and 1 Timeout during concurrent interactive
@@ -76,7 +97,8 @@ lost signal. This avoids destroying the signal owner while temporary dispatcher
 listeners are attached. Upstream unit tests and the existing touch test pass.
 A private real-hardware trial survived the reset notification with the same
 greeter process and no assertion; subsequent packaged EGL rendering passed.
-The current combined compositor/Mesa trial remains temporary.
+The current combined compositor/Mesa packages have also completed physical
+desktop and suspend/resume checks.
 
 `rpd-gpu-m10` keeps modules separate from official kernel files. Its boot-deploy
 hook composes GPU changes after audio/CPU changes only when the kernel APK,

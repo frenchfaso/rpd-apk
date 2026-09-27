@@ -7,9 +7,9 @@
 +	if (adreno_is_a504(adreno_gpu)) {
 +		/* SP0 is excluded from Mesa's userspace counter allocation. */
 +		gpu_write(gpu, REG_A5XX_SP_PERFCTR_SP_SEL_0,
-+			  PERF_SP_PIXELS_KILLED);
-+		memset(a5xx_gpu->last_discard_count, 0,
-+		       sizeof(a5xx_gpu->last_discard_count));
++			  PERF_SP_FS_INSTRUCTIONS);
++		memset(a5xx_gpu->last_fragment_count, 0,
++		       sizeof(a5xx_gpu->last_fragment_count));
 +	}
 +
  	/* Increase VFD cache access so LRZ and other data gets evicted less */
@@ -28,15 +28,15 @@
 +	/* SP0 is reserved at init; sample only its RBBM counter mirror here. */
 +
 +	/*
-+	 * A long fragment-discard draw can make forward progress without
++	 * Fragment instructions can advance during a long draw without
 +	 * advancing the CP. This activity is not a termination guarantee:
 +	 * the common hangcheck still enforces its three-retry hard bound.
 +	 * Counts may include another ring; at worst that consumes a bounded
 +	 * extra retry, just as a first CP snapshot can do.
 +	 */
 +	count = gpu_read64(gpu, REG_A5XX_RBBM_PERFCTR_SP_0_LO);
-+	progress = count != a5xx_gpu->last_discard_count[ring->id];
-+	a5xx_gpu->last_discard_count[ring->id] = count;
++	progress = count != a5xx_gpu->last_fragment_count[ring->id];
++	a5xx_gpu->last_fragment_count[ring->id] = count;
 +
 +	return progress;
 +}
@@ -75,7 +75,7 @@
 +
 +	/* Private A504 activity experiment; common hangcheck bounds unchanged. */
 +	struct adreno_gpu_funcs activity_funcs;
-+	u64 last_discard_count[MSM_GPU_MAX_RINGS];
++	u64 last_fragment_count[MSM_GPU_MAX_RINGS];
  
  	struct drm_gem_object *pm4_bo;
  	uint64_t pm4_iova;

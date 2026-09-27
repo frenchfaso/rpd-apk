@@ -1,11 +1,13 @@
 # Mesa for Adreno 504
 
-The r1009 draft adds an A504-specific barrier-residency bound. Its private
-production-form library completes all 195 dEQP compute cases and all 39
-Khronos compute cases (37 Pass, 2 Skip), including the previously failing
-`shared-max`, without GPU faults or diagnostic overrides. Broader validation
-and actual APK runtime checks remain in progress; this is not a release or
-conformance claim.
+The r1010 checkpoint adds an A504 barrier-residency bound and an existing musl
+thread-stack portability fix. Its signed APK libraries complete all 195 dEQP
+compute cases and the 4,101-case Khronos GLES3.1 list without crashes, timeouts
+or GPU errors. The eight retained Khronos functional failures are documented
+below. Full quick_shader completes with the same retained functional failures
+and no crashes/timeouts or GPU errors. Public replay is repeatable, with two
+documented one-level image differences against A530. Physical desktop, suspend/resume and permanent boot checks pass on the M10.
+These tests do not establish Khronos conformance.
 
 Based on Alpine aports main/mesa at `5be9d1d4593ed639fe9e1905cee3a791de36bff3`.
 The upstream build options and subpackages are preserved, including llvmpipe.
@@ -68,22 +70,27 @@ The production-form r1009 candidate additionally completes the full 4,101-case
 Khronos GLES3.1 list: 2,588 Pass / 1,505 Skip / 8 Fail, with an empty monitored
 kernel log and no crashes/timeouts. All eight failing names also occur in the
 pinned A530 failure list; that comparison does not prove a common cause or
-convert failures into passes. Piglit and actual r1009 APK qualification are
-still in progress.
+convert failures into passes. The combined r1010 candidate also completes
+Piglit quick_shader with
+5,882 Pass / 12,127 Skip / 7 Fail / 2 Warn and no crash, timeout or GPU error.
+The signed r1010 APK libraries reproduce all 4,101 Khronos outcomes exactly
+and pass both UBO stack regressions. The actual r56 kernel-module APK repeats
+all Khronos outcomes without GPU errors. The final desktop lifecycle checks
+pass; see `docs/m10-gpu.md` for scope and retained failures.
 
-Broader CTS, Piglit, public trace replay and packaged desktop/runtime-PM
-lifecycle checks remain required before release. Known clipping and other
-rendering failures remain failures; no A530 expected-failure baseline is
-imported. No Khronos certification is claimed.
+The qualification includes the CTS selections above, full quick_shader,
+public replay and packaged desktop/runtime-PM lifecycle checks. Known clipping
+and other rendering failures remain failures; no A530 expected-failure
+baseline is imported. No Khronos certification is claimed.
 
 Official kernel upgrades remain independent, and software rendering remains
-available. The draft does not enable Vulkan or video decoding on A504.
+available. This checkpoint does not enable Vulkan or video decoding on A504.
 
-The r1010 draft additionally carries Chimera's unchanged `musl-stacksize.patch`
+The r1010 checkpoint additionally carries Chimera's unchanged `musl-stacksize.patch`
 from cports commit `73188229fd4f9666a9cec99036fd152e179b8c46`:
 <https://github.com/chimera-linux/cports/blob/73188229fd4f9666a9cec99036fd152e179b8c46/main/mesa/patches/musl-stacksize.patch>.
 This provides 8 MiB stacks to Mesa C11 workers on non-glibc systems. Two
 unchanged Piglit UBO cases exhaust musl's default stack in IR3 copy propagation
 (2,066 recursive frames confirmed in the guard page), independently of the
 A504 barrier fix. This is a userspace portability fix, not a GPU workaround.
-The draft remains private pending runtime qualification.
+The qualified checkpoint retains the known functional failures documented above.
