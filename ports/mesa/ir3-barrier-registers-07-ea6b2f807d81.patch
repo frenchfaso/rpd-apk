@@ -1,0 +1,121 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Upstream-commit: ea6b2f807d817ba57f3b57871aeade226e5b1744
+Upstream: https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896
+
+ir3: fit every wave of a barrier workgroup in the register file
+
+A barrier keeps all the waves of a workgroup resident at once, so they share
+the register file rather than getting it in turn, and nothing on a5xx bounds
+them against it.  A GLES 3.1 compute shader with a barrier faults the GPU as
+soon as its waves want more than the file holds.
+
+calc_limit_pressure_for_cs_with_barrier() computes that bound but applies it
+only with merged registers, where one limit covers the whole file.  Its TODO
+asks for the split-bank case to be done after the first pressure pass, because
+how the budget divides between the two banks depends on how much half the
+shader uses.  Return the bound rather than applying it, so that case can clamp
+the file both banks are sized against once that is known.  A variable
+workgroup size is bounded from the largest the API allows, as it already was
+with merged registers.
+
+The wave-pair count was taken at the threadsize the shader runs, which cancels
+against the divisor below: a double-sized wave halves the count and then costs
+two parts per vec4 instead of one.  Where the banks are split, count
+single-sized pairs so that only the divisor carries the threadsize.  Sweeping
+workgroup size against register footprint on a db820c, 128 threads of 17
+registers fault where the old formula permits 32, and 16 run.
+
+A wave's share can now be smaller than the half bank, so the half budget is
+clamped to it as well; without that the full budget underflows into a bound
+that allows everything.
+
+Assisted-by: Claude:claude-opus-5
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896>
+
+Backport: omit CI expectation changes; driver hunks unchanged.
+
+diff --git a/src/freedreno/ir3/ir3_ra.c b/src/freedreno/ir3/ir3_ra.c
+index 7749714..34e4bc4 100644
+--- a/src/freedreno/ir3/ir3_ra.c
++++ b/src/freedreno/ir3/ir3_ra.c
+@@ -2721,10 +2721,14 @@
+ /*
+  * If barriers are used, it must be possible for all waves in the workgroup
+  * to execute concurrently. Thus we may have to reduce the registers limit.
++ *
++ * Returns the half-units one thread may use with every wave resident.
++ * pairs_at_threadsize counts the resident wave-pairs at the threadsize the
++ * shader runs rather than at the single one.
+  */
+-static void
+-calc_limit_pressure_for_cs_with_barrier(struct ir3_shader_variant *v,
+-                                        struct ir3_pressure *limit_pressure)
++static unsigned
++calc_cs_barrier_reg_budget(struct ir3_shader_variant *v,
++                           bool pairs_at_threadsize)
+ {
+    const struct ir3_compiler *compiler = v->compiler;
+ 
+@@ -2738,24 +2742,16 @@
+     * parts each could get.
+     */
+ 
+-   unsigned waves_per_wg = ir3_get_waves_per_wg(v, double_threadsize) /
+-                           compiler->info->wave_granularity;
++   unsigned wave_pairs_per_wg =
++      ir3_get_waves_per_wg(v, pairs_at_threadsize && double_threadsize) /
++      compiler->info->wave_granularity;
+ 
+    uint32_t vec4_regs_per_thread =
+-      compiler->reg_size_vec4 / (waves_per_wg * (double_threadsize ? 2 : 1));
++      compiler->reg_size_vec4 /
++      (wave_pairs_per_wg * (double_threadsize ? 2 : 1));
+    assert(vec4_regs_per_thread > 0);
+ 
+-   uint32_t half_regs_per_thread = vec4_regs_per_thread * 4 * 2;
+-
+-   if (limit_pressure->full > half_regs_per_thread) {
+-      if (v->mergedregs) {
+-         limit_pressure->full = half_regs_per_thread;
+-      } else {
+-         /* TODO: Handle !mergedregs case, probably we would have to do this
+-          * after the first register pressure pass.
+-          */
+-      }
+-   }
++   return vec4_regs_per_thread * 4 * 2;
+ }
+ 
+ struct ir3_pressure
+@@ -2768,9 +2764,10 @@
+       .shared_half = RA_SHARED_HALF_SIZE,
+    };
+ 
+-   if (mesa_shader_stage_is_compute(v->type) &&
++   if (v->mergedregs && mesa_shader_stage_is_compute(v->type) &&
+        v->shader->nir->info.uses_control_barrier) {
+-      calc_limit_pressure_for_cs_with_barrier(v, &limit_pressure);
++      limit_pressure.full =
++         MIN2(limit_pressure.full, calc_cs_barrier_reg_budget(v, true));
+    }
+ 
+    /* If the user forces a doubled threadsize, we may have to lower the limit
+@@ -2853,11 +2850,15 @@
+    /* Both banks come out of one file, in half-units. */
+    unsigned phys_file_size = v->compiler->reg_size_vec4 * 4 * 2;
+ 
++   if (!v->mergedregs && mesa_shader_stage_is_compute(v->type) &&
++       v->shader->nir->info.uses_control_barrier)
++      phys_file_size = MIN2(phys_file_size, calc_cs_barrier_reg_budget(v, false));
++
+    if (!v->mergedregs &&
+        limit_pressure.full + limit_pressure.half > phys_file_size) {
+       /* a whole register is reserved even for a single component of it */
+-      limit_pressure.half =
+-         MIN2(ALIGN_POT(max_pressure.half, 4), limit_pressure.half);
++      limit_pressure.half = MIN3(ALIGN_POT(max_pressure.half, 4 * 2),
++                                 limit_pressure.half, phys_file_size);
+       /* the footprint rounds up, so the budget rounds down */
+       limit_pressure.full =
+          MIN2(limit_pressure.full,

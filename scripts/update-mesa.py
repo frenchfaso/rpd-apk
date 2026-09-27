@@ -11,7 +11,25 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / 'ports/mesa'
 API = 'https://gitlab.alpinelinux.org/api/v4/projects/alpine%2Faports/repository/'
-PATCHES = ('adreno-504.patch', 'freedreno-msaa-gmem.patch', 'freedreno-504-bypass.patch', 'freedreno-504-clear.patch', 'freedreno-504-depth-tile.patch')
+PATCHES = (
+    'adreno-504.patch',
+    'freedreno-msaa-gmem.patch',
+    'freedreno-504-bypass.patch',
+    'freedreno-504-clear.patch',
+    'freedreno-504-depth-tile.patch',
+    'freedreno-504-xfb-linkage.patch',
+    'freedreno-504-compute-boundary.patch',
+    'freedreno-504-cached-blit.patch',
+    'ir3-barrier-registers-01-3906e5b1feea.patch',
+    'ir3-barrier-registers-02-3e36cf699eb0.patch',
+    'ir3-barrier-registers-03-551468ad68b1.patch',
+    'ir3-barrier-registers-04-6abd651a99bf.patch',
+    'ir3-barrier-registers-05-f028380b515d.patch',
+    'ir3-barrier-registers-06-1507102c2ad8.patch',
+    'ir3-barrier-registers-07-ea6b2f807d81.patch',
+    'ir3-504-barrier-residency.patch',
+    'musl-stacksize.patch',
+)
 
 
 def fetch(url):

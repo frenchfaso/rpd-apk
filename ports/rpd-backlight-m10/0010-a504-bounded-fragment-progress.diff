@@ -1,0 +1,81 @@
+--- a/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
+@@ -750,6 +750,14 @@
+ 	/* Select RBBM0 to countable 6 to get the busy status for devfreq */
+ 	gpu_write(gpu, REG_A5XX_RBBM_PERFCTR_RBBM_SEL_0, 6);
+ 
++	if (adreno_is_a504(adreno_gpu)) {
++		/* SP0 is excluded from Mesa's userspace counter allocation. */
++		gpu_write(gpu, REG_A5XX_SP_PERFCTR_SP_SEL_0,
++			  PERF_SP_PIXELS_KILLED);
++		memset(a5xx_gpu->last_discard_count, 0,
++		       sizeof(a5xx_gpu->last_discard_count));
++	}
++
+ 	/* Increase VFD cache access so LRZ and other data gets evicted less */
+ 	gpu_write(gpu, REG_A5XX_UCHE_CACHE_WAYS, 0x02);
+ 
+@@ -1776,6 +1784,28 @@
+ 	devm_pm_opp_set_supported_hw(dev, &val, 1);
+ }
+ 
++static bool a504_progress(struct msm_gpu *gpu, struct msm_ringbuffer *ring)
++{
++	struct a5xx_gpu *a5xx_gpu = to_a5xx_gpu(to_adreno_gpu(gpu));
++	u64 count;
++	bool progress;
++
++	/* SP0 is reserved at init; sample only its RBBM counter mirror here. */
++
++	/*
++	 * A long fragment-discard draw can make forward progress without
++	 * advancing the CP. This activity is not a termination guarantee:
++	 * the common hangcheck still enforces its three-retry hard bound.
++	 * Counts may include another ring; at worst that consumes a bounded
++	 * extra retry, just as a first CP snapshot can do.
++	 */
++	count = gpu_read64(gpu, REG_A5XX_RBBM_PERFCTR_SP_0_LO);
++	progress = count != a5xx_gpu->last_discard_count[ring->id];
++	a5xx_gpu->last_discard_count[ring->id] = count;
++
++	return progress;
++}
++
+ static struct msm_gpu *a5xx_gpu_init(struct drm_device *dev)
+ {
+ 	struct msm_drm_private *priv = dev->dev_private;
+@@ -1807,11 +1837,20 @@
+ 	if (config->info->revn == 510)
+ 		nr_rings = 1;
+ 
+-	ret = adreno_gpu_init(dev, pdev, adreno_gpu, config->info->funcs, nr_rings);
++	a5xx_gpu->activity_funcs = *config->info->funcs;
++	if (config->info->revn == 504)
++		a5xx_gpu->activity_funcs.base.progress = a504_progress;
++
++	ret = adreno_gpu_init(dev, pdev, adreno_gpu,
++			      &a5xx_gpu->activity_funcs, nr_rings);
+ 	if (ret) {
+ 		a5xx_destroy(&(a5xx_gpu->base.base));
+ 		return ERR_PTR(ret);
+ 	}
++
++	/* Keep the original A504 polling interval for execution activity. */
++	if (adreno_is_a504(adreno_gpu))
++		priv->hangcheck_period = DRM_MSM_HANGCHECK_DEFAULT_PERIOD;
+ 
+ 	/* Set the speedbin value that is passed to userspace */
+ 	if (adreno_read_speedbin(&pdev->dev, &speedbin) || !speedbin)
+--- a/drivers/gpu/drm/msm/adreno/a5xx_gpu.h
++++ b/drivers/gpu/drm/msm/adreno/a5xx_gpu.h
+@@ -14,6 +14,10 @@
+ 
+ struct a5xx_gpu {
+ 	struct adreno_gpu base;
++
++	/* Private A504 activity experiment; common hangcheck bounds unchanged. */
++	struct adreno_gpu_funcs activity_funcs;
++	u64 last_discard_count[MSM_GPU_MAX_RINGS];
+ 
+ 	struct drm_gem_object *pm4_bo;
+ 	uint64_t pm4_iova;

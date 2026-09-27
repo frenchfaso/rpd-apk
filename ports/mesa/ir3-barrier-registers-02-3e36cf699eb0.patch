@@ -1,0 +1,56 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Upstream-commit: 3e36cf699eb071c4d72a7b008398d341c5e55e47
+Upstream: https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896
+
+freedreno/a5xx: the register file holds 64 vec4
+
+a5xx has been sharing a4xx's reg_size_vec4 of 48, but the sweep behind the
+bank bound put its boundary at 512 half-units, which is 64 vec4 of four
+components at two halves each.
+
+The whole generation gets the value: a505 to a540 already share one
+threadsize_base and one wave_granularity, and nothing here distinguishes their
+register files.  Only a530 is measured.
+
+Understating the file costs occupancy everywhere, and costs correctness where
+a barrier workgroup has to fit inside it: that budget is a share of
+reg_size_vec4, so a quarter of the file goes missing from every wave and
+shaders are held below what the hardware runs.
+
+Assisted-by: Claude:claude-opus-5
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896>
+
+Backport: omit CI expectation changes; driver hunks unchanged.
+
+diff --git a/src/freedreno/common/freedreno_devices.py b/src/freedreno/common/freedreno_devices.py
+index 34b1664..7d5b775 100644
+--- a/src/freedreno/common/freedreno_devices.py
++++ b/src/freedreno/common/freedreno_devices.py
+@@ -86,7 +86,7 @@
+         fibers_per_sp = 64 * 16, # Lowest number that didn't fault on spillall fs-varying-array-mat4-col-row-rd.
+         highest_bank_bit = 14,
+         threadsize_base = 32,
+-        reg_size_vec4 = 48,
++        reg_size_vec4 = 64,
+     ))
+ 
+ add_gpus([
+@@ -105,7 +105,7 @@
+         fibers_per_sp = 64 * 16, # Lowest number that didn't fault on spillall fs-varying-array-mat4-col-row-rd.
+         highest_bank_bit = 14,
+         threadsize_base = 32,
+-        reg_size_vec4 = 48,
++        reg_size_vec4 = 64,
+     ))
+ 
+ add_gpus([
+@@ -124,7 +124,7 @@
+         fibers_per_sp = 64 * 16, # Lowest number that didn't fault on spillall fs-varying-array-mat4-col-row-rd.
+         highest_bank_bit = 15,
+         threadsize_base = 32,
+-        reg_size_vec4 = 48,
++        reg_size_vec4 = 64,
+     ))
+ 
+ # Props could be modified with env var:

@@ -1,0 +1,113 @@
+From: Job Noorman <jnoorman@igalia.com>
+Upstream-commit: f028380b515d03807f8fc066b3678e7fe8ed0149
+Upstream: https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896
+
+ir3: add ir3_get_waves_per_wg helper
+
+Signed-off-by: Job Noorman <jnoorman@igalia.com>
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896>
+
+Backport: omit CI expectation changes; driver hunks unchanged.
+
+diff --git a/src/freedreno/ir3/ir3.c b/src/freedreno/ir3/ir3.c
+index 46d0ab2..73314f6 100644
+--- a/src/freedreno/ir3/ir3.c
++++ b/src/freedreno/ir3/ir3.c
+@@ -267,13 +267,7 @@
+ 
+    /* If this is a compute shader, compute the limit based on shared size */
+    if (ir3_shader_compute(v)) {
+-      unsigned threads_per_wg =
+-         v->local_size[0] * v->local_size[1] * v->local_size[2];
+-      unsigned waves_per_wg =
+-         DIV_ROUND_UP(threads_per_wg, compiler->info->threadsize_base *
+-                                         (double_threadsize ? 2 : 1) *
+-                                         compiler->info->wave_granularity) *
+-         compiler->info->wave_granularity;
++      unsigned waves_per_wg = ir3_get_waves_per_wg(v, double_threadsize);
+ 
+       /* Shared is allocated in chunks of 1k */
+       unsigned shared_per_wg = ALIGN_POT(v->shared_size, 1024);
+@@ -352,6 +346,32 @@
+        (double_threadsize ? 2 : 1) + 1)) + 1;
+ }
+ 
++unsigned
++ir3_get_waves_per_wg(struct ir3_shader_variant *v, bool double_threadsize)
++{
++   assert(ir3_shader_compute(v));
++
++   struct ir3_compiler *compiler = v->compiler;
++   unsigned threads_per_wg;
++
++   if (v->local_size_variable) {
++      if (v->type == MESA_SHADER_KERNEL) {
++         threads_per_wg =
++            compiler->info->threadsize_base * (double_threadsize ? 2 : 1);
++      } else {
++         /* We have to expect the worst case. */
++         threads_per_wg = compiler->max_variable_workgroup_size;
++      }
++   } else {
++      threads_per_wg = v->local_size[0] * v->local_size[1] * v->local_size[2];
++   }
++
++   return DIV_ROUND_UP(threads_per_wg, compiler->info->threadsize_base *
++                                          (double_threadsize ? 2 : 1) *
++                                          compiler->info->wave_granularity) *
++          compiler->info->wave_granularity;
++}
++
+ void
+ ir3_collect_info(struct ir3_shader_variant *v)
+ {
+diff --git a/src/freedreno/ir3/ir3.h b/src/freedreno/ir3/ir3.h
+index 83035ce..5304ca8 100644
+--- a/src/freedreno/ir3/ir3.h
++++ b/src/freedreno/ir3/ir3.h
+@@ -1083,6 +1083,9 @@
+ bool ir3_should_double_threadsize(struct ir3_shader_variant *v,
+                                   unsigned regs_count);
+ 
++unsigned ir3_get_waves_per_wg(struct ir3_shader_variant *v,
++                              bool double_threadsize);
++
+ struct ir3_block *ir3_block_create(struct ir3 *shader);
+ 
+ struct ir3_instruction *ir3_build_instr(struct ir3_builder *builder, opc_t opc,
+diff --git a/src/freedreno/ir3/ir3_ra.c b/src/freedreno/ir3/ir3_ra.c
+index ffe9e2c..9ec8b80 100644
+--- a/src/freedreno/ir3/ir3_ra.c
++++ b/src/freedreno/ir3/ir3_ra.c
+@@ -2729,18 +2729,6 @@
+    const struct ir3_compiler *compiler = v->compiler;
+ 
+    bool double_threadsize = ir3_should_double_threadsize(v, 0);
+-   unsigned threads_per_wg;
+-
+-   if (v->local_size_variable) {
+-      if (v->type == MESA_SHADER_KERNEL) {
+-         threads_per_wg = compiler->info->threadsize_base * (double_threadsize ? 2 : 1);
+-      } else {
+-         /* We have to expect the worst case. */
+-         threads_per_wg = compiler->max_variable_workgroup_size;
+-      }
+-   } else {
+-      threads_per_wg = v->local_size[0] * v->local_size[1] * v->local_size[2];
+-   }
+ 
+    /* The register file is grouped into reg_size_vec4 number of parts.
+     * Each part has enough registers to add a single vec4 register to
+@@ -2750,9 +2738,8 @@
+     * parts each could get.
+     */
+ 
+-   unsigned waves_per_wg = DIV_ROUND_UP(
+-      threads_per_wg, compiler->info->threadsize_base * (double_threadsize ? 2 : 1) *
+-                         compiler->info->wave_granularity);
++   unsigned waves_per_wg = ir3_get_waves_per_wg(v, double_threadsize) /
++                           compiler->info->wave_granularity;
+ 
+    uint32_t vec4_regs_per_thread =
+       compiler->reg_size_vec4 / (waves_per_wg * (double_threadsize ? 2 : 1));

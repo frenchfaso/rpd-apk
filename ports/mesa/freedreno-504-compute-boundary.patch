@@ -1,0 +1,124 @@
+From: Phone OS project <local-candidate>
+Subject: freedreno: isolate A504 compute dispatch submissions
+
+Give every A504 compute dispatch a fresh nondraw batch and seal its low-level
+submit on both sides under the existing device submit lock. Keep normal
+fences, synchronization, dependency tracking and backend submission behavior.
+The internal no-merge mark does not add a CPU or GPU completion wait.
+
+Private candidate against Mesa 26.2.3 plus the recorded A504 base and XFB fix.
+No runtime or conformance qualification is implied by this patch.
+
+--- a/src/freedreno/drm/freedreno_priv.h
++++ b/src/freedreno/drm/freedreno_priv.h
+@@ -396,6 +396,7 @@
+ 
+    struct fd_ringbuffer *primary;
+    uint32_t fence;
++   bool no_merge;
+    struct list_head node;  /* node in fd_pipe::deferred_submits */
+ };
+ 
+--- a/src/freedreno/drm/freedreno_ringbuffer.h
++++ b/src/freedreno/drm/freedreno_ringbuffer.h
+@@ -72,6 +72,12 @@
+ void fd_submit_del(struct fd_submit *submit);
+ 
+ struct fd_submit * fd_submit_ref(struct fd_submit *submit);
++
++/* Prevent concatenation with preceding or subsequent submits.  Call before
++ * the first flush.  This seals a separate submission without waiting for
++ * the submit worker or GPU completion.
++ */
++void fd_submit_set_no_merge(struct fd_submit *submit);
+ 
+ /* Allocate a new rb from the submit. */
+ struct fd_ringbuffer *fd_submit_new_ringbuffer(struct fd_submit *submit,
+--- a/src/freedreno/drm/freedreno_ringbuffer.c
++++ b/src/freedreno/drm/freedreno_ringbuffer.c
+@@ -17,6 +17,7 @@
+ {
+    struct fd_submit *submit = pipe->funcs->submit_new(pipe);
+    submit->refcnt = 1;
++   submit->no_merge = false;
+    submit->pipe = fd_pipe_ref(pipe);
+    submit->dev = fd_device_ref(pipe->dev);
+    return submit;
+@@ -45,6 +46,12 @@
+ {
+    ref(&submit->refcnt);
+    return submit;
++}
++
++void
++fd_submit_set_no_merge(struct fd_submit *submit)
++{
++   submit->no_merge = true;
+ }
+ 
+ struct fd_fence *
+--- a/src/freedreno/drm/freedreno_ringbuffer_sp.c
++++ b/src/freedreno/drm/freedreno_ringbuffer_sp.c
+@@ -338,12 +338,13 @@
+     */
+    simple_mtx_lock(&dev->submit_lock);
+ 
+-   /* If there are deferred submits from another fd_pipe, flush them now,
+-    * since we can't merge submits from different submitqueue's (ie. they
+-    * could have different priority, etc)
++   /* Flush preceding work before adding a no-merge submit or switching
++    * fd_pipe: different submitqueues may have different priorities, etc.
++    * This also keeps a no-merge submit from inheriting the group's fence.
+     */
+    if (!list_is_empty(&dev->deferred_submits) &&
+-       (last_submit(&dev->deferred_submits)->pipe != submit->pipe)) {
++       (submit->no_merge ||
++        last_submit(&dev->deferred_submits)->pipe != submit->pipe)) {
+       flush_deferred_submits(dev);
+    }
+ 
+@@ -378,7 +379,8 @@
+     * reference to the fd, and merged all the in-fence-fd's when we flush the
+     * deferred submits
+     */
+-   if (!use_fence_fd && !has_shared && should_defer(submit)) {
++   if (!submit->no_merge && !use_fence_fd && !has_shared &&
++       should_defer(submit)) {
+       DEBUG_MSG("defer: %u", submit->fence);
+       dev->deferred_cmds += fd_ringbuffer_cmd_count(submit->primary);
+       assert(dev->deferred_cmds == fd_dev_count_deferred_cmds(dev));
+--- a/src/gallium/drivers/freedreno/freedreno_draw.c
++++ b/src/gallium/drivers/freedreno/freedreno_draw.c
+@@ -565,7 +565,19 @@
+    if (!fd_render_condition_check(pctx))
+       return;
+ 
++   const bool isolate_compute = ctx->screen->gpu_id == 504;
++
++   /* A504 needs each compute dispatch in a separate submission.  Drain
++    * earlier nondraw work before acquiring the dispatch's fresh batch.
++    * Even a batch with only query/fence setup must use the normal flush.
++    */
++   if (isolate_compute && ctx->batch_nondraw)
++      fd_batch_flush(ctx->batch_nondraw);
++
+    batch = fd_context_batch_nondraw(ctx);
++   if (isolate_compute)
++      fd_submit_set_no_merge(batch->submit);
++
+    fd_batch_reference(&save_batch, ctx->batch);
+    fd_batch_reference(&ctx->batch, batch);
+ 
+@@ -626,6 +638,12 @@
+    fd_batch_needs_flush(batch);
+    ctx->launch_grid(ctx, info);
+ 
++   if (isolate_compute) {
++      fd_batch_flush(batch);
++      if (save_batch && save_batch->flushed)
++         fd_batch_reference(&save_batch, NULL);
++   }
++
+    fd_batch_reference(&ctx->batch, save_batch);
+    fd_batch_reference(&save_batch, NULL);
+    fd_batch_reference(&batch, NULL);

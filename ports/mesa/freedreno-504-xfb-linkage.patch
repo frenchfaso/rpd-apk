@@ -1,0 +1,71 @@
+--- a/src/freedreno/ir3/ir3_shader.h
++++ b/src/freedreno/ir3/ir3_shader.h
+@@ -426,6 +426,9 @@
+           * enabled
+           */
+          unsigned force_dual_color_blend : 1;
++
++         /* Reserve complete FS input slots for A5xx hardware stream-out. */
++         unsigned has_xfb : 1;
+       };
+       uint32_t global;
+    };
+@@ -494,6 +497,9 @@
+                 sizeof(key->fsampler_swizzles)))
+          return true;
+    }
++
++   if (last_key->has_xfb != key->has_xfb)
++      return true;
+ 
+    if (last_key->rasterflat != key->rasterflat)
+       return true;
+--- a/src/freedreno/ir3/ir3_shader.c
++++ b/src/freedreno/ir3/ir3_shader.c
+@@ -774,6 +774,7 @@
+       key->ucp_enables = 0xff;
+ 
+    if (info->stage == MESA_SHADER_FRAGMENT) {
++      key->has_xfb = shader->compiler->gen == 5;
+       key->fastc_srgb = ~0;
+       key->fsamples = ~0;
+       memset(key->fsampler_swizzles, 0xff, sizeof(key->fsampler_swizzles));
+--- a/src/freedreno/ir3/ir3_compiler_nir.c
++++ b/src/freedreno/ir3/ir3_compiler_nir.c
+@@ -5267,7 +5267,10 @@
+       if (so->inputs[i].bary) {
+          so->varying_in++;
+          so->inputs[i].compmask = (1 << maxcomp) - 1;
+-         inloc += maxcomp;
++         /* Stream-out can extend this mask with components unused by the FS.
++          * Keep those components from overlapping the next input slot.
++          */
++         inloc += so->key.has_xfb ? 4 : maxcomp;
+       }
+    }
+ 
+--- a/src/gallium/drivers/freedreno/a5xx/fd5_draw.c
++++ b/src/gallium/drivers/freedreno/a5xx/fd5_draw.c
+@@ -69,6 +69,7 @@
+          .fs = ctx->prog.fs,
+          .key = {
+             .rasterflat = ctx->rasterizer->flatshade,
++            .has_xfb = ir3_get_shader_info(ctx->prog.vs)->has_transform_feedback_varyings,
+          },
+          .clip_plane_enable = ctx->rasterizer->clip_plane_enable,
+       },
+--- a/src/gallium/drivers/freedreno/ir3/ir3_gallium.c
++++ b/src/gallium/drivers/freedreno/ir3/ir3_gallium.c
+@@ -104,9 +104,10 @@
+    if (v->shader->initial_variants_done && !v->binning_pass) {
+       perf_debug_message(debug, SHADER_INFO,
+                            "%s shader: recompiling at draw time: global "
+-                           "0x%08x, vfsamples %x/%x, astc %x/%x\n",
++                           "0x%08x, vfsamples %x/%x, astc %x/%x, xfb %u\n",
+                            ir3_shader_stage(v), v->key.global, v->key.vsamples,
+-                           v->key.fsamples, v->key.vastc_srgb, v->key.fastc_srgb);
++                           v->key.fsamples, v->key.vastc_srgb, v->key.fastc_srgb,
++                           v->key.has_xfb);
+    }
+ 
+    dump_shader_info(v, debug);

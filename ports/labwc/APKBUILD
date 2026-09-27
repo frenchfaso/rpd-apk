@@ -2,12 +2,13 @@
 # Maintainer: Patrycja Rosa <alpine@ptrcnull.me>
 pkgname=labwc
 pkgver=0.20.2
-pkgrel=153
+pkgrel=154
 pkgdesc="Wayland stacking compositor"
 url="https://github.com/labwc/labwc"
 arch="aarch64"
 license="GPL-2.0-only"
 depends="xwayland"
+checkdepends="cmocka-dev"
 makedepends="
 	cairo-dev
 	glib-dev
@@ -25,6 +26,7 @@ makedepends="
 subpackages="$pkgname-doc $pkgname-lang"
 source="https://github.com/labwc/labwc/archive/$pkgver/labwc-$pkgver.tar.gz
 	initial-orientation.patch two-finger-tap.patch rpd-two-finger.h test-two-finger.c
+	defer-renderer-recovery.patch
 	"
 
 prepare() {
@@ -33,7 +35,7 @@ prepare() {
 }
 
 build() {
-	abuild-meson . output -Dman-pages=enabled
+	abuild-meson . output -Dman-pages=enabled -Dtest=enabled
 	meson compile -C output
 }
 
@@ -53,4 +55,5 @@ sha512sums="
 75aa2347a48f094e024b73874ad6a8032398b47dd62b793652d4b366cf79a12847b4288f415b889d22e34dd7cec6008fd6da900f96f9e9a82ef0015abf99b787  two-finger-tap.patch
 e54b422faae7ae848c4c435f3615d9cb546e59d2cb62b610965642fec553f92797ced8aced04444b4f7fdf6bbcd20cd0400b312765938c3d8dffc72c229ffe54  rpd-two-finger.h
 bed83dae4c9b9c783a2e4f0bf0b2218469f3385614621376fe0507b119bffacbcb61a63c0da2743a69089cce7f4fbc06b5a041568f24c329c640de2eb9b6ab91  test-two-finger.c
+0d6f88588860e51695aa7d77194a1f260f682cda00ee50c2bc2dc5a6fd2cedbc2536175a56b1dace8d1014756f7eecc384ce5f086446e1f84a8f58121b8ed62b  defer-renderer-recovery.patch
 "

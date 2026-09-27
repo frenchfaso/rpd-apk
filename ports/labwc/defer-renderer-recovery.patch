@@ -1,0 +1,57 @@
+--- a/src/server.c
++++ b/src/server.c
+@@ -401,8 +401,10 @@
+ }
+ 
+ static void
+-handle_renderer_lost(struct wl_listener *listener, void *data)
+-{
++recreate_renderer(void *data)
++{
++	server.renderer_recreate = NULL;
++
+ 	wlr_log(WLR_INFO, "Re-creating renderer after GPU reset");
+ 
+ 	struct wlr_renderer *renderer = wlr_renderer_autocreate(server.backend);
+@@ -441,6 +443,19 @@
+ 
+ 	wlr_allocator_destroy(old_allocator);
+ 	wlr_renderer_destroy(old_renderer);
++}
++
++static void
++handle_renderer_lost(struct wl_listener *listener, void *data)
++{
++	if (server.renderer_recreate) {
++		return;
++	}
++
++	/* The lost signal must finish emitting before its renderer is destroyed. */
++	server.renderer_recreate = wl_event_loop_add_idle(server.wl_event_loop,
++		recreate_renderer, NULL);
++	die_if_null(server.renderer_recreate);
+ }
+ 
+ static void
+@@ -882,6 +897,11 @@
+ #if HAVE_LIBSFDO
+ 	desktop_entry_finish();
+ #endif
++	if (server.renderer_recreate) {
++		wl_event_source_remove(server.renderer_recreate);
++		server.renderer_recreate = NULL;
++	}
++
+ 	wl_event_source_remove(server.sighup_source);
+ 	wl_event_source_remove(server.sigint_source);
+ 	wl_event_source_remove(server.sigterm_source);
+--- a/include/labwc.h
++++ b/include/labwc.h
+@@ -286,6 +286,7 @@
+ 	int pending_output_layout_change;
+ 
+ 	struct wl_listener renderer_lost;
++	struct wl_event_source *renderer_recreate;
+ 
+ 	struct wlr_gamma_control_manager_v1 *gamma_control_manager_v1;
+ 

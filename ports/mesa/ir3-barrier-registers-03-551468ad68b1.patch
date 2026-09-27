@@ -1,0 +1,43 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Upstream-commit: 551468ad68b1854d914e5e2e2009af48a40b6ff4
+Upstream: https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896
+
+ir3: report an unreachable register limit rather than assert
+
+calc_limit_pressure_for_cs_with_barrier() can put the register limit below
+what a shader needs, and spilling is then asked for something it cannot
+deliver: the spiller only evicts values that are not live across the
+instruction it is working on, so it can never get below that instruction's own
+footprint, and it ends on an assertion in limit() instead of reporting
+anything.  debugoptimized keeps asserts, and that is what CI builds.
+
+Work out that floor first and fail the compile when the limit is under it.  A
+workgroup whose waves all have to be resident at once cannot run at all in
+that case, so there is nothing better to fall back to.
+
+Assisted-by: Claude:claude-opus-5
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896>
+
+Backport: omit CI expectation changes; driver hunks unchanged.
+
+diff --git a/src/freedreno/ir3/ir3_ra.c b/src/freedreno/ir3/ir3_ra.c
+index e15a79b..961d418 100644
+--- a/src/freedreno/ir3/ir3_ra.c
++++ b/src/freedreno/ir3/ir3_ra.c
+@@ -2874,6 +2874,15 @@
+          d("max pressure exceeded!");
+          goto fail;
+       }
++      /* the spiller cannot get below one instruction's own footprint */
++      struct ir3_pressure min_pressure;
++      calc_min_limit_pressure(v, live, &min_pressure);
++      if (limit_pressure.full < min_pressure.full ||
++          limit_pressure.half < min_pressure.half) {
++         mesa_loge("Shader (%s) needs more registers than its register "
++                   "limit allows.", v->name);
++         goto fail;
++      }
+       d("max pressure exceeded, spilling!");
+       IR3_PASS(v->ir, ir3_spill, v, &live, &limit_pressure);
+       ir3_calc_pressure(v, live, &max_pressure);

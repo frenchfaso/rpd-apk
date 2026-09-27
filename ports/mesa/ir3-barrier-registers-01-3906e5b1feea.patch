@@ -1,0 +1,103 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Upstream-commit: 3906e5b1feea8cc3a817980c38a41b2151460d10
+Upstream: https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896
+
+ir3: take the register file size from the device table
+
+reg_size_vec4 is derived from the generation before a6xx, so a part whose
+register file differs from the rest of its generation has no way to say so.
+
+Move it into the device table, giving each pre-a6xx entry the value the
+generation check produced: 96 for a3xx, 48 for a4xx and a5xx.  No functional
+change.
+
+Assisted-by: Claude:claude-opus-5
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896>
+
+Backport: omit CI expectation changes; driver hunks unchanged.
+
+diff --git a/src/freedreno/common/freedreno_dev_info.py b/src/freedreno/common/freedreno_dev_info.py
+index 383dd7f..9fd9861 100644
+--- a/src/freedreno/common/freedreno_dev_info.py
++++ b/src/freedreno/common/freedreno_dev_info.py
+@@ -105,8 +105,11 @@
+                  tile_max_w, tile_max_h, num_vsc_pipes,
+                  cs_shared_mem_size, num_sp_cores, wave_granularity, fibers_per_sp,
+                  highest_bank_bit = 0, ubwc_swizzle = 0x7, macrotile_mode = 0,
+-                 threadsize_base = 64, max_waves = 16, compute_lb_size = 0):
++                 threadsize_base = 64, max_waves = 16, compute_lb_size = 0,
++                 reg_size_vec4 = 0):
+         self.chip          = chip.value
++        self.props = Struct()
++        self.props.reg_size_vec4 = reg_size_vec4
+         self.gmem_align_w  = gmem_align_w
+         self.gmem_align_h  = gmem_align_h
+         self.tile_align_w  = tile_align_w
+diff --git a/src/freedreno/common/freedreno_devices.py b/src/freedreno/common/freedreno_devices.py
+index 6f99e9f..34b1664 100644
+--- a/src/freedreno/common/freedreno_devices.py
++++ b/src/freedreno/common/freedreno_devices.py
+@@ -46,6 +46,7 @@
+         wave_granularity = 2,
+         fibers_per_sp = 0, # TODO
+         threadsize_base = 8,
++        reg_size_vec4 = 96, # TODO: confirm this
+     ))
+ 
+ add_gpus([
+@@ -64,6 +65,7 @@
+         wave_granularity = 2,
+         fibers_per_sp = 0, # TODO
+         threadsize_base = 32, # TODO: Confirm this
++        reg_size_vec4 = 48, # not measured the way a5xx was
+     ))
+ 
+ add_gpus([
+@@ -84,6 +86,7 @@
+         fibers_per_sp = 64 * 16, # Lowest number that didn't fault on spillall fs-varying-array-mat4-col-row-rd.
+         highest_bank_bit = 14,
+         threadsize_base = 32,
++        reg_size_vec4 = 48,
+     ))
+ 
+ add_gpus([
+@@ -102,6 +105,7 @@
+         fibers_per_sp = 64 * 16, # Lowest number that didn't fault on spillall fs-varying-array-mat4-col-row-rd.
+         highest_bank_bit = 14,
+         threadsize_base = 32,
++        reg_size_vec4 = 48,
+     ))
+ 
+ add_gpus([
+@@ -120,6 +124,7 @@
+         fibers_per_sp = 64 * 16, # Lowest number that didn't fault on spillall fs-varying-array-mat4-col-row-rd.
+         highest_bank_bit = 15,
+         threadsize_base = 32,
++        reg_size_vec4 = 48,
+     ))
+ 
+ # Props could be modified with env var:
+diff --git a/src/freedreno/ir3/ir3_compiler.c b/src/freedreno/ir3/ir3_compiler.c
+index aed282c..1cd127a 100644
+--- a/src/freedreno/ir3/ir3_compiler.c
++++ b/src/freedreno/ir3/ir3_compiler.c
+@@ -346,17 +346,7 @@
+ 
+    compiler->has_isam_ssbo = compiler->gen >= 6;
+ 
+-   if (compiler->gen >= 6) {
+-      compiler->reg_size_vec4 = dev_info->props.reg_size_vec4;
+-   } else if (compiler->gen >= 4) {
+-      /* On a4xx-a5xx, using r24.x and above requires using the smallest
+-       * threadsize.
+-       */
+-      compiler->reg_size_vec4 = 48;
+-   } else {
+-      /* TODO: confirm this */
+-      compiler->reg_size_vec4 = 96;
+-   }
++   compiler->reg_size_vec4 = dev_info->props.reg_size_vec4;
+ 
+    if (compiler->gen >= 4) {
+       /* need special handling for "flat" */

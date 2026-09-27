@@ -1,0 +1,43 @@
+From: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Upstream-commit: 1507102c2ad8d93269d447193416953bc411d3fb
+Upstream: https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896
+
+ir3: print the register limits next to where they are used
+
+The limits are printed well before the allocator consumes them, with the
+shared register pass in between.  Print them where they are used instead.
+
+Assisted-by: Claude:claude-opus-5
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Part-of: <https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/43896>
+
+Backport: omit CI expectation changes; driver hunks unchanged.
+
+diff --git a/src/freedreno/ir3/ir3_ra.c b/src/freedreno/ir3/ir3_ra.c
+index 9ec8b80..7749714 100644
+--- a/src/freedreno/ir3/ir3_ra.c
++++ b/src/freedreno/ir3/ir3_ra.c
+@@ -2835,11 +2835,6 @@
+    if (ir3_shader_debug & IR3_DBG_SPILLALL)
+       calc_min_limit_pressure(v, live, &limit_pressure);
+ 
+-   d("limit pressure:");
+-   d("\tfull: %u", limit_pressure.full);
+-   d("\thalf: %u", limit_pressure.half);
+-   d("\tshared: %u", limit_pressure.shared);
+-
+    /* In the worst case, each half register could block one full register, so
+     * add shared_half in case of fragmentation. In addition, full registers can
+     * block half registers so we have to consider the total pressure against the
+@@ -2869,6 +2864,11 @@
+               ROUND_DOWN_TO(phys_file_size - limit_pressure.half, 4 * 2));
+    }
+ 
++   d("limit pressure:");
++   d("\tfull: %u", limit_pressure.full);
++   d("\thalf: %u", limit_pressure.half);
++   d("\tshared: %u", limit_pressure.shared);
++
+    bool spilled = false;
+    if (max_pressure.full > limit_pressure.full ||
+        max_pressure.half > limit_pressure.half) {

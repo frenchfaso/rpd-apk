@@ -2,7 +2,7 @@
 maintainer="team/alpine-desktop <achill@achill.org>"
 pkgname=mesa
 pkgver=26.2.3
-pkgrel=1005
+pkgrel=1010
 pkgdesc="Mesa DRI OpenGL library"
 url="https://www.mesa3d.org"
 arch="aarch64"
@@ -82,6 +82,18 @@ source="https://mesa.freedesktop.org/archive/mesa-${pkgver/_/-}.tar.xz
 	freedreno-504-bypass.patch
 	freedreno-504-clear.patch
 	freedreno-504-depth-tile.patch
+	freedreno-504-xfb-linkage.patch
+	freedreno-504-compute-boundary.patch
+	freedreno-504-cached-blit.patch
+	ir3-barrier-registers-01-3906e5b1feea.patch
+	ir3-barrier-registers-02-3e36cf699eb0.patch
+	ir3-barrier-registers-03-551468ad68b1.patch
+	ir3-barrier-registers-04-6abd651a99bf.patch
+	ir3-barrier-registers-05-f028380b515d.patch
+	ir3-barrier-registers-06-1507102c2ad8.patch
+	ir3-barrier-registers-07-ea6b2f807d81.patch
+	ir3-504-barrier-residency.patch
+	musl-stacksize.patch
 	"
 builddir="$srcdir/mesa-${pkgver/_/-}"
 options="!check" # TODO
@@ -440,4 +452,16 @@ ce1887fb7d425b94c375a0547bee40c308809c01f5ce1bcddabcc69a7fcb445efb9d5f5c7bac49b2
 5548f9618240bf13e88ab5d471d72d47e5bf9c9496b058ff17cd294bee3a0d099e7dc5b39bfc28c8c2a735febfe630026e9a6755c65c90ea67ff0b98e1ba018b  freedreno-504-bypass.patch
 8b4a8bff9c04d700d972869d4954bc19dae9f63933338713d05ebb97b8b5c78897d3d5a417d7f374cfaceb526c2cb5d2b78aac295267bd874eae8f262b147ee7  freedreno-504-clear.patch
 ff11dfcbdd13c052ed4f8e1d589051d39543fd0a7eddfd8ad78c9f0a4504f3fc705b2d923157d411ba8f7cf32a20ae2b5e8962bfa3d910c5f9851ecd243f5ce9  freedreno-504-depth-tile.patch
+30e898d97b90470e5f4105261c04a255ed6db9ed6e735644499c8728af48d6e14229daaf4763d8499d043e5846c88adf9f243d07df1316a036624f37ff8bfb98  freedreno-504-xfb-linkage.patch
+30d8ce157227cb4efa1ea65c7f82a500e6c4978078fdc505ba844571f3e3c9a9ed518f2d35234160821f53dd2e9b51eb9f1876baed474475d6630fb7f366ed53  freedreno-504-compute-boundary.patch
+00df05c75de19634aa7110b7e9da853c56c0f4ad029e39fa1298d90222299e81ba3271b68779c97b40fe3280a226b6b51512177eb5e848d01c97011f5def4735  freedreno-504-cached-blit.patch
+ed9d00389e45e79a6c30f8f27768bbac2bcc6c11c22d0e649ef86ac05e8c9b21e92d3e608db0056e3be8fca818cb71b7a70fbf9e5a1a5975c66a363c8a87f293  ir3-barrier-registers-01-3906e5b1feea.patch
+e092e24acdd8e9cbd1e0b46f64c03996301034db9baa72ab2ba49559f50a731288179889c5a17daeaa1c9c2af35c17e4e915f1779d5d95083858743733a00d6e  ir3-barrier-registers-02-3e36cf699eb0.patch
+676faf0edd460399cdc32c94bce369b33e1013fff1c5d5cbcb53e1c25d4c49186848c1a979fa39c4e94ce72674307acfab3d366a6c0d43dc8ae3c53ac907a26a  ir3-barrier-registers-03-551468ad68b1.patch
+0e5fc1ddd2c68ffa7060182c9854261908e5a4f7ae37a668d7886b29f1bea1c385d91faff56010da67392f224c76942ce5a90cb9e4e33ce904957862b2f908fd  ir3-barrier-registers-04-6abd651a99bf.patch
+d6352222b5162eb470ca2a3b54d385a74353c532865e2e2ef726def64d10294ff859cd442b8539f2a9c3f179d38012fccfa630a720f37c1f09cfc1b0aad2374e  ir3-barrier-registers-05-f028380b515d.patch
+adbb5abc6ef2c1c364ab41989ecf4b0c6b08e753eb753072b49757344547e027265a44e339e70fa08e7d064222363cfa2537b43117ab5c460bcb797588eb41a0  ir3-barrier-registers-06-1507102c2ad8.patch
+f55d236f0d03d6b600913f5299d8b9c98340ecc9cfb7be46e7e496069466518579042dcfa68c904d693466b9f836c94d239db584b43aa000c4dba8f183b33800  ir3-barrier-registers-07-ea6b2f807d81.patch
+4c087da3df6d7563cdd21546cbcf493dd2c4251d2290fe95d299eadbfeb02218e35de0b5cce3f305e0f1d0de9fd0027e903dc6a95d0a4da6332110afdff797b3  ir3-504-barrier-residency.patch
+36c25333f6a3f31713b78fb2450691e3654d0edc6dc3c4271672b7e5db3aa832bcece86401979904c715a8a703a30261991a44077ae90bb63922ff47118503ab  musl-stacksize.patch
 "
