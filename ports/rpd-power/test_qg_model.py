@@ -1,7 +1,7 @@
 import copy
 import json
 import unittest
-from qg_model import charge_delta, decode_snapshot
+from qg_model import charge_delta, decode_snapshot, sleep_voltage_reference
 from test_power_model import Model, PROFILES, sample
 
 
@@ -116,6 +116,87 @@ class GaugeTests(unittest.TestCase):
         self.assertIsNone(charge_delta(frame(0),frame(1900),600))
         self.assertIsNone(charge_delta(frame(0),frame(1950),600))
         self.assertIsNotNone(charge_delta(frame(0),frame(2000),600.3))
+
+    def test_overnight_sleep_tail_recovers_seed_without_learning_missing_charge(self):
+        model,reading=self.ready_model()
+        model.state.update(learning_anchor={'soc':85},anchor_net_mah=-100,
+                           capacity_mah=4700,capacity_updates=2)
+        # M10 2026-09-28: 9 h 26 min gap, about 140 mA at the sleep tail.
+        q=frame(5*256+140)
+        q.update(accum_current_raw=171365,
+                 fifo_current_raw=[917,917,916,915,915,917,917,917],
+                 fifo_voltage_raw=[19313,19312,19311,19309,19308,19316,19316,19315])
+        reading.update(elapsed=34169.530854,awake_elapsed=195.019549,
+                       timestamp=134169.530854,qg=q,voltage_uv=3721070,temp_c=23.6)
+        first=model.update(reading)
+        self.assertIsNone(first['percentage'])
+        self.assertIsNone(first['charge_delta_mah'])
+        self.assertEqual(first['integration_source'],'none')
+        self.assertIsNone(model.state['learning_anchor'])
+        # Persisted candidate survives a daemon restart; continuity is checked.
+        model=Model(PROFILES,json.loads(json.dumps(model.state)))
+        q=copy.deepcopy(q)
+        q.update(accum_count=190,accum_current_raw=171365+50*1900)
+        reading.update(elapsed=34184.530854,awake_elapsed=210.019549,
+                       timestamp=134184.530854,qg=q)
+        result=model.update(reading)
+        self.assertEqual(result['method'],'sleep-voltage-seed')
+        self.assertEqual(result['reference_source'],'qg-sleep-loaded-voltage')
+        self.assertIsNotNone(result['percentage'])
+        self.assertIsNone(result['time_to_empty_seconds'])
+        self.assertAlmostEqual(result['charge_delta_mah'],-1900*.152588*15/3600)
+        self.assertIsNone(model.state['learning_anchor'])
+        self.assertIsNone(model.state['anchor_net_mah'])
+        self.assertEqual(result['capacity_updates'],2)
+        self.assertEqual(result['capacity_mah_estimated'],4700)
+
+    def test_sleep_seed_requires_fresh_stable_low_load_discharge(self):
+        p=frame(1000)
+        q=frame(1400,900)
+        self.assertIsNotNone(sleep_voltage_reference(p,q,34000,15))
+        self.assertIsNone(sleep_voltage_reference(q,q,34000,15))
+        self.assertIsNone(sleep_voltage_reference(p,q,600,15))
+        self.assertIsNone(sleep_voltage_reference(p,q,34000,90))
+        self.assertIsNone(sleep_voltage_reference(p,q,34000,-1))
+        self.assertIsNone(sleep_voltage_reference(None,q,34000,15))
+        for changes in [dict(config=0),dict(slots=3),
+                        dict(fifo_current_raw=[-900]*8),
+                        dict(fifo_current_raw=[2000]*8),
+                        dict(fifo_voltage_raw=[0x8000]*8),
+                        dict(fifo_current_raw=[900,900,900,1200,900,900,900,900]),
+                        dict(fifo_voltage_raw=[20000,20000,20000,20100,20000,20000,20000,20000])]:
+            self.assertIsNone(sleep_voltage_reference(p,{**q,**changes},34000,15))
+
+    def test_sleep_seed_excludes_newest_completed_block_and_accumulator(self):
+        p=frame(1000);q=frame(1400,900)
+        q['fifo_current_raw'][4]=5000
+        q['fifo_voltage_raw'][4]=19000
+        q['accum_current_raw']=600000
+        self.assertIsNotNone(sleep_voltage_reference(p,q,34000,15))
+        # The same selection works over the ring boundary.
+        q=frame(10,900);q['fifo_voltage_raw'][7]=19000
+        self.assertIsNotNone(sleep_voltage_reference(p,q,34000,15))
+
+    def test_sleep_candidate_is_dropped_on_unproven_followup(self):
+        for changes in [dict(qg=None),dict(usb_online=True),dict(boot_id='other'),
+                        dict(current_ua=100000),dict(temp_c=50)]:
+            model,reading=self.ready_model()
+            reading.update(elapsed=34180,awake_elapsed=195,timestamp=134180,qg=frame(1400,900))
+            model.update(reading)
+            self.assertIn('pending_sleep_reference',model.state)
+            reading.update(elapsed=34195,awake_elapsed=210,timestamp=134195,qg=frame(1450,900))
+            reading.update(changes)
+            result=model.update(reading)
+            self.assertNotEqual(result['reference_source'],'qg-sleep-loaded-voltage')
+            self.assertNotIn('pending_sleep_reference',model.state)
+
+    def test_sleep_reference_is_not_used_across_reboot_or_charging(self):
+        for changes in [dict(boot_id='other'),dict(usb_online=True),dict(temp_c=5)]:
+            model,reading=self.ready_model()
+            reading.update(elapsed=34180,awake_elapsed=195,timestamp=134180,qg=frame(1400,900))
+            reading.update(changes)
+            model.update(reading)
+            self.assertNotIn('pending_sleep_reference',model.state)
 
     def test_m10_s2idle_trace_with_clock_skew_and_fifo_wrap(self):
         # 2026-09-24, 180.655 s in s2idle within a 195.857 s poll interval.

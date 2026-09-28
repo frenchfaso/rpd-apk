@@ -70,6 +70,32 @@ bound, including time between the last poll and suspension/resume. A reboot,
 changed configuration, stopped gauge or overwritten window cannot supply
 charge continuity. Such unobserved gaps invalidate the learning interval.
 
+For a long discharge sleep, a stable FIFO tail can now supply a provisional
+loaded-voltage seed after one confirming poll, rather than waiting three minutes
+for awake voltage samples. Three older completed blocks are used; the newest
+block and accumulator are excluded to avoid wake load. Acceptance requires the
+same boot/configuration, sleep longer than a full FIFO, at most one block of
+awake time between polls, changed data, discharge at no more than 200 mA, voltage
+spread at most 10 mV, current spread at most 20 mA, no external power at either
+endpoint, and temperature between 10 and 45 C. The next uninterrupted poll must
+confirm measured FIFO discharge; interruption or charging drops the candidate.
+
+This is a heuristic reference, **not open-circuit voltage or an overnight charge
+measurement**. The FIFO has no absolute timestamps: assuming its stable tail
+represents late sleep is not proof that sampling ran throughout the gap. This
+path reports `qg-sleep-loaded-voltage`, never advances capacity learning, and
+keeps the missing interval unaccounted. Learned capacity is preserved. If these
+checks fail, the existing filtered awake seed remains the fallback. ETA still
+waits for representative awake consumption rather than using sleep current.
+
+The 2026-09-28 overnight trace (9 h 26 min) reproduced the original unavailable
+percentage. Replaying its unchanged samples with this path recovered a provisional
+25% after the next 15-second poll, instead of a 16% awake-voltage seed after
+216 seconds. This demonstrates recovery timing, **not that 25% is the true SOC**.
+39 model tests pass on both the host and M10, including invalid/stale windows,
+charging, reboot, follow-up failure and exclusion of wake-load blocks. A new
+physical long-sleep trial remains separate from this recorded-data replay.
+
 Suspend is detected by comparing BOOTTIME and MONOTONIC, including short sleeps.
 Measured sleep charge updates SOC immediately. Full/quiet observation timers and
 awake ETA smoothing restart; unobserved temperature/current cannot qualify a

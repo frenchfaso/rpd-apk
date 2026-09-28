@@ -7,7 +7,7 @@ Low-current references and voltage seeds remain unvalidated approximations.
 """
 import math
 import statistics
-from qg_model import charge_delta
+from qg_model import charge_delta, sleep_voltage_reference
 
 
 def clamp(value, low, high):
@@ -74,6 +74,7 @@ class Model:
                 s.update(seed_started=sample['elapsed'], seed_samples=[],
                          estimate_exhausted=False)
         p = s.get('previous')
+        pending_sleep = s.pop('pending_sleep_reference', None)
         dt = sample['elapsed'] - p['elapsed'] if p else 0
         same_boot = bool(p and sample['boot_id'] == p['boot_id'] and dt > 0)
         # BOOTTIME includes suspend; MONOTONIC does not. Charge measured during
@@ -109,6 +110,12 @@ class Model:
             if not resume:
                 s.update(seed_started=sample['elapsed'], seed_samples=[],
                          estimate_exhausted=False)
+                if (slept and not sample['usb_online'] and not p['usb_online'] and
+                        10 <= sample['temp_c'] <= 45):
+                    candidate = sleep_voltage_reference(p.get('qg'), sample.get('qg'), dt,
+                        sample['awake_elapsed'] - p['awake_elapsed'])
+                    if candidate:
+                        s['pending_sleep_reference'] = candidate
             elif 'seed_started' in s:
                 # A seed window must not span an unobserved interval.
                 s.update(seed_started=sample['elapsed'], seed_samples=[])
@@ -172,6 +179,19 @@ class Model:
             s.pop('seed_samples', None)
             if s['reference_source'] == 'qg-rest':
                 self.rest_reference(reference, {**sample, 'current_ua': hardware_reference['current_ua']})
+        elif (pending_sleep and continuous and integration_source == 'qg-fifo' and
+              not sample['usb_online'] and not p['usb_online'] and
+              sample['current_ua'] <= 0 and dq <= 0 and 10 <= sample['temp_c'] <= 45 and
+              abs(sample['temp_c'] - p['temp_c']) <= 2):
+            # The next measured FIFO interval confirms a running gauge. The
+            # sleep tail supplies a seed only; the missing overnight charge
+            # and capacity-learning anchor remain unknown.
+            reference = curve_soc(profile, pending_sleep['voltage_uv'], sample['temp_c'], False)
+            s.update(soc=clamp(reference + dq * 100 / s['capacity_mah'], 0, 99),
+                     method='sleep-voltage-seed', reference_source='qg-sleep-loaded-voltage',
+                     estimate_exhausted=False, learning_anchor=None, anchor_net_mah=None)
+            s.pop('seed_started', None)
+            s.pop('seed_samples', None)
         if sample['current_ua'] > 100000:
             s.update(learning_anchor=None, anchor_net_mah=None)
         full = (sample['usb_online'] and sample['charger_state'] == 5 and

@@ -82,3 +82,36 @@ def charge_delta(previous, current, elapsed):
     if abs(current_ua) > 5000000:
         return None
     return -raw * 152588 / 1000 * period / 3600000
+
+
+def sleep_voltage_reference(previous, current, elapsed, awake_elapsed):
+    """A provisional loaded-voltage seed, never charge counted over a gap.
+
+    Once a long sleep overwrites the FIFO, three completed blocks can still
+    describe its tail. Skip the newest block and accumulator to exclude wake
+    load. The caller must confirm that sampling continues before using this
+    candidate. These conservative stability gates are not an OCV qualification.
+    """
+    if not previous or not current or previous['config'] != current['config']:
+        return None
+    q = current
+    slots = q['slots']
+    block = q['samples_per_slot'] * q['interval_ms'] / 1000
+    if (slots < 4 or block <= 0 or not 0 <= awake_elapsed <= block or
+            elapsed - awake_elapsed <= slots * block):
+        return None
+    indices = [(q['completed'] - 2 - i) % slots for i in range(3)]
+    # Unchanged data cannot establish that the gauge ran while asleep.
+    if all((q['fifo_voltage_raw'][i], q['fifo_current_raw'][i]) ==
+           (previous['fifo_voltage_raw'][i], previous['fifo_current_raw'][i])
+           for i in indices):
+        return None
+    voltages = [q['fifo_voltage_raw'][i] * 194637 // 1000 for i in indices]
+    currents = [-q['fifo_current_raw'][i] * 152588 / 1000 for i in indices]
+    if (not all(2800000 < v < 4500000 for v in voltages) or
+            not all(-200000 <= i <= 0 for i in currents) or
+            max(voltages) - min(voltages) > 10000 or
+            max(currents) - min(currents) > 20000):
+        return None
+    return {'voltage_uv': sorted(voltages)[1],
+            'current_ua': sum(currents) / len(currents)}
