@@ -16,6 +16,38 @@
 #include <linux/of_platform.h>
 #include <linux/pm_domain.h>
 #include <linux/platform_device.h>
+#include <linux/suspend.h>
+
+/* Lenovo stock INX JD9365 on/off commands, including OEM wait times.
+ * Keep supplies and reset untouched: only the panel enters DCS sleep.
+ */
+struct panel_cmd { u8 type, cmd, value, wait_ms; };
+static const struct panel_cmd panel_on[] = {
+ { 0x05, 0x11, 0x00, 120 },
+ { 0x15, 0xe0, 0x00, 0 },
+ { 0x15, 0xe1, 0x93, 0 },
+ { 0x15, 0xe2, 0x65, 0 },
+ { 0x15, 0xe3, 0xf8, 0 },
+ { 0x15, 0x80, 0x03, 0 },
+ { 0x15, 0xe0, 0x03, 0 },
+ { 0x15, 0xa0, 0x33, 0 },
+ { 0x15, 0xa1, 0x11, 0 },
+ { 0x15, 0xe0, 0x01, 0 },
+ { 0x15, 0x37, 0x15, 0 },
+ { 0x15, 0xe0, 0x00, 0 },
+ { 0x05, 0x29, 0x00, 10 },
+ { 0x15, 0x51, 0x00, 0 },
+ { 0x15, 0x53, 0x2c, 0 },
+ { 0x15, 0x55, 0x00, 0 },
+};
+static const struct panel_cmd panel_off[] = {
+ { 0x15, 0x53, 0x24, 0 },
+ { 0x15, 0x51, 0x00, 0 },
+ { 0x15, 0x55, 0x10, 0 },
+ { 0x05, 0x28, 0x00, 20 },
+ { 0x05, 0x10, 0x00, 120 },
+};
+
 
 #define BASE 0x01a94000
 #define SIZE 0x300
@@ -83,6 +115,11 @@ static struct platform_device *pdev;
 static struct backlight_device *bl;
 static DEFINE_MUTEX(lock);
 static bool faulted;
+static bool panel_asleep;
+module_param(panel_asleep, bool, 0444);
+static unsigned int panel_sleeps, panel_wakes;
+module_param(panel_sleeps, uint, 0444);
+module_param(panel_wakes, uint, 0444);
 static char *panel;
 module_param(panel, charp, 0444);
 MODULE_PARM_DESC(panel, "Required verified panel: inx-jd9365-800p");
@@ -100,12 +137,11 @@ static bool firmware_state_valid(void)
         !(rd(0x110) & (IRQ_MASKS | BIT(24))) && !(rd(8) & 3);
 }
 
-static int update_status(struct backlight_device *bd)
+static int send_short(u8 type, u8 command, u8 value)
 {
  u32 status, ctrl, tpg, length;
  int ret;
- unsigned int brightness = backlight_get_brightness(bd);
- mutex_lock(&lock);
+
  if (faulted || !firmware_state_valid()) {
   ret = -EIO;
   goto out;
@@ -119,7 +155,7 @@ static int update_status(struct backlight_device *bd)
  wr(4, ctrl | BIT(2));
  wr(0x110, BIT(0));
  wr(0x15c, 0x30006);
- wr(0x17c, 0x80150051 | (brightness << 8));
+ wr(0x17c, BIT(31) | ((u32)type << 16) | ((u32)value << 8) | command);
  wr(0x17c, 0); /* even number of FIFO words required */
  wr(0x4c, 4);
  /* readback orders register setup before triggering the FIFO */
@@ -135,9 +171,55 @@ static int update_status(struct backlight_device *bd)
 fail:
  if (ret) {
   faulted = true;
-  dev_err(&bd->dev, "DSI command failed (%d); further writes disabled\n", ret);
+  dev_err(&pdev->dev, "DSI command failed (%d); further writes disabled\n", ret);
  }
 out:
+ return ret;
+}
+
+/* Exact panel commands and delays from the stock Lenovo device tree. */
+static int set_panel_sleep(bool sleep)
+{
+ const struct panel_cmd *seq = sleep ? panel_off : panel_on;
+ size_t count = sleep ? ARRAY_SIZE(panel_off) : ARRAY_SIZE(panel_on);
+ int ret = 0;
+ size_t i;
+ if (sleep == panel_asleep) return 0;
+ for (i = 0; i < count; i++) {
+  ret = send_short(seq[i].type, seq[i].cmd, seq[i].value);
+  if (ret) return ret;
+  if (seq[i].wait_ms) msleep(seq[i].wait_ms);
+ }
+ panel_asleep = sleep;
+ if (sleep) panel_sleeps++;
+ else {
+  ret = send_short(0x15, 0x51, backlight_get_brightness(bl));
+  if (!ret) panel_wakes++;
+ }
+ return ret;
+}
+/* Preserve controller state; only the qualified panel enters DCS sleep. */
+static bool panel_pm_registered;
+static int panel_pm_notify(struct notifier_block *nb, unsigned long event, void *unused)
+{
+ int ret = 0;
+ if (event != PM_SUSPEND_PREPARE && event != PM_POST_SUSPEND) return NOTIFY_OK;
+ mutex_lock(&lock);
+ if (retention_active)
+  ret = set_panel_sleep(event == PM_SUSPEND_PREPARE);
+ mutex_unlock(&lock);
+ if (ret) {
+  dev_err(&pdev->dev, "Panel sleep transition failed (%d)\n", ret);
+  return notifier_from_errno(ret);
+ }
+ return NOTIFY_OK;
+}
+static struct notifier_block panel_pm_nb = { .notifier_call = panel_pm_notify };
+static int update_status(struct backlight_device *bd)
+{
+ int ret = 0;
+ mutex_lock(&lock);
+ if (!panel_asleep) ret = send_short(0x15, 0x51, backlight_get_brightness(bd));
  mutex_unlock(&lock);
  return ret;
 }
@@ -188,6 +270,11 @@ static int __init m10_bl_init(void)
   dev_warn(&pdev->dev, "Display retention unavailable (%d); suspend may lose scanout\n", ret);
  else if (retention_active)
   dev_info(&pdev->dev, "Firmware display retention active; higher suspend power expected\n");
+ if (retention_active) {
+  ret = register_pm_notifier(&panel_pm_nb);
+  if (ret) dev_warn(&pdev->dev, "Panel sleep unavailable (%d)\n", ret);
+  else panel_pm_registered = true;
+ }
  dev_info(&pdev->dev, "Firmware DSI backlight registered, range 0..255\n");
  return 0;
 device:
@@ -200,6 +287,10 @@ region:
 }
 static void __exit m10_bl_exit(void)
 {
+ if (panel_pm_registered) unregister_pm_notifier(&panel_pm_nb);
+ mutex_lock(&lock);
+ if (panel_asleep) set_panel_sleep(false);
+ mutex_unlock(&lock);
  disable_display_retention();
  device_remove_file(&bl->dev, &dev_attr_display_name);
  backlight_device_unregister(bl);

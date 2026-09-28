@@ -233,3 +233,36 @@ Wi-Fi reconnected automatically about 40 seconds later. Captured QG counters had
 test. This verifies bounded sleep accounting, not overnight continuity or learned
 capacity accuracy. There is still one full-charge reference and zero learned
 capacity updates in the verified device state.
+
+## M10 suspend power
+
+The firmware backlight bridge now sends the stock Lenovo INX JD9365 panel's
+DCS off/sleep sequence before system suspend, then its on/wake sequence and the
+current brightness after resume. It keeps the controller domain, PHY/PLL,
+reset GPIO and supplies unchanged, preserving the working firmware scanout.
+This affects system suspend only; ordinary idle screen blanking is unchanged.
+
+An unplugged, same-boot comparison on 2026-09-28 measured 101.47 mA with the
+panel asleep versus 141.79 mA with brightness-only blanking (about 28% lower).
+Each case spent 240 seconds in s2idle. Current is derived from the hardware
+charge integral over the complete interval, including brief entry/resume time,
+not from differences between estimated percentages. This is a short comparison,
+not a full-night battery benchmark. Separately disabling USB or audio did not
+produce a useful saving, so neither workaround is installed.
+
+Display-controller retention remains a power cost. Native display suspend and
+resume support is still needed to let that domain and its scanout clocks stop.
+The saving therefore does not imply laptop-class standby or solve battery
+capacity calibration. Kernel upgrades remain unrestricted; the existing matching
+kernel build/loader rules also apply to this integration.
+
+Read-only diagnostic parameters under
+`/sys/module/m10_firmware_backlight/parameters/` expose `panel_asleep`,
+`panel_sleeps` and `panel_wakes`. `tests/verify_panel_sleep.py` checks the actual
+transition and notifier helpers; the existing retention fixture covers domain
+qualification and notifier lifecycle.
+
+The installed automatic implementation also completed 90- and 120-second RTC
+suspend/resume cycles while charging, with balanced panel sleep/wake counters,
+unchanged boot ID and active services. The user confirmed visible display and
+working touch after restoring the test's initially blank brightness state.

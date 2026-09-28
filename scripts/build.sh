@@ -17,6 +17,7 @@ apk add --no-cache pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-de
 python3 tests/verify_charge_status.py ports/rpd-backlight-m10/m10_battery.c
 python3 tests/verify_qg_snapshot.py ports/rpd-backlight-m10/m10_battery.c
 python3 tests/verify_display_retention.py ports/rpd-backlight-m10/m10_firmware_backlight.c
+python3 tests/verify_panel_sleep.py ports/rpd-backlight-m10/m10_firmware_backlight.c
 adduser -D builder 2>/dev/null || true
 addgroup builder abuild 2>/dev/null || true
 printf 'builder ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/rpd-builder
