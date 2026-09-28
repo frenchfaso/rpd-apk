@@ -239,7 +239,12 @@ capacity updates in the verified device state.
 The firmware backlight bridge now sends the stock Lenovo INX JD9365 panel's
 DCS off/sleep sequence before system suspend, then its on/wake sequence and the
 current brightness after resume. It keeps the controller domain, PHY/PLL,
-reset GPIO and supplies unchanged, preserving the working firmware scanout.
+reset GPIO and supplies unchanged, preserving the firmware display configuration.
+On the qualified INTF1 interface it also stops the timing engine after panel
+sleep, then restarts it and checks frame progress before sending wake commands.
+This stops frame generation without removing the retained clocks or power.
+If the interface is unavailable or does not match the observed firmware timing
+configuration, it falls back to panel-only sleep.
 This affects system suspend only; ordinary idle screen blanking is unchanged.
 
 An unplugged, same-boot comparison on 2026-09-28 measured 101.47 mA with the
@@ -250,6 +255,11 @@ not from differences between estimated percentages. This is a short comparison,
 not a full-night battery benchmark. Separately disabling USB or audio did not
 produce a useful saving, so neither workaround is installed.
 
+A second same-boot 240-second comparison measured 80.66 mA with panel sleep and
+stopped scanout, versus 106.53 mA with panel-only sleep (about 24% lower). The
+frame counter remained unchanged across the stopped-scanout suspend. Both cases
+resumed without a reboot; the same short-test limitations apply.
+
 Display-controller retention remains a power cost. Native display suspend and
 resume support is still needed to let that domain and its scanout clocks stop.
 The saving therefore does not imply laptop-class standby or solve battery
@@ -258,11 +268,23 @@ kernel build/loader rules also apply to this integration.
 
 Read-only diagnostic parameters under
 `/sys/module/m10_firmware_backlight/parameters/` expose `panel_asleep`,
-`panel_sleeps` and `panel_wakes`. `tests/verify_panel_sleep.py` checks the actual
+`panel_sleeps`, `panel_wakes`, `scanout_available`, `timing_stopped`,
+`timing_stops` and `timing_starts`. `tests/verify_panel_sleep.py` checks the actual
 transition and notifier helpers; the existing retention fixture covers domain
-qualification and notifier lifecycle.
+qualification and notifier lifecycle. `tests/verify_scanout_sleep.py` checks
+timing guards, stop/resume ordering, failed-stop rollback, resume timeouts and
+automatic notifier fallback. The timing enable bit is the only controller
+register changed; timings, buffers and IRQ ownership remain untouched.
 
 The installed automatic implementation also completed 90- and 120-second RTC
 suspend/resume cycles while charging, with balanced panel sleep/wake counters,
 unchanged boot ID and active services. The user confirmed visible display and
 working touch after restoring the test's initially blank brightness state.
+
+The packaged automatic scanout integration subsequently completed unplugged
+90- and 120-second s2idle cycles: 82.95 and 83.09 mA over the measured intervals,
+respectively. Panel and timing stop/start counters were balanced (2/2), scanout
+resumed at 60 fps, the boot ID was unchanged and the services remained active.
+No DSI/GPU errors were present in the checked kernel log; the existing wcn36xx
+unsupported-event message still occurs around Wi-Fi suspension. The user
+confirmed visible display and working touch after the final resume.

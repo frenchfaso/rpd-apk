@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Narrow firmware-handoff driver for Lenovo M10 INX JD9365.
- * Preserves bootloader scanout, PHY, PLL, timings and power supplies.
+ * Preserves bootloader display state, PHY, PLL, timings and power supplies.
  * TPG command transport derived from msm89x7-mainline/msm-4.9
  * c348797f41abb995dbdac36d2c6e8324202244d7 mdss_dsi_host.c.
  * Remove this bridge when a native DRM DSI driver becomes available.
@@ -198,18 +198,110 @@ static int set_panel_sleep(bool sleep)
  }
  return ret;
 }
-/* Preserve controller state; only the qualified panel enters DCS sleep. */
+/* Retained timing stop, from downstream mdss_mdp_intf_video.c
+ * c348797f41abb995dbdac36d2c6e8324202244d7. Stop after panel sleep, restart
+ * before sending DCS wake commands. No clock, power, PHY/PLL or reset writes.
+ */
+#define INTF_BASE 0x01a6b800
+#define INTF_SIZE 0x100
+static void __iomem *intf_regs;
+static bool timing_stopped, scanout_available;
+module_param(timing_stopped, bool, 0444);
+module_param(scanout_available, bool, 0444);
+static unsigned int timing_stops, timing_starts;
+module_param(timing_stops, uint, 0444);
+module_param(timing_starts, uint, 0444);
+static u32 intf_read(unsigned int off) { return readl(intf_regs + off); }
+static bool intf_valid(void)
+{
+ return intf_read(4) == 0x80000000 && intf_read(8) == 0x042b0064 &&
+        intf_read(0xc) == 0x0015d96a && intf_read(0x90) == 0x213f;
+}
+static int timing_run(void)
+{
+ u32 count, value;
+ int ret;
+ if (!timing_stopped) return 0;
+ if (!intf_valid()) return -EIO;
+ count = intf_read(0xac);
+ writel(1, intf_regs); readl(intf_regs);
+ ret = readl_poll_timeout(intf_regs + 0xac, value, value != count, 1000, 100000);
+ if (!ret) { timing_stopped = false; timing_starts++; }
+ return ret;
+}
+static int timing_pause(void)
+{
+ u32 count;
+ int ret;
+ if (timing_stopped) return 0;
+ if (!intf_valid() || intf_read(0) != 1) return -EIO;
+ ret = set_panel_sleep(true);
+ if (ret) return ret;
+ writel(0, intf_regs); readl(intf_regs);
+ timing_stopped = true;
+ /* Android waits at least one full VSYNC after stopping the timing engine. */
+ msleep(40);
+ count = intf_read(0xac);
+ msleep(40);
+ if (intf_read(0) || intf_read(0xac) != count) {
+  ret = timing_run();
+  if (!ret) ret = set_panel_sleep(false);
+  return ret ? ret : -EIO;
+ }
+ timing_stops++;
+ return 0;
+}
+static void disable_scanout_sleep(void)
+{
+ scanout_available = false;
+ if (!intf_regs) return;
+ iounmap(intf_regs); intf_regs = NULL;
+ release_mem_region(INTF_BASE, INTF_SIZE);
+}
+static int enable_scanout_sleep(void)
+{
+ void __iomem *probe;
+ u32 value, count;
+ if (!retention_active) return -ENODEV;
+ probe = ioremap(0x01a00000, 4);
+ if (!probe) return -ENOMEM;
+ value = readl(probe); iounmap(probe);
+ if (value != 0x100e0000) return -ENODEV;
+ probe = ioremap(0x01a6c000, 4);
+ if (!probe) return -ENOMEM;
+ value = readl(probe); iounmap(probe);
+ if (value) return -ENODEV;
+ if (!request_mem_region(INTF_BASE, INTF_SIZE, "m10-firmware-scanout")) return -EBUSY;
+ intf_regs = ioremap(INTF_BASE, INTF_SIZE);
+ if (!intf_regs) { release_mem_region(INTF_BASE, INTF_SIZE); return -ENOMEM; }
+ if (!intf_valid() || intf_read(0) != 1) goto fail;
+ count = intf_read(0xac); msleep(40);
+ if (count == intf_read(0xac)) goto fail;
+ scanout_available = true;
+ return 0;
+fail:
+ disable_scanout_sleep();
+ return -ENODEV;
+}
+
+/* Fall back to panel-only sleep if the timing interface is not qualified. */
 static bool panel_pm_registered;
 static int panel_pm_notify(struct notifier_block *nb, unsigned long event, void *unused)
 {
  int ret = 0;
  if (event != PM_SUSPEND_PREPARE && event != PM_POST_SUSPEND) return NOTIFY_OK;
  mutex_lock(&lock);
- if (retention_active)
-  ret = set_panel_sleep(event == PM_SUSPEND_PREPARE);
+ if (retention_active) {
+  if (event == PM_SUSPEND_PREPARE)
+   ret = scanout_available ? timing_pause() : set_panel_sleep(true);
+  else {
+   ret = timing_run();
+   if (!ret) ret = set_panel_sleep(false);
+  }
+ }
  mutex_unlock(&lock);
  if (ret) {
-  dev_err(&pdev->dev, "Panel sleep transition failed (%d)\n", ret);
+  dev_err(&pdev->dev, "Display sleep transition failed (%d)\n", ret);
   return notifier_from_errno(ret);
  }
  return NOTIFY_OK;
@@ -271,8 +363,13 @@ static int __init m10_bl_init(void)
  else if (retention_active)
   dev_info(&pdev->dev, "Firmware display retention active; higher suspend power expected\n");
  if (retention_active) {
+  ret = enable_scanout_sleep();
+  if (ret) dev_warn(&pdev->dev, "Timing stop unavailable (%d); using panel-only sleep\n", ret);
   ret = register_pm_notifier(&panel_pm_nb);
-  if (ret) dev_warn(&pdev->dev, "Panel sleep unavailable (%d)\n", ret);
+  if (ret) {
+   disable_scanout_sleep();
+   dev_warn(&pdev->dev, "Panel sleep unavailable (%d)\n", ret);
+  }
   else panel_pm_registered = true;
  }
  dev_info(&pdev->dev, "Firmware DSI backlight registered, range 0..255\n");
@@ -289,8 +386,9 @@ static void __exit m10_bl_exit(void)
 {
  if (panel_pm_registered) unregister_pm_notifier(&panel_pm_nb);
  mutex_lock(&lock);
- if (panel_asleep) set_panel_sleep(false);
+ if (!timing_run() && panel_asleep) set_panel_sleep(false);
  mutex_unlock(&lock);
+ disable_scanout_sleep();
  disable_display_retention();
  device_remove_file(&bl->dev, &dev_attr_display_name);
  backlight_device_unregister(bl);
