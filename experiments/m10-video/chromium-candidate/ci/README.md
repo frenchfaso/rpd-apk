@@ -81,6 +81,25 @@ Every attempt's raw log/status is retained. Hash failures, HTTP404 and all
 other errors fail immediately; no checksum or URL changes. Normal
 `abuild verify unpack prepare` follows only after fetch succeeds.
 
+[Run 36773335738](https://github.com/frenchfaso/rpd-apk/actions/runs/36773335738)
+exhausted those three HTTP503 attempts. The original Copium publisher remained
+unavailable. Alpine's official
+[distfiles cache](https://distfiles.alpinelinux.org/distfiles/edge/copium-152.0.tar.gz)
+provided the exact original 20,697-byte archive with the recipe's unchanged
+SHA512. The runner now prefills only that named file in `SRCDEST` from the
+official cache, with the exact recipe, size and full SHA512 checked before
+publishing complete bytes. Missing, truncated or mismatched downloads fail;
+an existing cache file is revalidated and never replaced. Raw response headers,
+curl output and the hash report are retained on failure and success.
+
+The recipe URL, source order and checksums remain unchanged. Pinned
+[abuild-fetch](https://github.com/alpinelinux/abuild/blob/03444ca1b6fa10d1717d024a6e94ee27e3ed50f2/abuild-fetch.c)
+uses an existing `SRCDEST` file, then normal
+[default_fetch](https://github.com/alpinelinux/abuild/blob/03444ca1b6fa10d1717d024a6e94ee27e3ed50f2/abuild.in#L445)
+verifies it against the recipe along with every other source. Both normal fetch
+and verify remain mandatory. No global mirror setting or archive regeneration
+is used; the original HTTP503 attempt logs remain separate transport evidence.
+
 The manual default builds only the two changed C++ objects. The optional
 `full_recipe` dispatch input continues to normal `abuild -r` only after those
 objects and generated backend flags pass. It uses the recipe's normal

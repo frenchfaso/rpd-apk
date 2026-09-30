@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "scope": "Offline workflow/script validation; runner attempts recorded separately, no local downloads/GN/C++ build",
-  "tests": 43,
+  "tests": 52,
   "checks": [
     "Python syntax and immutable candidate input hashes",
     "Recipe staging zero-fuzz/no-offset roundtrip",
@@ -15,17 +15,19 @@
     "Pinned global Rust export and build-only file-limit contract",
     "Actual wrapper child-process export/limit success and omission failures",
     "Actual generated compiler command source/output selection and complete flag retention",
-    "Actual fetch-only wrapper: HTTP503 success/recovery/bound; checksum/mixed-hash/404/timeout/other curl errors fail immediately; cached bytes and raw attempts retained"
+    "Actual fetch-only wrapper: HTTP503 success/recovery/bound; checksum/mixed-hash/404/timeout/other curl errors fail immediately; cached bytes and raw attempts retained",
+    "Exact official Alpine Copium preseed: pinned recipe/size/SHA512; cached, missing, truncated, wrong-hash, redirect and failed-fetch fixtures; mandatory unchanged abuild checks"
   ],
   "files_sha256": {
     "native-build.yml": "a5bc5c45fcb45ff83871905b65a0e1b65e8c89195eb795ef045804c6b1a650af",
-    "build-in-container.sh": "d61274565813b8a2927fde33edaf6ea39a661e88d415d11c3cab3e27f58f3eb3",
+    "build-in-container.sh": "b7a3128c849e2be745b40d370794fc92901cd70f113c0c100b8322d032db7b45",
     "verify-build.py": "b2e76e51a175d2af25289deee4bdb0809fadde15343bc53d2cb0321c7bfedc2d",
-    "test-verify-build.py": "2299d943751b5841b2d18517e8a67a9e1ba19265ab6c0474d68aa3eab83639a7",
+    "test-verify-build.py": "b47158f0e49c0e66bec607f42026785249a98b3ceb3b91876bdbc4cc0a8165f8",
     "abuild-default-fetch.sh": "3dee74f6e4dea799a2ed187cbcb493b34c5cf3e9802ac0dbbb6471d06527c42e",
     "patch-wrapper.sh": "6a437c22f64e15f648fc8dceca5022ffad9a3774b3fbdbc724e7ae062fe56527",
-    "README.md": "4c9ec9d3992631f97555975d1d28b218eda7ad08b4012e15c41d9fd53a3634a8",
-    "fetch-with-retry.sh": "88320f14e1715185ba3ed4a55310b4a1208a611a1ad7609b0ddde082f7019cf3"
+    "README.md": "4caaeb335ef5ff4409ff2e36181b4a36a534f9de1284b20cb8364fc06f229a36",
+    "fetch-with-retry.sh": "88320f14e1715185ba3ed4a55310b4a1208a611a1ad7609b0ddde082f7019cf3",
+    "preseed-copium.py": "e3ade1fb62f9e2e0daeb6defae55011c03357190fad90a78369b5568623d8b6e"
   },
   "remaining": [
     "Repeat native GN/target checks with exact recipe compiler environment",
@@ -151,5 +153,33 @@
     "chromium_and_fonts_sha512": "Original pinned checks PASS",
     "failure": "Official Codeberg copium152.0 archive HTTP503; no compiler or environment gate reached",
     "compilation": "Not reached"
+  },
+  "fetch_retry_review": {
+    "reviewer": "venus_ffmpeg_eof",
+    "result": "No blocker after explicit mixed503/non503 rejection and negative fixtures",
+    "scope": "Only exact HTTP503, max3 attempts/delay5; all checks retained"
+  },
+  "sixth_runner_attempt": {
+    "run": "https://github.com/frenchfaso/rpd-apk/actions/runs/36773335738",
+    "commit": "46567be674d9b46998e168805d64ed648c787164",
+    "full_recipe": false,
+    "status": "Failed before unpack after three exact Codeberg HTTP503 attempts",
+    "cached_sources": "Unchanged Chromium and fonts rechecked successfully on every retry",
+    "compilation": "Not reached"
+  },
+  "copium_transport": {
+    "original_url": "https://codeberg.org/selfisekai/copium/archive/152.0.tar.gz",
+    "cache_url": "https://distfiles.alpinelinux.org/distfiles/edge/copium-152.0.tar.gz",
+    "size_bytes": 20697,
+    "sha512": "6bdfb803ec024224db07ae46eeb0df6ccdd86603d48b6166bfdd5c03df60bf05e680c05ee0e1638663ef943600d9e5658aadc2313483053783c8381a8244f326",
+    "local_cache_proof": "Exact original pinned hash PASS; archive not unpacked",
+    "standard_abuild_fetch_verify": "Required unchanged after preseed",
+    "global_mirror": false,
+    "review": {
+      "reviewer": "venus_ffmpeg_eof",
+      "result": "No concrete source-level blocker",
+      "abuild_cache_contract": "Existing SRCDEST file skips network in abuild-fetch; unchanged default_fetch then checks original recipe SHA512"
+    },
+    "actual_retained_archive_cli_check": "PASS exact size/hash, no network"
   }
 }

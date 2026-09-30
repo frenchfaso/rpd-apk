@@ -51,6 +51,7 @@ python3 "$CANDIDATE_DIR/ci/verify-build.py" stage "$port" "$REVIEW_DIR/recipe-st
 cd "$port"
 abuild deps
 apk info -vv > "$REVIEW_DIR/build-packages.txt"
+python3 "$CANDIDATE_DIR/ci/preseed-copium.py" "$port/APKBUILD" "$SRCDEST" "$REVIEW_DIR"
 sh "$CANDIDATE_DIR/ci/fetch-with-retry.sh" "$REVIEW_DIR"
 abuild verify unpack prepare
 source_dir="$port/src/chromium-152.0.7977.82"

@@ -14,6 +14,101 @@ HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("verify", HERE / "verify-build.py")
 verify = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(verify)
+spec = importlib.util.spec_from_file_location("preseed", HERE / "preseed-copium.py")
+preseed = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(preseed)
+
+
+class CopiumPreseed(unittest.TestCase):
+    def fixture(self, root):
+        data = b"a" * preseed.SIZE
+        checksum = hashlib.sha512(data).hexdigest()
+        recipe = root / "APKBUILD"
+        original = (HERE.parent / "prepared/aports/community/chromium/APKBUILD").read_bytes()
+        recipe.write_bytes(original.replace(preseed.SHA512.encode(), checksum.encode()))
+        sources, review = root / "sources", root / "review"
+        sources.mkdir()
+        return recipe, sources, review, data, mock.patch.multiple(
+            preseed, SHA512=checksum,
+            RECIPE_SHA256=hashlib.sha256(recipe.read_bytes()).hexdigest())
+
+    def test_original_recipe_and_artifact_pins(self):
+        recipe = HERE.parent / "prepared/aports/community/chromium/APKBUILD"
+        self.assertEqual(verify.sha(recipe), preseed.RECIPE_SHA256)
+        self.assertIn((preseed.SHA512, preseed.NAME), verify.checksum_order(recipe.read_text()))
+        self.assertEqual(preseed.SIZE, 20697)
+        self.assertEqual(preseed.URL, "https://distfiles.alpinelinux.org/distfiles/edge/copium-152.0.tar.gz")
+
+    def test_cached_artifact_is_revalidated_without_fetch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            recipe, sources, review, data, pins = self.fixture(Path(directory))
+            (sources / preseed.NAME).write_bytes(data)
+            with pins, mock.patch.object(preseed.subprocess, "run") as fetch:
+                report = preseed.seed(recipe, sources, review)
+                fetch.assert_not_called()
+            self.assertEqual(report["status"], "PASS")
+            self.assertTrue(report["normal_abuild_fetch_verify_required"])
+            self.assertEqual((sources / preseed.NAME).read_bytes(), data)
+
+    def fetched_fixture(self, payload=None, exit_status=0, effective_url=None):
+        with tempfile.TemporaryDirectory() as directory:
+            recipe, sources, review, data, pins = self.fixture(Path(directory))
+            def fetch(command, **kwargs):
+                self.assertEqual(command[-1], preseed.URL)
+                self.assertEqual(command[command.index("--max-filesize") + 1], "20697")
+                self.assertEqual(command[command.index("--max-time") + 1], "30")
+                Path(command[command.index("--dump-header") + 1]).write_text("HTTP/2 200\nfixture raw header\n")
+                Path(command[command.index("--output") + 1]).write_bytes(data if payload is None else payload)
+                return subprocess.CompletedProcess(command, exit_status,
+                    "http_code=200\nurl_effective=" + (effective_url or preseed.URL) + "\nsize_download=20697\n")
+            with pins, mock.patch.object(preseed.subprocess, "run", side_effect=fetch):
+                if payload is None and not exit_status and not effective_url:
+                    report = preseed.seed(recipe, sources, review)
+                    self.assertEqual((sources / preseed.NAME).read_bytes(), data)
+                    self.assertEqual(report["status"], "PASS")
+                else:
+                    with self.assertRaises(ValueError):
+                        preseed.seed(recipe, sources, review)
+                    self.assertFalse((sources / preseed.NAME).exists())
+                    self.assertEqual(json.loads((review / "copium-prefetch.json").read_text())["status"], "FAIL")
+                self.assertTrue((review / "copium-prefetch-headers.txt").is_file())
+                self.assertTrue((review / "copium-prefetch-curl.log").is_file())
+                self.assertEqual(list(sources.glob(".copium-preseed-*")), [])
+
+    def test_missing_cache_fetches_only_pinned_official_archive(self):
+        self.fetched_fixture()
+
+    def test_missing_remote_archive_fails_without_seeding(self):
+        self.fetched_fixture(exit_status=22)
+
+    def test_truncated_download_fails_without_seeding(self):
+        self.fetched_fixture(payload=b"a" * (preseed.SIZE - 1))
+
+    def test_wrong_hash_download_fails_without_seeding(self):
+        self.fetched_fixture(payload=b"b" * preseed.SIZE)
+
+    def test_unexpected_redirect_fails_without_seeding(self):
+        self.fetched_fixture(effective_url="https://unexpected.example/copium-152.0.tar.gz")
+
+    def test_bad_cached_artifacts_fail_without_overwrite_or_fetch(self):
+        for data in (b"truncated", b"b" * preseed.SIZE):
+            with self.subTest(size=len(data)), tempfile.TemporaryDirectory() as directory:
+                recipe, sources, review, _, pins = self.fixture(Path(directory))
+                (sources / preseed.NAME).write_bytes(data)
+                with pins, mock.patch.object(preseed.subprocess, "run") as fetch:
+                    with self.assertRaises(ValueError):
+                        preseed.seed(recipe, sources, review)
+                    fetch.assert_not_called()
+                self.assertEqual((sources / preseed.NAME).read_bytes(), data)
+
+    def test_changed_recipe_fails_before_fetch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            recipe, sources, review, _, pins = self.fixture(Path(directory))
+            recipe.write_bytes(recipe.read_bytes() + b"\nchanged\n")
+            with pins, mock.patch.object(preseed.subprocess, "run") as fetch:
+                with self.assertRaisesRegex(ValueError, "exact reviewed"):
+                    preseed.seed(recipe, sources, review)
+                fetch.assert_not_called()
 
 
 class TargetDiscovery(unittest.TestCase):
