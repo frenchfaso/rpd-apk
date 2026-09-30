@@ -1,0 +1,26 @@
+name: Inspect native ARM browser build capacity
+on:
+  push:
+    branches: [codex/m10-video-build-preflight]
+    paths: [.github/workflows/browser-preflight.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capacity:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    steps:
+      - name: Record architecture, memory and storage
+        shell: bash
+        run: |
+          set -eu
+          uname -m
+          nproc
+          free -h
+          df -hT / /mnt
+          lsblk -o NAME,SIZE,TYPE,MOUNTPOINTS
+          for directory in /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache /usr/local/swift /usr/share/swift /opt/microsoft; do
+            if [ -d "$directory" ]; then sudo du -sh "$directory"; fi
+          done
+          docker info --format '{{.Architecture}} {{.DockerRootDir}}'
