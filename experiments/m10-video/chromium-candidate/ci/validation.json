@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "scope": "Offline workflow/script validation; runner attempts recorded separately, no local downloads/GN/C++ build",
-  "tests": 37,
+  "tests": 43,
   "checks": [
     "Python syntax and immutable candidate input hashes",
     "Recipe staging zero-fuzz/no-offset roundtrip",
@@ -14,16 +14,18 @@
     "Declared/default GN target contracts; wrong architecture/default-hash/ELF cases; actual config/raw-query metadata retained before validation and query failures",
     "Pinned global Rust export and build-only file-limit contract",
     "Actual wrapper child-process export/limit success and omission failures",
-    "Actual generated compiler command source/output selection and complete flag retention"
+    "Actual generated compiler command source/output selection and complete flag retention",
+    "Actual fetch-only wrapper: HTTP503 success/recovery/bound; checksum/mixed-hash/404/timeout/other curl errors fail immediately; cached bytes and raw attempts retained"
   ],
   "files_sha256": {
     "native-build.yml": "a5bc5c45fcb45ff83871905b65a0e1b65e8c89195eb795ef045804c6b1a650af",
-    "build-in-container.sh": "65d7fe1f6c20526dbc8c36674de89332104576bf32d7858b9c5a5a5fd8a648c6",
+    "build-in-container.sh": "d61274565813b8a2927fde33edaf6ea39a661e88d415d11c3cab3e27f58f3eb3",
     "verify-build.py": "b2e76e51a175d2af25289deee4bdb0809fadde15343bc53d2cb0321c7bfedc2d",
-    "test-verify-build.py": "bbea2bf4356373b7044b99615d3740fdd8ea5d0757b9e7be5104302f02b3d440",
+    "test-verify-build.py": "2299d943751b5841b2d18517e8a67a9e1ba19265ab6c0474d68aa3eab83639a7",
     "abuild-default-fetch.sh": "3dee74f6e4dea799a2ed187cbcb493b34c5cf3e9802ac0dbbb6471d06527c42e",
     "patch-wrapper.sh": "6a437c22f64e15f648fc8dceca5022ffad9a3774b3fbdbc724e7ae062fe56527",
-    "README.md": "ece68ae676f7e3348ce3f50c51e0fb1096c21a6e4b723aace36391581ceb87da"
+    "README.md": "4c9ec9d3992631f97555975d1d28b218eda7ad08b4012e15c41d9fd53a3634a8",
+    "fetch-with-retry.sh": "88320f14e1715185ba3ed4a55310b4a1208a611a1ad7609b0ddde082f7019cf3"
   },
   "remaining": [
     "Repeat native GN/target checks with exact recipe compiler environment",
@@ -140,5 +142,14 @@
     ],
     "reviewer": "venus_ffmpeg_eof",
     "limit": "Next native attempt must compile both ELF objects under recorded environment"
+  },
+  "fifth_runner_attempt": {
+    "run": "https://github.com/frenchfaso/rpd-apk/actions/runs/36772429374",
+    "commit": "441da3c6a48be29e80dc1e609f290eadafe678c1",
+    "full_recipe": false,
+    "status": "Failed before unpack on external copium HTTP503",
+    "chromium_and_fonts_sha512": "Original pinned checks PASS",
+    "failure": "Official Codeberg copium152.0 archive HTTP503; no compiler or environment gate reached",
+    "compilation": "Not reached"
   }
 }

@@ -51,7 +51,8 @@ python3 "$CANDIDATE_DIR/ci/verify-build.py" stage "$port" "$REVIEW_DIR/recipe-st
 cd "$port"
 abuild deps
 apk info -vv > "$REVIEW_DIR/build-packages.txt"
-abuild fetch verify unpack prepare
+sh "$CANDIDATE_DIR/ci/fetch-with-retry.sh" "$REVIEW_DIR"
+abuild verify unpack prepare
 source_dir="$port/src/chromium-152.0.7977.82"
 test -d "$source_dir/out/bld"
 python3 "$CANDIDATE_DIR/ci/verify-build.py" prepared "$source_dir" "$REVIEW_DIR/prepared-source.json" --candidate "$CANDIDATE_DIR"

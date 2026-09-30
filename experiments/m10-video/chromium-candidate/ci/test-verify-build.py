@@ -236,6 +236,70 @@ class PatchPolicy(unittest.TestCase):
         self.assertIn("old-value", source)
 
 
+class FetchRetry(unittest.TestCase):
+    def fixture(self, mode):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "cached-source").write_bytes(b"verified cached fixture")
+            abuild = root / "abuild"
+            abuild.write_text('''#!/bin/sh
+[ "$#" -eq 1 ] && [ "$1" = fetch ] || exit 9
+calls=0
+[ ! -f "$FIXTURE_ROOT/calls" ] || calls=$(cat "$FIXTURE_ROOT/calls")
+calls=$((calls + 1))
+printf '%s\\n' "$calls" > "$FIXTURE_ROOT/calls"
+case "$FIXTURE_MODE" in
+success) printf 'cached input: OK\\n'; exit 0;;
+recover) [ "$calls" -lt 2 ] || { printf 'cached input: OK\\n'; exit 0; };;
+hash) printf 'source: FAILED\\nUse abuild checksum\\n'; exit 1;;
+mixed) printf 'source: FAILED\\n';;
+mixed404) printf 'curl: (22) The requested URL returned error: 404\\n';;
+mixedtimeout) printf 'curl: (28) Operation timed out\\n';;
+notfound) printf 'curl: (22) The requested URL returned error: 404\\n'; exit 1;;
+other) printf 'permission failure\\n'; exit 1;;
+esac
+printf 'curl: (22) The requested URL returned error: 503\\n'
+exit 1
+''')
+            abuild.chmod(0o755)
+            sleeper = root / "sleep"
+            sleeper.write_text('#!/bin/sh\n[ "$1" = 5 ] || exit 9\nprintf "sleep5\\n" >> "$FIXTURE_ROOT/delays"\n')
+            sleeper.chmod(0o755)
+            env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"],
+                       FIXTURE_ROOT=str(root), FIXTURE_MODE=mode)
+            result = subprocess.run(["sh", str(HERE / "fetch-with-retry.sh"), str(root)],
+                                    env=env, text=True, capture_output=True)
+            self.assertEqual((root / "cached-source").read_bytes(), b"verified cached fixture")
+            attempts = (root / "fetch-attempts.tsv").read_text().splitlines()
+            delays = (root / "delays").read_text().splitlines() if (root / "delays").exists() else []
+            self.assertEqual(len(list(root.glob("fetch-attempt-*.log"))), len(attempts))
+            return result.returncode, attempts, delays
+
+    def test_success_first_attempt(self):
+        self.assertEqual(self.fixture("success"), (0, ["1\t0"], []))
+
+    def test_503_recovers_with_cached_source_and_two_logs(self):
+        self.assertEqual(self.fixture("recover"), (0, ["1\t1", "2\t0"], ["sleep5"]))
+
+    def test_503_is_bounded_to_three_attempts(self):
+        self.assertEqual(self.fixture("transient"), (1, ["1\t1", "2\t1", "3\t1"], ["sleep5", "sleep5"]))
+
+    def test_checksum_and_mixed_hash_503_fail_immediately(self):
+        for mode in ("hash", "mixed"):
+            with self.subTest(mode=mode):
+                self.assertEqual(self.fixture(mode), (1, ["1\t1"], []))
+
+    def test_404_and_other_failures_are_not_retried(self):
+        for mode in ("notfound", "other"):
+            with self.subTest(mode=mode):
+                self.assertEqual(self.fixture(mode), (1, ["1\t1"], []))
+
+    def test_mixed_503_404_and_timeout_fail_immediately(self):
+        for mode in ("mixed404", "mixedtimeout"):
+            with self.subTest(mode=mode):
+                self.assertEqual(self.fixture(mode), (1, ["1\t1"], []))
+
+
 class CompilerCommands(unittest.TestCase):
     def rows(self):
         return [{"source": source, "target": "obj/" + Path(source).stem + ".o"} for source in verify.UNITS]

@@ -50,13 +50,13 @@ exact pinned BUILDCONFIG hash; explicit CPU/OS must be arm64/Linux. Independentl
 both completed objects must be little-endian ELF64 with AARCH64 machine type.
 These changes preserve normal recipe defaults and require actual compiler proof.
 
-[Run36769567466](https://github.com/frenchfaso/rpd-apk/actions/runs/36769567466)
+[Run 36769567466](https://github.com/frenchfaso/rpd-apk/actions/runs/36769567466)
 passed those checks with declared CPU/OS both empty, effective native arm64,
 both backends enabled, and two unique generated object targets. Ninja ran
 1,557 of 4,516 dependency actions before its Rust allocator dependency rejected
 `-Z` options. The direct Ninja shell had not inherited the recipe's global
 `export RUSTC_BOOTSTRAP=1` from the earlier abuild subprocess. The wrapper now
-mirrors that exact export and `build()`'s open-file limit4096, recording their
+mirrors that exact export and `build()`'s open-file limit 4096, recording their
 effective values and actual Rust version. It preserves every compiler option.
 Input guards require the original global export and build-limit contract;
 real child-process fixtures fail if either wrapper setting is omitted.
@@ -71,6 +71,15 @@ and the wrapper retains the two small actual toolchain source files/hashes.
 `VPYTHON_BYPASS` and the depot-tools PATH extension belong to `check()`; normal
 full abuild retains that phase. The units-only gate executes neither checks nor
 final browser links and does not claim their qualification.
+
+[Run 36772429374](https://github.com/frenchfaso/rpd-apk/actions/runs/36772429374)
+verified the unchanged Chromium archive and fonts, then stopped before unpack
+because Codeberg returned HTTP503 for the official copium archive. Standard
+`abuild fetch` now retries only that exact transient HTTP503, at most three
+attempts with five-second delays, reusing successful downloads in the same run.
+Every attempt's raw log/status is retained. Hash failures, HTTP404 and all
+other errors fail immediately; no checksum or URL changes. Normal
+`abuild verify unpack prepare` follows only after fetch succeeds.
 
 The manual default builds only the two changed C++ objects. The optional
 `full_recipe` dispatch input continues to normal `abuild -r` only after those
