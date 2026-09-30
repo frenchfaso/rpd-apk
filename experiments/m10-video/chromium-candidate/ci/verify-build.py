@@ -171,21 +171,58 @@ def select_targets(text, source, query):
     return selected
 
 
-def record_commands(text, selected):
+def record_commands(data, selected):
     """Retain each actual generated C++ command, including GN-captured flags."""
+    if isinstance(data, str):
+        data = data.encode("utf-8")
     for row in selected:
-        matches = []
-        for command in text.splitlines():
-            if row["source"] not in command:
-                continue
-            words = shlex.split(command)
-            if not any(re.fullmatch(r"(?:\.\./)+" + re.escape(row["source"]), word) for word in words):
-                continue
-            if any(word == "-o" and index + 1 < len(words) and words[index + 1] == row["target"]
-                   for index, word in enumerate(words)):
-                matches.append(command)
+        source = rb"(?:^|[\s'\"])(?:\.\./)+" + re.escape(row["source"].encode("ascii")) + rb"(?:[\s'\"]|$)"
+        output = rb"(?:^|\s)-o\s+['\"]?" + re.escape(row["target"].encode("ascii")) + rb"['\"]?(?:\s|$)"
+        matches = [line for line in data.split(b"\n") if re.search(source, line) and re.search(output, line)]
         require(len(matches) == 1, "missing or ambiguous generated compiler command for " + row["source"])
-        row["command"] = matches[0]
+        # Never replace/ignore invalid bytes in either requested compiler command.
+        command = matches[0].decode("utf-8", errors="strict")
+        words = shlex.split(command)
+        require(any(re.fullmatch(r"(?:\.\./)+" + re.escape(row["source"]), word) for word in words)
+                and any(word == "-o" and index + 1 < len(words) and words[index + 1] == row["target"]
+                        for index, word in enumerate(words)),
+                "generated compiler command tokens differ for " + row["source"])
+        row["command"] = command
+    return selected
+
+
+def command_evidence(data):
+    evidence = {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(),
+                "full_stream_utf8": True}
+    try:
+        data.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        evidence.update(full_stream_utf8=False, invalid_byte_offset=error.start,
+                        invalid_byte_end=error.end, invalid_byte_reason=error.reason,
+                        context_start=max(0, error.start - 32),
+                        context_hex=data[max(0, error.start - 32):error.end + 32].hex())
+    return evidence
+
+
+def capture_commands(output, selected, diagnostic=None):
+    command = ["ninja", "-C", str(output), "-t", "commands",
+               *(row["target"] for row in selected)]
+    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    evidence = {"status": "UNPROVEN", "tool_command": command,
+                "exit_code": result.returncode, **command_evidence(result.stdout)}
+    if diagnostic is not None:
+        diagnostic.with_name("ninja-commands.raw").write_bytes(result.stdout)
+        save(diagnostic, evidence)
+    try:
+        require(result.returncode == 0, "Ninja commands tool failed; see retained raw output")
+        record_commands(result.stdout, selected)
+        evidence.update(status="PASS", objects=selected)
+    except Exception as error:
+        evidence.update(status="FAIL", error=str(error))
+        raise
+    finally:
+        if diagnostic is not None:
+            save(diagnostic, evidence)
     return selected
 
 
@@ -262,8 +299,8 @@ def targets(source, diagnostic=None):
     text = run(["ninja", "-C", str(output), "-t", "targets", "all"])
     selected = select_targets(text, source,
                               lambda target: run(["ninja", "-C", str(output), "-t", "query", target]))
-    record_commands(run(["ninja", "-C", str(output), "-t", "commands",
-                         *(row["target"] for row in selected)]), selected)
+    capture_commands(output, selected,
+                     diagnostic.with_name("compiler-commands.json") if diagnostic is not None else None)
     return {"status": "PASS", "gn_arguments": flags, "gn_target_evidence": evidence, "objects": selected}
 
 

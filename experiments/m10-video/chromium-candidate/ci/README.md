@@ -100,6 +100,19 @@ verifies it against the recipe along with every other source. Both normal fetch
 and verify remain mandatory. No global mirror setting or archive regeneration
 is used; the original HTTP503 attempt logs remain separate transport evidence.
 
+[Run 36775393371](https://github.com/frenchfaso/rpd-apk/actions/runs/36775393371)
+passed that exact cache preseed, every normal source checksum, preparation,
+GN and all four prepared source hashes. Before compilation, the command audit
+failed when it treated Samurai's complete dependency-command output as UTF-8.
+[Samurai's commands tool](https://github.com/michaelforney/samurai/blob/1.3/tool.c#L130)
+prints command bytes without an encoding contract. The audit now retains its
+complete raw output, size/hash and any first invalid-byte offset/context in hex.
+It selects the two unique ASCII source/output lines before strict UTF-8 decoding
+and exact shell-token checks. Missing, ambiguous or undecodable requested C++
+commands remain fatal; no command or compiler option is changed. Their pinned
+C++ tool commands embed flags directly, so archive/link/Rust response files
+do not replace the two inspected C++ commands.
+
 The manual default builds only the two changed C++ objects. The optional
 `full_recipe` dispatch input continues to normal `abuild -r` only after those
 objects and generated backend flags pass. It uses the recipe's normal

@@ -419,6 +419,67 @@ class CompilerCommands(unittest.TestCase):
             with self.assertRaises(ValueError):
                 verify.record_commands("\n".join(changed), self.rows())
 
+    def test_non_utf8_dependency_does_not_change_selected_commands(self):
+        rows = self.rows()
+        commands = self.commands(rows)
+        raw = b"unrelated dependency \xc3(\n" + "\n".join(commands).encode()
+        verify.record_commands(raw, rows)
+        self.assertEqual([row["command"] for row in rows], commands)
+        evidence = verify.command_evidence(raw)
+        self.assertFalse(evidence["full_stream_utf8"])
+        self.assertEqual(evidence["invalid_byte_offset"], raw.index(b"\xc3"))
+        self.assertEqual(evidence["sha256"], hashlib.sha256(raw).hexdigest())
+
+    def capture_fixture(self, raw, failure=None, tool_status=0):
+        with tempfile.TemporaryDirectory() as directory:
+            diagnostic = Path(directory) / "compiler-commands.json"
+            result = subprocess.CompletedProcess([], tool_status, raw)
+            with mock.patch.object(verify.subprocess, "run", return_value=result):
+                if failure is None:
+                    verify.capture_commands(Path("/unused"), self.rows(), diagnostic)
+                else:
+                    with self.assertRaises(failure):
+                        verify.capture_commands(Path("/unused"), self.rows(), diagnostic)
+            self.assertEqual(diagnostic.with_name("ninja-commands.raw").read_bytes(), raw)
+            evidence = json.loads(diagnostic.read_text())
+            self.assertEqual(evidence["bytes"], len(raw))
+            self.assertEqual(evidence["sha256"], hashlib.sha256(raw).hexdigest())
+            self.assertEqual(evidence["status"], "PASS" if failure is None else "FAIL")
+            return evidence
+
+    def test_undecodable_selected_command_fails_with_complete_raw_proof(self):
+        commands = self.commands(self.rows())
+        raw = (commands[0] + " -DINVALID=").encode() + b"\xc3(\n" + commands[1].encode()
+        evidence = self.capture_fixture(raw, UnicodeDecodeError)
+        self.assertFalse(evidence["full_stream_utf8"])
+        self.assertIn("c328", evidence["context_hex"])
+
+    def test_duplicate_invalid_selected_command_still_fails_ambiguity(self):
+        commands = "\n".join(self.commands(self.rows())).encode()
+        duplicate = self.commands(self.rows())[0].encode() + b" -DINVALID=\xc3("
+        self.capture_fixture(commands + b"\n" + duplicate, ValueError)
+
+    def test_missing_selected_command_retains_full_raw_failure(self):
+        self.capture_fixture(self.commands(self.rows())[0].encode(), ValueError)
+
+    def test_ninja_tool_failure_retains_exit_status_and_raw_output(self):
+        evidence = self.capture_fixture(b"tool failure\xc3(\n", ValueError, 2)
+        self.assertEqual(evidence["exit_code"], 2)
+
+    def test_real_child_non_utf8_bytes_are_captured_without_loss(self):
+        rows = self.rows()
+        raw = b"unrelated dependency \xc3(\n" + "\n".join(self.commands(rows)).encode()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            child = root / "ninja"
+            child.write_text("#!/usr/bin/env python3\nimport sys\nsys.stdout.buffer.write(" + repr(raw) + ")\n")
+            child.chmod(0o755)
+            diagnostic = root / "compiler-commands.json"
+            with mock.patch.dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"]):
+                verify.capture_commands(root, rows, diagnostic)
+            self.assertEqual(diagnostic.with_name("ninja-commands.raw").read_bytes(), raw)
+            self.assertEqual([row["command"] for row in rows], self.commands(rows))
+
 
 class RecipeEnvironment(unittest.TestCase):
     def test_actual_pinned_recipe_environment(self):
