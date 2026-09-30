@@ -25,6 +25,17 @@ the unchanged original entries. Offline fixtures exercise the unchanged primary
 abuild `default_fetch` function with local files: correct order passes, reversed
 entries and corrupted bytes fail. No source checksum was refreshed or bypassed.
 
+The corrected [run 36765877955](https://github.com/frenchfaso/rpd-apk/actions/runs/36765877955)
+verified every source checksum and unpacked normally, then our global zero-fuzz
+wrapper rejected 11 unchanged Alpine patches during `default_prepare`.
+The wrapper now requires zero fuzz for the two named candidate patches and
+passes official Alpine/copium patches directly to the normal patch tool with
+their recipe arguments. Their normal context policy and visible fuzz/offset
+diagnostics are retained. Real-patch fixtures prove that a context-mismatched
+official fixture follows the standard policy while the same candidate fixture
+fails, even if a caller supplies `--fuzz=2`. The actual native preparation and
+compiler results remain required; no failed patch is skipped.
+
 The manual default builds only the two changed C++ objects. The optional
 `full_recipe` dispatch input continues to normal `abuild -r` only after those
 objects and generated backend flags pass. It uses the recipe's normal
@@ -48,8 +59,9 @@ applies the recipe candidate with zero fuzz and no offsets, and checks retained
 candidate hashes. Standard `abuild deps` and `fetch verify unpack prepare` then
 install dependencies and verify every recipe source checksum. The pinned
 `prepare()` already includes copium, normal Alpine preparation and GN generation.
-A PATH wrapper enforces zero fuzz on all patch commands. Any upstream patch
-that needs fuzz fails this strict preparation; it is not silently relaxed.
+A PATH wrapper enforces zero fuzz on our recipe and broker candidate patches.
+Unchanged official patches use their normal Alpine/copium policy; all failure
+statuses remain fatal and their application diagnostics remain in the logs.
 
 After preparation, the four inspected Chromium files must equal the reviewed
 candidate hashes. GN must report native arm64, VA-API and V4L2 enabled. The script

@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "scope": "Offline workflow/script validation only; no downloads, GN, C++ build or workflow run",
-  "tests": 17,
+  "scope": "Offline workflow/script validation; runner attempts recorded separately, no local downloads/GN/C++ build",
+  "tests": 22,
   "checks": [
     "Python syntax and immutable candidate input hashes",
     "Recipe staging zero-fuzz/no-offset roundtrip",
@@ -9,18 +9,20 @@
     "Measured/minimum capacity and five failing resource guards",
     "Container shell syntax",
     "YAML parse and embedded Bash syntax",
-    "Source/checksum positional order and unchanged original sums; real abuild default_fetch local-file regressions"
+    "Source/checksum positional order and unchanged original sums; real abuild default_fetch local-file regressions",
+    "Real patch fixtures: normal official context policy, candidate zero-fuzz failure/exact success, caller-fuzz override rejected"
   ],
   "files_sha256": {
     "native-build.yml": "a5bc5c45fcb45ff83871905b65a0e1b65e8c89195eb795ef045804c6b1a650af",
-    "build-in-container.sh": "8b93acf0f1b264b015e83be653ff0908d9bb8bd42b05bc9a1bc8253765dfa638",
+    "build-in-container.sh": "8cbb8fb41cd3cd18cc928f6fe1cf177c7d75a8fdec2a04605616fc17062f5675",
     "verify-build.py": "4cf41539165394ff37619dd787aed64aa2fc83715c1220dcc066069067c93712",
-    "test-verify-build.py": "84631f673295bdb2abf99d1f148d7b2989d2b0e2b57911a04cb5a01342c4872d",
+    "test-verify-build.py": "6060a4421a18b9ce0681a4fc9fb6344bcc58f240255b9238f6daec0cde4523a8",
     "abuild-default-fetch.sh": "3dee74f6e4dea799a2ed187cbcb493b34c5cf3e9802ac0dbbb6471d06527c42e",
-    "README.md": "eb487f47f775185dcafdd8bb989d3c4f69077d0c832df0c9f866fd4d44c537fa"
+    "patch-wrapper.sh": "6a437c22f64e15f648fc8dceca5022ffad9a3774b3fbdbc724e7ae062fe56527",
+    "README.md": "42e34f1b1fb24a6d295b123208227cc67e564c16a6d0d52d7f484774d97328a4"
   },
   "remaining": [
-    "Real native Alpine source checksum/unpack/prepare/GN gates",
+    "Real native Alpine normal preparation/GN gates",
     "Two modified C++ objects compile",
     "Optional normal full abuild recipe including checks and packaging",
     "Separate M10 sandbox/decoder/NV12 import/render qualification"
@@ -51,5 +53,21 @@
     "dependencies": "PASS",
     "failure": "Wrong positional expected SHA512 used at normal source fetch; recipe order fixed locally, no actual unpack/GN/C++ result yet",
     "archive_expected_sha512_unchanged": "29c5f18976bec889e4041177c1290353734e42865a1e59a91f8f54e723d97bc9f48a02bb59dc90b2a9aaa55e7126c770d9af1e375f5cb9f509e4de5f3f488a44"
+  },
+  "corrected_runner_attempt": {
+    "run": "https://github.com/frenchfaso/rpd-apk/actions/runs/36765877955",
+    "commit": "11c4e0dc4d06c54414abe1d9e38cbed3672bd9b9",
+    "full_recipe": false,
+    "capacity_and_ordered_input_checks": "PASS",
+    "all_source_sha512_checks": "PASS",
+    "unpack": "PASS",
+    "broker_candidate_zero_fuzz": "PASS",
+    "failure": "Global zero-fuzz wrapper rejects11 unchanged official Alpine recipe patches during default_prepare; restore normal official patch policy and retain candidate zero-fuzz",
+    "gn_and_compilation": "Not reached"
+  },
+  "patch_policy_review": {
+    "reviewer": "venus_ffmpeg_eof",
+    "result": "No blocker found for normal official patch policy and mandatory candidate F0",
+    "native_scope": "Only next runner attempt can prove preparation/GN/object compilation"
   }
 }

@@ -182,5 +182,57 @@ default_fetch
         self.assertIn("archive.tar.xz: FAILED", result.stdout)
 
 
+class PatchPolicy(unittest.TestCase):
+    def apply(self, name, mismatch=True, extra=(), long_input=False):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.txt"
+            first = "different-context" if mismatch else "expected-context"
+            source.write_text(first + "\nold-value\nmatching-context\n")
+            patch = root / name
+            patch.write_text('''--- source.txt
++++ source.txt
+@@ -1,3 +1,3 @@
+ expected-context
+-old-value
++new-value
+ matching-context
+''')
+            args = ["sh", str(HERE / "patch-wrapper.sh"), "-p0", *extra]
+            args += ["--input=" + str(patch)] if long_input else ["-i", str(patch)]
+            result = subprocess.run(args, cwd=root, capture_output=True, text=True)
+            return result, source.read_text()
+
+    def test_official_patch_keeps_standard_recipe_context_policy(self):
+        result, source = self.apply("unchanged-official.patch")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("new-value", source)
+        self.assertEqual(source, "different-context\nnew-value\nmatching-context\n")
+
+    def test_each_candidate_patch_rejects_context_fuzz(self):
+        for name in ("alpine-chromium-enable-v4l2-aarch64.patch",
+                     "chromium-linux-v4l2-decoder-broker.patch"):
+            with self.subTest(name=name):
+                result, source = self.apply(name)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("old-value", source)
+
+    def test_candidate_exact_context_passes(self):
+        result, source = self.apply("chromium-linux-v4l2-decoder-broker.patch", mismatch=False)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("new-value", source)
+        self.assertNotIn("fuzz", result.stdout)
+
+    def test_candidate_caller_cannot_override_fuzz_guard(self):
+        result, source = self.apply("chromium-linux-v4l2-decoder-broker.patch", extra=("--fuzz=2",))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("old-value", source)
+
+    def test_candidate_long_input_option_stays_strict(self):
+        result, source = self.apply("chromium-linux-v4l2-decoder-broker.patch", long_input=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("old-value", source)
+
+
 if __name__ == "__main__":
     unittest.main()

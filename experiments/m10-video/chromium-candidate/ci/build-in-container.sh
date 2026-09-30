@@ -24,12 +24,9 @@ chown -R builder:builder /home/builder "$work" "$review"
 export ABUILD_USERDIR=/home/builder/.abuild
 su builder -c 'abuild-keygen -a -n'
 cp /home/builder/.abuild/*.pub /etc/apk/keys/
-# Force zero fuzz in normal Alpine/copium preparation. Bound every recipe Ninja
-# invocation, including its full build(), without replacing recipe functions.
-cat > "$work/tools/patch" <<'SH'
-#!/bin/sh
-exec /usr/bin/patch "$@" --fuzz=0 --batch
-SH
+# Force zero fuzz for our named candidate patches; leave unchanged Alpine/copium
+# patches under the normal recipe policy. Bound every recipe Ninja invocation.
+cp "$candidate/ci/patch-wrapper.sh" "$work/tools/patch"
 cat > "$work/tools/ninja" <<'SH'
 #!/bin/sh
 exec /usr/bin/ninja -j "$JOBS" "$@"
