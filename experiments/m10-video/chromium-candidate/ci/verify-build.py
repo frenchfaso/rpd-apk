@@ -8,10 +8,13 @@ from pathlib import Path
 import platform
 import re
 import shutil
+import struct
 import subprocess
 
 APORTS = "a44854115ef1a1cda0c41b3e6f0974f51755d736"
 BASE_RECIPE = "11eaf1455db582568e715bb161e4b890618977accf65ac3d89f6f4373bed8252"
+# Pinned Chromium BUILDCONFIG resolves empty Linux CPU/OS to native host values.
+BUILD_CONFIG = "4d6c39685c8c8ae6529211a9c770890015c858bad35d8b8ce4f3437ecdbcb66f"
 UNITS = ("content/common/gpu_pre_sandbox_hook_linux.cc", "media/gpu/v4l2/v4l2_device.cc")
 
 
@@ -153,18 +156,80 @@ def select_targets(text, source, query):
     return selected
 
 
-def targets(source):
+def gn_value(text, name):
+    matches = re.findall(r"^" + re.escape(name) + r"\s*=\s*(.*?)\s*$", text, re.M)
+    require(len(matches) == 1, "missing or ambiguous GN argument: " + name + ": " + repr(text))
+    return matches[0]
+
+
+def native_cpu(cpu, target_os, system, machine, config_hash):
+    require(system == "Linux" and machine == "aarch64", "GN host is not native Linux/aarch64")
+    require(cpu in ('""', '"arm64"'), "GN target_cpu is not arm64/native: " + cpu)
+    require(target_os in ('""', '"linux"'), "GN target_os is not Linux/native: " + target_os)
+    if cpu == '""' or target_os == '""':
+        require(config_hash == BUILD_CONFIG, "native GN defaults differ from exact pinned BUILDCONFIG")
+    return "arm64"
+
+
+def arm64_object(path):
+    with path.open("rb") as stream:
+        header = stream.read(20)
+    require(len(header) == 20 and header[:4] == b"\x7fELF" and header[4:6] == b"\x02\x01",
+            "object is not little-endian ELF64: " + str(path))
+    machine = struct.unpack_from("<H", header, 18)[0]
+    require(machine == 183, "object is not AARCH64 (ELF machine " + str(machine) + "): " + str(path))
+    return "AARCH64"
+
+
+def targets(source, diagnostic=None):
     output = source / "out/bld"
+    reported = {name: None for name in ("target_cpu", "target_os", "use_v4l2_codec", "use_vaapi")}
+    evidence = {"status": "UNPROVEN", "raw_gn_arguments": reported,
+                "runtime_system": platform.system(), "runtime_machine": platform.machine(),
+                "buildconfig_sha256": sha(source / "build/config/BUILDCONFIG.gn"),
+                "gn_version": None}
+    if diagnostic is not None:
+        diagnostic.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source / "build/config/BUILDCONFIG.gn",
+                        diagnostic.with_name("gn-effective-buildconfig.gn"))
+        save(diagnostic, evidence)
+    try:
+        evidence["gn_version"] = run(["gn", "--version"], source).strip()
+    except subprocess.CalledProcessError as exc:
+        evidence.update(status="FAIL", query_failed="version", query_output=exc.output,
+                        exit_code=exc.returncode)
+        if diagnostic is not None:
+            save(diagnostic, evidence)
+        raise
+    for name in ("target_cpu", "target_os", "use_v4l2_codec", "use_vaapi"):
+        try:
+            reported[name] = run(["gn", "args", str(output), "--list=" + name, "--short"], source)
+        except subprocess.CalledProcessError as exc:
+            reported[name] = exc.output
+            evidence.update(status="FAIL", query_failed=name, exit_code=exc.returncode)
+            if diagnostic is not None:
+                save(diagnostic, evidence)
+            raise
+        if diagnostic is not None:
+            save(diagnostic, evidence)
     flags = {}
-    for name, expected in (("target_cpu", '"arm64"'), ("use_v4l2_codec", "true"), ("use_vaapi", "true")):
-        text = run(["gn", "args", str(output), "--list=" + name, "--short"], source)
-        require(re.search(r"^" + name + r"\s*=\s*" + re.escape(expected) + r"\s*$", text, re.M),
-                "wrong generated GN argument: " + name)
+    flags["target_cpu"] = native_cpu(gn_value(reported["target_cpu"], "target_cpu"),
+                                     gn_value(reported["target_os"], "target_os"),
+                                     evidence["runtime_system"], evidence["runtime_machine"],
+                                     evidence["buildconfig_sha256"])
+    for name in ("use_v4l2_codec", "use_vaapi"):
+        expected = "true"
+        require(gn_value(reported[name], name) == expected,
+                "wrong generated GN argument: " + name + ": " + repr(reported[name]))
         flags[name] = expected
+    evidence.update(status="PASS", effective_target_cpu=flags["target_cpu"],
+                    basis="Explicit arm64 or exact pinned native-default contract; compiled ELF machine still required")
+    if diagnostic is not None:
+        save(diagnostic, evidence)
     text = run(["ninja", "-C", str(output), "-t", "targets", "all"])
     selected = select_targets(text, source,
                               lambda target: run(["ninja", "-C", str(output), "-t", "query", target]))
-    return {"status": "PASS", "gn_arguments": flags, "objects": selected}
+    return {"status": "PASS", "gn_arguments": flags, "gn_target_evidence": evidence, "objects": selected}
 
 
 def completed(source, report):
@@ -172,7 +237,7 @@ def completed(source, report):
     for row in data["objects"]:
         path = source / "out/bld" / row["target"]
         require(path.is_file() and path.stat().st_size > 0, "compiled object missing: " + row["target"])
-        row.update(bytes=path.stat().st_size, sha256=sha(path))
+        row.update(bytes=path.stat().st_size, sha256=sha(path), elf_machine=arm64_object(path))
     header = source / "out/bld/gen/media/gpu/buildflags.h"
     text = header.read_text()
     for flag in ("USE_V4L2_CODEC", "USE_VAAPI"):
@@ -200,7 +265,7 @@ def main():
     elif args.operation == "prepared":
         data = prepared(args.candidate, args.directory)
     elif args.operation == "targets":
-        data = targets(args.directory)
+        data = targets(args.directory, args.report.with_name("gn-arguments.json"))
     else:
         data = completed(args.directory, args.report)
     save(args.report, data)

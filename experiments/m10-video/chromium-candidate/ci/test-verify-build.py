@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("verify", HERE / "verify-build.py")
@@ -232,6 +233,94 @@ class PatchPolicy(unittest.TestCase):
         result, source = self.apply("chromium-linux-v4l2-decoder-broker.patch", long_input=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("old-value", source)
+
+
+class NativeGnTarget(unittest.TestCase):
+    def failure_evidence(self, query_error=False):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "source/build/config/BUILDCONFIG.gn"
+            config.parent.mkdir(parents=True)
+            config.write_text("primary config fixture\n")
+            diagnostic = root / "review/gn-arguments.json"
+            values = {"target_cpu": 'target_cpu = "x64"\n',
+                      "target_os": 'target_os = "linux"\n',
+                      "use_v4l2_codec": "use_v4l2_codec = true\n", "use_vaapi": "use_vaapi = true\n"}
+
+            def command(args, cwd=None):
+                if args[-1] == "--version":
+                    return "fixture-version\n"
+                name = next(arg.removeprefix("--list=") for arg in args if arg.startswith("--list="))
+                if query_error:
+                    raise subprocess.CalledProcessError(2, args, output="query fixture error\n")
+                return values[name]
+
+            with mock.patch.object(verify, "run", side_effect=command), \
+                    mock.patch.object(verify.platform, "system", return_value="Linux"), \
+                    mock.patch.object(verify.platform, "machine", return_value="aarch64"):
+                with self.assertRaises((ValueError, subprocess.CalledProcessError)):
+                    verify.targets(root / "source", diagnostic)
+            self.assertEqual(diagnostic.with_name("gn-effective-buildconfig.gn").read_bytes(), config.read_bytes())
+            return json.loads(diagnostic.read_text())
+
+    def test_actual_gn_values_and_config_retained_before_failed_validation(self):
+        evidence = self.failure_evidence()
+        self.assertEqual(evidence["raw_gn_arguments"]["target_cpu"], 'target_cpu = "x64"\n')
+        self.assertEqual(evidence["raw_gn_arguments"]["use_v4l2_codec"], "use_v4l2_codec = true\n")
+        self.assertEqual(evidence["gn_version"], "fixture-version")
+        self.assertEqual(evidence["status"], "UNPROVEN")
+
+    def test_gn_query_error_is_retained_and_missing_values_unproven(self):
+        evidence = self.failure_evidence(query_error=True)
+        self.assertEqual(evidence["query_failed"], "target_cpu")
+        self.assertEqual(evidence["raw_gn_arguments"]["target_cpu"], "query fixture error\n")
+        self.assertIsNone(evidence["raw_gn_arguments"]["use_v4l2_codec"])
+        self.assertEqual(evidence["status"], "FAIL")
+
+    def test_exact_declared_argument_values(self):
+        for name, text, expected in (("target_cpu", 'target_cpu=""\n', '""'),
+                                     ("target_cpu", 'target_cpu = "arm64"\n', '"arm64"'),
+                                     ("use_v4l2_codec", 'use_v4l2_codec = true\n', "true")):
+            self.assertEqual(verify.gn_value(text, name), expected)
+
+    def test_missing_and_duplicate_argument_fail(self):
+        for text in ('unrelated=true\n', 'target_cpu="arm64"\ntarget_cpu="x64"\n'):
+            with self.assertRaisesRegex(ValueError, "missing or ambiguous"):
+                verify.gn_value(text, "target_cpu")
+
+    def test_pinned_native_defaults_and_explicit_cpu_pass(self):
+        for cpu in ('""', '"arm64"'):
+            self.assertEqual(verify.native_cpu(cpu, '""', "Linux", "aarch64", verify.BUILD_CONFIG), "arm64")
+
+    def test_non_native_target_and_changed_default_contract_fail(self):
+        good = ['""', '""', "Linux", "aarch64", verify.BUILD_CONFIG]
+        for field, value in ((0, '"x64"'), (1, '"android"'), (2, "Darwin"),
+                             (3, "x86_64"), (4, "changed-buildconfig")):
+            bad = good.copy()
+            bad[field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                verify.native_cpu(*bad)
+
+    def object_fixture(self, machine=183, bits=2):
+        header = bytearray(20)
+        header[:6] = b"\x7fELF" + bytes([bits, 1])
+        import struct
+        struct.pack_into("<H", header, 18, machine)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "compiled.o"
+            path.write_bytes(header)
+            return verify.arm64_object(path)
+
+    def test_actual_object_machine_aarch64(self):
+        self.assertEqual(self.object_fixture(), "AARCH64")
+
+    def test_non_arm64_object_rejected(self):
+        with self.assertRaisesRegex(ValueError, "not AARCH64"):
+            self.object_fixture(machine=62)
+
+    def test_32bit_object_rejected(self):
+        with self.assertRaisesRegex(ValueError, "not little-endian ELF64"):
+            self.object_fixture(bits=1)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "scope": "Offline workflow/script validation; runner attempts recorded separately, no local downloads/GN/C++ build",
-  "tests": 22,
+  "tests": 31,
   "checks": [
     "Python syntax and immutable candidate input hashes",
     "Recipe staging zero-fuzz/no-offset roundtrip",
@@ -10,19 +10,20 @@
     "Container shell syntax",
     "YAML parse and embedded Bash syntax",
     "Source/checksum positional order and unchanged original sums; real abuild default_fetch local-file regressions",
-    "Real patch fixtures: normal official context policy, candidate zero-fuzz failure/exact success, caller-fuzz override rejected"
+    "Real patch fixtures: normal official context policy, candidate zero-fuzz failure/exact success, caller-fuzz override rejected",
+    "Declared/default GN target contracts; wrong architecture/default-hash/ELF cases; actual config/raw-query metadata retained before validation and query failures"
   ],
   "files_sha256": {
     "native-build.yml": "a5bc5c45fcb45ff83871905b65a0e1b65e8c89195eb795ef045804c6b1a650af",
     "build-in-container.sh": "8cbb8fb41cd3cd18cc928f6fe1cf177c7d75a8fdec2a04605616fc17062f5675",
-    "verify-build.py": "4cf41539165394ff37619dd787aed64aa2fc83715c1220dcc066069067c93712",
-    "test-verify-build.py": "6060a4421a18b9ce0681a4fc9fb6344bcc58f240255b9238f6daec0cde4523a8",
+    "verify-build.py": "dafad050e2e50fe57bf8c18aa7e5a680d516f5d5e9b3aa3bc83f55deeb2be147",
+    "test-verify-build.py": "e86809e92bd55bc3f9cf2a23a7dc6217f4ff1b6631da1ebc78dee3e46b9b0068",
     "abuild-default-fetch.sh": "3dee74f6e4dea799a2ed187cbcb493b34c5cf3e9802ac0dbbb6471d06527c42e",
     "patch-wrapper.sh": "6a437c22f64e15f648fc8dceca5022ffad9a3774b3fbdbc724e7ae062fe56527",
-    "README.md": "42e34f1b1fb24a6d295b123208227cc67e564c16a6d0d52d7f484774d97328a4"
+    "README.md": "0ac5d23e05b14fb9995656ac2f32e6af607f80dfc8aa089dc66d00f368634d74"
   },
   "remaining": [
-    "Real native Alpine normal preparation/GN gates",
+    "Actual declared/effective GN target report and generated Ninja target discovery",
     "Two modified C++ objects compile",
     "Optional normal full abuild recipe including checks and packaging",
     "Separate M10 sandbox/decoder/NV12 import/render qualification"
@@ -37,7 +38,7 @@
       "GN/source/target/buildflags checks",
       "12 offline fixtures independently passed"
     ],
-    "limit": "Initial dependency installation passed; actual source checksum/unpack/GN and native C++ compilation remain unproven after ordering fix"
+    "limit": "Earlier dispatch, checksum and patch-policy reviews passed; native default diagnostics and actual two-object compilation remain gated by the next runner attempt"
   },
   "bootstrap": {
     "branch": "codex/m10-video-build-preflight",
@@ -69,5 +70,20 @@
     "reviewer": "venus_ffmpeg_eof",
     "result": "No blocker found for normal official patch policy and mandatory candidate F0",
     "native_scope": "Only next runner attempt can prove preparation/GN/object compilation"
+  },
+  "third_runner_attempt": {
+    "run": "https://github.com/frenchfaso/rpd-apk/actions/runs/36767421564",
+    "commit": "8ec3e9f6e013831ae8733354ed96481a702fc449",
+    "full_recipe": false,
+    "normal_preparation": "PASS",
+    "gn_generated_targets": 31613,
+    "reviewed_source_hashes": "All4 PASS",
+    "failure": "Explicit target_cpu guard; actual declared output not retained by previous helper; now record every GN argument and qualify pinned native defaults plus actual ELF machine",
+    "compilation": "Not reached"
+  },
+  "native_default_provenance": {
+    "source": "https://github.com/chromium/chromium/blob/d04cdb24d67b081f6cf80200ffc5233f44b61109/build/config/BUILDCONFIG.gn",
+    "sha256": "4d6c39685c8c8ae6529211a9c770890015c858bad35d8b8ce4f3437ecdbcb66f",
+    "linux_contract": "Empty target_os/target_cpu resolve to host_os/host_cpu; native-only guard plus actual AARCH64 ELF proof required"
   }
 }
