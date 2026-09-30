@@ -1,8 +1,9 @@
 # Raspberry Pi Desktop for Lenovo M10
 
 The **Raspberry Pi OS ARM Trixie** desktop on postmarketOS/Alpine, with its menu,
-theme, LightDM login, Chromium, VLC and essential utilities. Includes M10 support
-for touch, rotation, the on-screen keyboard, Bluetooth, USB OTG, internal speakers, brightness and battery.
+theme, LightDM login, Chromium, VLC, Bash completion and essential utilities.
+Includes M10 support for touch, rotation, the on-screen keyboard, Bluetooth,
+USB OTG, internal speakers, brightness and battery.
 This ports the desktop; the underlying OS remains postmarketOS, managed through APK.
 
 ## Install

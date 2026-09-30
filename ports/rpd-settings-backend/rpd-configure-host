@@ -6,6 +6,10 @@ set -eu
 desktop_user=$1
 id "$desktop_user" >/dev/null
 [ "$(id -u "$desktop_user")" -ge 1000 ] || exit 1
+# Match the Raspberry desktop's interactive shell and command completion.
+case "$(awk -F: -v user="$desktop_user" '$1 == user { print $7 }' /etc/passwd)" in
+    /bin/ash|/bin/sh) chsh -s /bin/bash "$desktop_user" ;;
+esac
 if [ -d /run/systemd/system ]; then
     apk add cups-systemd cups-filters-systemd
     systemctl daemon-reload
