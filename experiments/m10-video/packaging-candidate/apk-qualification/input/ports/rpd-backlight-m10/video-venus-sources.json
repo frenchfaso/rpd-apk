@@ -1,0 +1,260 @@
+{
+  "tag": "v7.1.3-r1",
+  "repository": "https://github.com/msm89x7-mainline/linux",
+  "source_path": "drivers/media/platform/qcom/venus",
+  "scope": "Unchanged upstream source for isolated full three-module build",
+  "files": [
+    {
+      "file": "Kconfig",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/Kconfig",
+      "git_blob_sha1": "b580b27ac3ba991f34507b0068f2da1134af2b5f",
+      "sha256": "24f387fb78baba91a75a6271ac27dd2943503c416a1ffa25228d6ee133737ced",
+      "bytes": 537
+    },
+    {
+      "file": "Makefile",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/Makefile",
+      "git_blob_sha1": "91ee6be10292e0c275106f090f521f268da4c50a",
+      "sha256": "819838fb7a556484f31ae00a60abe922d9eabca0edbc62b7d647c9875c142b66",
+      "bytes": 511
+    },
+    {
+      "file": "core.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/core.c",
+      "git_blob_sha1": "21d8d2041a3e253cc81bdf7d6b4be1caf0f17c20",
+      "sha256": "3a28f4840a03b68e961d356c9965918b497fccc46f897e480555f9c2bd765418",
+      "bytes": 33574
+    },
+    {
+      "file": "core.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/core.h",
+      "git_blob_sha1": "ff9174a4e8c114c54dc0494f0d8b5f7d260eda46",
+      "sha256": "f631beb883142d6c2b7bc847fcd0af43bb6e212a100478e07ee94823f2d11335",
+      "bytes": 16458
+    },
+    {
+      "file": "dbgfs.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/dbgfs.c",
+      "git_blob_sha1": "726f4b730e69bc07fa925c747bfe9d7cf434b54a",
+      "sha256": "526a9cbddfbec53803241ce24979d489f9f1ad73a8af7681fe86964cdd6a9b70",
+      "bytes": 604
+    },
+    {
+      "file": "dbgfs.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/dbgfs.h",
+      "git_blob_sha1": "c87c1355d03924f703d4177a7cb56394f9374aca",
+      "sha256": "d343a7a160b6266205b7b9752444865f87dfa0f706ae775179956fcaa036bf04",
+      "bytes": 534
+    },
+    {
+      "file": "firmware.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/firmware.c",
+      "git_blob_sha1": "1de7436713ed9704f95c998d62620da19f1344fe",
+      "sha256": "38c4f1c283a22855f4809fa6defd927f5528cb8bc8d3a0e64dfcdbcbb55af448",
+      "bytes": 8859
+    },
+    {
+      "file": "firmware.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/firmware.h",
+      "git_blob_sha1": "87e1d922b369346111a27af0e22a595e6e00942e",
+      "sha256": "3eca15719a88e3b73d3ffa7485987d5b327d3b08078a9ec54bbaf8d8f744d693",
+      "bytes": 750
+    },
+    {
+      "file": "helpers.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/helpers.c",
+      "git_blob_sha1": "c71e2b81c7657c2dd10df9c66e5e53c81d072eda",
+      "sha256": "b7242f2c62f982a4928efe1e0feb73acd5fd8d962dfc29b10a4bac21abba4cc5",
+      "bytes": 50374
+    },
+    {
+      "file": "helpers.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/helpers.h",
+      "git_blob_sha1": "358e4f39c9c038b46c10707cc5cfcf9cc7ca7db8",
+      "sha256": "99f376ae359a2ad6f3560404ccf8f5dc5721fba48fce81cdd1b1a14a399200a6",
+      "bytes": 3810
+    },
+    {
+      "file": "hfi.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi.c",
+      "git_blob_sha1": "675e6fd1e9fae40177349c0bc68f38c326b9aa25",
+      "sha256": "3891bfb46aae5a99833e06958f7f77050d973807769a28df8202ff5d07b7dbfa",
+      "bytes": 10687
+    },
+    {
+      "file": "hfi.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi.h",
+      "git_blob_sha1": "0338841d5992b0b462d82544f610999182869163",
+      "sha256": "1a7646d7bab604935b5fabf280fb2bdf4e295d4594c0819c4190d3b7870c8fb2",
+      "bytes": 5379
+    },
+    {
+      "file": "hfi_cmds.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_cmds.c",
+      "git_blob_sha1": "3ae063094e3e1f915937389b8c7b3bfe3d5ada1b",
+      "sha256": "6189fd20ba8a1d61ef9020623cf443e286fe46ba86df02c96bbe75681f80a053",
+      "bytes": 37732
+    },
+    {
+      "file": "hfi_cmds.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_cmds.h",
+      "git_blob_sha1": "a83125bc17aab9c338383c61c6ebdbbd397049eb",
+      "sha256": "d9b6139557864319cb8fc8976fb2fa33d0f45a43339966f0e82ce9fad4de5d95",
+      "bytes": 7644
+    },
+    {
+      "file": "hfi_helper.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_helper.h",
+      "git_blob_sha1": "fe39e03a5968bf02d05fa764ed901f3169348dd9",
+      "sha256": "ac5f19fa22d135db829541c3da7e50ef02d1804db95a08b8e78ab12e3ca7babc",
+      "bytes": 36583
+    },
+    {
+      "file": "hfi_msgs.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_msgs.c",
+      "git_blob_sha1": "47b99d5b5af73fd769ae024c00e86b9fe79a1cd2",
+      "sha256": "c3288af5b0862ebdf77fc9b0de507af9b4dfe4fa507c8440f5ab48cad49761df",
+      "bytes": 22858
+    },
+    {
+      "file": "hfi_msgs.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_msgs.h",
+      "git_blob_sha1": "8c2e17b0d36f092071d9c8c72123ba3704c712fb",
+      "sha256": "3844261450368c819719267c5a8453ed0f669548e331cf400a7caa5578a07f50",
+      "bytes": 5818
+    },
+    {
+      "file": "hfi_parser.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_parser.c",
+      "git_blob_sha1": "a1397765a0bea8bd87f4b39d4c02f30675e753bd",
+      "sha256": "0ca4aefb2e16b3690d727c7d4ff3b6e1282aec7e9a230f9a9d3a1c4775538d75",
+      "bytes": 10047
+    },
+    {
+      "file": "hfi_parser.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_parser.h",
+      "git_blob_sha1": "5751d0140700cba3e11af36c9e5f572f70c728ca",
+      "sha256": "a999297c8b22ee4748c356effe59dbf620004a7657342dfc68653f537966fb0a",
+      "bytes": 2553
+    },
+    {
+      "file": "hfi_plat_bufs.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_plat_bufs.h",
+      "git_blob_sha1": "25e607452096a143dec521d93616812c28e6f779",
+      "sha256": "eca5f783a6fb8ed5fcae72ef138cccd766ac07ee27b21336c63f934239c64efe",
+      "bytes": 820
+    },
+    {
+      "file": "hfi_plat_bufs_v6.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_plat_bufs_v6.c",
+      "git_blob_sha1": "6289166786ec36d87978c33ff9a79749d4374642",
+      "sha256": "665959736447bde72a02b46927b43e4a080222aa0e07b7521c5a5cc7515c443c",
+      "bytes": 44064
+    },
+    {
+      "file": "hfi_platform.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_platform.c",
+      "git_blob_sha1": "cde7f93045ac4567bf4239eeb3c489b887d4ad01",
+      "sha256": "d61ce075ecd0c7bea9a9e5c85a869b0a333b3c5ff0b0e3138a0457ba39304cb3",
+      "bytes": 1905
+    },
+    {
+      "file": "hfi_platform.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_platform.h",
+      "git_blob_sha1": "5e4f8013a6b1db4f4f83cd983ef9e83347ef4e0a",
+      "sha256": "93ffdf872bf091865c0a67a5ceb07eaa279fcaedce290626264968de950771a5",
+      "bytes": 2370
+    },
+    {
+      "file": "hfi_platform_v4.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_platform_v4.c",
+      "git_blob_sha1": "cda888b56b5d4806f10d062371b9a4969e27d9b4",
+      "sha256": "297afd2a02017b3cb70b915865c9b877996c732d37f796c89943aa057cf3738e",
+      "bytes": 20443
+    },
+    {
+      "file": "hfi_platform_v6.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_platform_v6.c",
+      "git_blob_sha1": "d8568c08cc3612a0024d36f65c741151a23459c3",
+      "sha256": "f866915edf2f278059e58f327dd5167a414b804663ce80d7745115948acd88c8",
+      "bytes": 14540
+    },
+    {
+      "file": "hfi_venus.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_venus.c",
+      "git_blob_sha1": "bd82066bb6e77f68ac3fe1440a8b5429ad62a192",
+      "sha256": "8a3e0f50b0894063e91c4f7040f22f2bd443be45525521eed6e5877cab1df486",
+      "bytes": 41870
+    },
+    {
+      "file": "hfi_venus.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_venus.h",
+      "git_blob_sha1": "1b656ef2bf07248f5f5a37454d545d0e22abb05d",
+      "sha256": "ae385ac9823db48af80fbcbe09c26e93352fda7edd019967becbabc3dc6bfb49",
+      "bytes": 396
+    },
+    {
+      "file": "hfi_venus_io.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/hfi_venus_io.h",
+      "git_blob_sha1": "f2c3064c44ae222ef35cc1b421157174a5c92289",
+      "sha256": "eddecf2411a8fad132ecec02323ba8037a09360b1bc43b10746e4d3bfde68b38",
+      "bytes": 5185
+    },
+    {
+      "file": "pm_helpers.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/pm_helpers.c",
+      "git_blob_sha1": "ad7cab48a294c64aeceac4a159dfd7166413cd95",
+      "sha256": "00d5eacf5373a0310b8508092b5b3258b703490f119a0e3e8cf251d707fe4ff5",
+      "bytes": 28851
+    },
+    {
+      "file": "pm_helpers.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/pm_helpers.h",
+      "git_blob_sha1": "a492c50c5543c5036a13cef7a72891b788b7e1c9",
+      "sha256": "1125d218fc284494e91a3a95b11d707d8de96a36e006281932dbf44719137024",
+      "bytes": 1569
+    },
+    {
+      "file": "vdec.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/vdec.c",
+      "git_blob_sha1": "daa8f56610c7ec0f74f044f27808a9dd6464af81",
+      "sha256": "dc7189e987543d78efa274cc291d326ce173ecfc0a00034033d982dd6d58f8b8",
+      "bytes": 47018
+    },
+    {
+      "file": "vdec.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/vdec.h",
+      "git_blob_sha1": "0cf981108ff08cf591bfad61c8e7608065f4c6d4",
+      "sha256": "aa155929355c2458b2f0172a601c9e30ac1bc6eb9807dddd4158a94b451ab12a",
+      "bytes": 280
+    },
+    {
+      "file": "vdec_ctrls.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/vdec_ctrls.c",
+      "git_blob_sha1": "36ed955b041941d33c50fcbca0f685918cac2698",
+      "sha256": "3febe3937f101fbbd0b4e608f17694c63452ae85a04610116ac2c9b69d4de52a",
+      "bytes": 5693
+    },
+    {
+      "file": "venc.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/venc.c",
+      "git_blob_sha1": "bf53267cb68d7fe82beae25897cb926b3757e59a",
+      "sha256": "f36d94d520ec5e9ca8f33dc67d738a6f65c68f41767d11518a743b78476e8fb2",
+      "bytes": 42332
+    },
+    {
+      "file": "venc.h",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/venc.h",
+      "git_blob_sha1": "719d0f73b14b80ef31a42b831abdc7269ce411f3",
+      "sha256": "4ef2aa4f2af13661bbd96f572f724f0406a63bf002d7c2082d8c68bf30ddb6c2",
+      "bytes": 280
+    },
+    {
+      "file": "venc_ctrls.c",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/platform/qcom/venus/venc_ctrls.c",
+      "git_blob_sha1": "4d36c44f9d44a5fba6c041cb470cd7cbc78b005b",
+      "sha256": "b9191a585b8cfba21f6af293a6e6f46190f060f6fd56a07c9c7c6960e2ec68c8",
+      "bytes": 22958
+    }
+  ]
+}

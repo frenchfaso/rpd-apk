@@ -1,0 +1,14 @@
+[Unit]
+Description=Lenovo M10 passive USB OTG
+After=systemd-udev-trigger.service
+ConditionPathExists=/proc/device-tree/compatible
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/rpd-usb-otg-m10
+ExecStopPost=/usr/libexec/rpd-usb-otg-m10 cleanup
+TimeoutStopSec=20
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

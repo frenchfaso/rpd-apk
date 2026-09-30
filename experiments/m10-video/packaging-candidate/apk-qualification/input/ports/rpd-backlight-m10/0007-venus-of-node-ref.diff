@@ -1,0 +1,24 @@
+diff --git a/drivers/media/platform/qcom/venus/core.c b/drivers/media/platform/qcom/venus/core.c
+index 243e342b0ae75..3e69fc7ea3c79 100644
+--- a/drivers/media/platform/qcom/venus/core.c
++++ b/drivers/media/platform/qcom/venus/core.c
+@@ -361,17 +361,17 @@ static int venus_add_video_core(struct venus_core *core, const char *node_name,
+ 	struct of_changeset *ocs = core->ocs;
+ 	struct device *dev = core->dev;
+ 	struct device_node *np, *enp;
+ 	int ret;
+ 
+ 	if (!node_name)
+ 		return 0;
+ 
+-	enp = of_find_node_by_name(dev->of_node, node_name);
++	enp = of_get_child_by_name(dev->of_node, node_name);
+ 	if (enp) {
+ 		of_node_put(enp);
+ 		return 0;
+ 	}
+ 
+ 	np = of_changeset_create_node(ocs, dev->of_node, node_name);
+ 	if (!np) {
+ 		dev_err(dev, "Unable to create new node\n");
+

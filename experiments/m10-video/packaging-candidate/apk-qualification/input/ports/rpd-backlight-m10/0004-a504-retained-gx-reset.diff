@@ -1,0 +1,19 @@
+--- a/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
+@@ -1360,6 +1360,16 @@
+ 	if (ret)
+ 		return ret;
+ 
++	/*
++	 * The GX supplier can remain powered across a quick runtime suspend.
++	 * Reset retained state before the A504 ringbuffer is initialized again.
++	 */
++	if (adreno_is_a504(adreno_gpu)) {
++		gpu_write(gpu, REG_A5XX_RBBM_SW_RESET_CMD, 1);
++		gpu_read(gpu, REG_A5XX_RBBM_SW_RESET_CMD);
++		gpu_write(gpu, REG_A5XX_RBBM_SW_RESET_CMD, 0);
++	}
++
+ 	/* Adreno 505, 506, 508, 509, 510, 512 needs manual RBBM sus/res control */
+ 	if (!(adreno_is_a530(adreno_gpu) || adreno_is_a540(adreno_gpu))) {
+ 		/* Halt the sp_input_clk at HM level */

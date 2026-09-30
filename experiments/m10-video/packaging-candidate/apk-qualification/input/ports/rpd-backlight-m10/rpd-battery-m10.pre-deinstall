@@ -1,0 +1,4 @@
+#!/bin/sh
+if [ -d /run/systemd/system ]; then
+    systemctl disable --now rpd-battery-m10.service || exit 1
+fi

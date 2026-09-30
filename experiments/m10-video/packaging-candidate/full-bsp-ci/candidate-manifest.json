@@ -1,0 +1,11 @@
+{
+  "scope": "Locally reviewable full BSP CI candidate, no runtime build claim",
+  "files": {
+    "workflow.yml": "fa18af61af0fb8b77794150d6b66bfb36cd8515d46a821c203675cc3264b6666",
+    "run-on-runner.sh": "2d68e4a3bcd7abe4bbde9b1dbbfe66940d75c53bef0401a985c42628a02f06bd",
+    "LOCAL-CHECKS.json": "31ec4ab7983af7bcc6d5e5069d1d1264b12669259d088e54b4696ea6a3b53f96",
+    "build-in-container.sh": "8832d4c0df33290dd51b6b10516a7ed892848f151ace756996d197e8455bd509",
+    "verify.py": "f15f5dbce68acb250557c6b30db81322710aa76715bb3397ef5fb553f836e566",
+    "REVIEW.md": "a53615f84cd6be236219c322bf763ccb3d14f4e43a7c89b5f479b93b6493bdc0"
+  }
+}

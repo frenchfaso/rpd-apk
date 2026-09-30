@@ -1,0 +1,108 @@
+Subject: [REVIEW ONLY] dt-bindings: media: qcom: describe SDM429 Venus
+
+Add only the SDM429 compatible and its single-codec-core parent topology.
+No SDM439/MSM8937 compatible alias or runtime/board change is included.
+
+diff --git a/Documentation/devicetree/bindings/media/qcom,sdm429-venus.yaml b/Documentation/devicetree/bindings/media/qcom,sdm429-venus.yaml
+new file mode 100644
+--- /dev/null
++++ b/Documentation/devicetree/bindings/media/qcom,sdm429-venus.yaml
+@@ -0,0 +1,98 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/media/qcom,sdm429-venus.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: Qualcomm SDM429 Venus video encode and decode accelerator
++
++maintainers:
++  - Stanimir Varbanov <stanimir.k.varbanov@gmail.com>
++  - Vikash Garodia <quic_vgarodia@quicinc.com>
++
++description: |
++  SDM429 has an HFI 3xx Venus accelerator with one codec core. The main
++  and codec-core clocks and power domains belong to the accelerator node.
++  The CX performance domain supplies the required operating-point votes.
++
++allOf:
++  - $ref: qcom,venus-common.yaml#
++
++properties:
++  compatible:
++    const: qcom,sdm429-venus
++
++  clocks:
++    items:
++      - description: Main Venus core clock
++      - description: AHB interface clock
++      - description: AXI bus clock
++      - description: Codec core 0 clock
++
++  clock-names:
++    items:
++      - const: core
++      - const: iface
++      - const: bus
++      - const: vcodec0_core
++
++  iommus:
++    maxItems: 1
++
++  power-domains:
++    items:
++      - description: Venus power domain
++      - description: Codec core 0 power domain
++      - description: CX performance domain
++
++  power-domain-names:
++    items:
++      - const: venus
++      - const: vcodec0
++      - const: cx
++
++  operating-points-v2: true
++
++  opp-table:
++    $ref: /schemas/opp/opp-v2.yaml#
++
++required:
++  - compatible
++  - iommus
++  - power-domain-names
++  - operating-points-v2
++
++unevaluatedProperties: false
++
++examples:
++  - |
++    #include <dt-bindings/clock/qcom,gcc-msm8917.h>
++    #include <dt-bindings/interrupt-controller/arm-gic.h>
++    #include <dt-bindings/power/qcom-rpmpd.h>
++
++    video-codec@1d00000 {
++        compatible = "qcom,sdm429-venus";
++        reg = <0x01d00000 0xff000>;
++        interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>;
++        clocks = <&gcc GCC_VENUS0_VCODEC0_CLK>,
++                 <&gcc GCC_VENUS0_AHB_CLK>,
++                 <&gcc GCC_VENUS0_AXI_CLK>,
++                 <&gcc GCC_VENUS0_CORE0_VCODEC0_CLK>;
++        clock-names = "core", "iface", "bus", "vcodec0_core";
++        iommus = <&apps_iommu 0x16>;
++        memory-region = <&venus_mem>;
++        power-domains = <&gcc VENUS_GDSC>,
++                        <&gcc VENUS_CORE0_GDSC>,
++                        <&rpmpd SDM439_VDDCX>;
++        power-domain-names = "venus", "vcodec0", "cx";
++        operating-points-v2 = <&venus_opp_table>;
++
++        venus_opp_table: opp-table {
++            compatible = "operating-points-v2";
++
++            opp-166150000 {
++                opp-hz = /bits/ 64 <166150000>;
++                required-opps = <&rpmpd_opp_svs>;
++            };
++        };
++    };

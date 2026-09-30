@@ -1,0 +1,45 @@
+name: Experimental M10 full BSP qualification
+'on':
+  push:
+    branches: [codex/m10-video-full-bsp]
+    paths: [.github/workflows/m10-video-full-bsp.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: m10-full-bsp-qualification-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+jobs:
+  full-bsp:
+    if: startsWith(github.ref, 'refs/heads/codex/')
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 210
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Normal full BSP build and artifact audit
+        timeout-minutes: 190
+        run: |
+          bash experiments/m10-video/packaging-candidate/full-bsp-ci/run-on-runner.sh \
+            experiments/m10-video/packaging-candidate/full-bsp-ci \
+            experiments/m10-video/packaging-candidate/apk-qualification/input \
+            experiments/m10-video/packaging-candidate/apk-qualification/input-manifest.json \
+            "$RUNNER_TEMP/m10-full-bsp-review"
+      - name: Recover owned artifacts and remove the disposable builder
+        if: always()
+        run: |
+          container="m10-full-bsp-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker rm -f "$container" || true
+          if [ -d "$RUNNER_TEMP/m10-full-bsp-review" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/m10-full-bsp-review"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: m10-full-bsp-review
+          path: ${{ runner.temp }}/m10-full-bsp-review/
+          if-no-files-found: error
+          retention-days: 3

@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+for d in /usr/lib/modules/*; do
+    [ ! -f "$d/modules.order" ] || depmod "${d##*/}"
+done
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload
+    if tr '\000' '\n' < /proc/device-tree/compatible 2>/dev/null | grep -qx 'lenovo,tbx505x'; then
+        systemctl enable rpd-battery-m10.service
+    fi
+fi

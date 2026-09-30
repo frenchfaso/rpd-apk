@@ -1,0 +1,613 @@
+Subject: [REVIEW ONLY] media: venus: own HFI3xx OPP/CX power for SDM429
+
+Replaces 0002-venus-hfi3xx-opp-initialization-only.patch; do not apply both.
+Applies to the pinned v7.1.3-r1 sources. Board proposal remains disabled.
+This is an offline review candidate, not kernel-built or hardware-validated.
+See docs/M10-VENUS-OPP-OWNERSHIP-20260925.md for its contract and limits.
+
+--- a/drivers/media/platform/qcom/venus/core.h
++++ b/drivers/media/platform/qcom/venus/core.h
+@@ -126,6 +126,19 @@
+ 	unsigned int num_planes;
+ 	u32 type;
+ 	u32 flags;
++};
++
++/* Resources owned by the optional HFI3xx OPP power path. */
++struct venus_opp_power {
++	unsigned long freq;
++	unsigned int domains;
++	bool cx;
++	bool vote;
++	bool core_clks;
++	bool vcodec_clks;
++	bool active;
++	bool rate_failed;
++	bool recovery_failed;
+ };
+ 
+ /**
+@@ -203,6 +216,7 @@
+ 	struct icc_path *cpucfg_path;
+ 	struct dev_pm_domain_list *pmdomains;
+ 	struct dev_pm_domain_list *opp_pmdomain;
++	struct venus_opp_power opp_power;
+ 	struct reset_control *resets[VIDC_RESETS_NUM_MAX];
+ 	struct video_device *vdev_dec;
+ 	struct video_device *vdev_enc;
+--- a/drivers/media/platform/qcom/venus/pm_helpers.c
++++ b/drivers/media/platform/qcom/venus/pm_helpers.c
+@@ -87,10 +87,34 @@
+ 		clk_disable_unprepare(core->clks[i]);
+ }
+ 
++static int core_opp_set_rate_v3(struct venus_core *core, unsigned long freq)
++{
++	struct venus_opp_power *power = &core->opp_power;
++	int ret;
++
++	if (power->rate_failed || power->recovery_failed)
++		return -EIO;
++
++	/* A failed transition can install a required OPP before failing. */
++	power->vote = true;
++	ret = dev_pm_opp_set_rate(core->dev, freq);
++	if (ret) {
++		power->rate_failed = true;
++		return ret;
++	}
++
++	power->freq = freq;
++	return 0;
++}
++
+ static int core_clks_set_rate(struct venus_core *core, unsigned long freq)
+ {
+ 	const struct venus_resources *res = core->res;
+ 	int ret, i;
++
++	/* SDM429's core and codec branches share the same rate parent. */
++	if (IS_V3(core) && res->opp_pmdomain)
++		return core_opp_set_rate_v3(core, freq);
+ 
+ 	ret = dev_pm_opp_set_rate(core->dev, freq);
+ 	if (ret)
+@@ -325,6 +349,45 @@
+ 					  &core->pmdomains);
+ }
+ 
++static int core_opp_get_v3(struct venus_core *core)
++{
++	const struct venus_resources *res = core->res;
++	const struct dev_pm_domain_attach_data data = {
++		.pd_names = res->opp_pmdomain,
++		.num_pd_names = 1,
++		.pd_flags = PD_FLAG_NO_DEV_LINK | PD_FLAG_REQUIRED_OPP,
++	};
++	struct device *dev = core->dev;
++	struct device *cx;
++	struct dev_pm_opp *opp;
++	unsigned long freq = 0;
++	int ret;
++
++	if (!IS_V3(core) || !res->opp_pmdomain)
++		return 0;
++
++	/* Own the CX runtime reference explicitly, independently of links. */
++	ret = devm_pm_domain_attach_list(dev, &data, &core->opp_pmdomain);
++	if (ret < 0)
++		return ret;
++	if (ret != 1)
++		return -ENODEV;
++	cx = core->opp_pmdomain->pd_devs[0];
++	if (!cx->pm_domain || !cx->pm_domain->set_performance_state)
++		return -EINVAL;
++
++	ret = devm_pm_opp_of_add_table(dev);
++	if (ret)
++		return ret;
++
++	opp = dev_pm_opp_find_freq_ceil(dev, &freq);
++	if (IS_ERR(opp))
++		return PTR_ERR(opp);
++	dev_pm_opp_put(opp);
++	core->opp_power.freq = freq;
++	return 0;
++}
++
+ static int core_get_v1(struct venus_core *core)
+ {
+ 	const struct venus_resources *res = core->res;
+@@ -340,6 +403,10 @@
+ 		return ret;
+ 
+ 	ret = devm_pm_opp_set_clkname(core->dev, "core");
++	if (ret)
++		return ret;
++
++	ret = core_opp_get_v3(core);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -416,13 +483,143 @@
+ 	return ret;
+ }
+ 
++static int core_opp_power_off_v3(struct venus_core *core)
++{
++	struct venus_opp_power *power = &core->opp_power;
++	struct device *cx = core->opp_pmdomain->pd_devs[0];
++	struct device *pd;
++	int ret, err = 0, opp_ret, cx_ret;
++	unsigned int i;
++
++	for (i = 0; i < power->domains; i++) {
++		pd = core->pmdomains->pd_devs[i];
++		ret = dev_pm_genpd_set_hwmode(pd, false);
++		if (ret && ret != -EOPNOTSUPP && !err)
++			err = ret;
++	}
++	if (power->vcodec_clks) {
++		vcodec_clks_disable(core, core->vcodec_clks);
++		power->vcodec_clks = false;
++	}
++	if (power->core_clks) {
++		core_clks_disable(core);
++		power->core_clks = false;
++	}
++	power->active = false;
++
++	while (power->domains) {
++		pd = core->pmdomains->pd_devs[--power->domains];
++		/* put_sync consumes our reference even when suspend fails. */
++		ret = pm_runtime_put_sync(pd);
++		if (ret < 0 && !err)
++			err = ret;
++	}
++
++	if (power->vote) {
++		/* A retry must clear the actual vote, not just cached resume state. */
++		if (!power->cx) {
++			ret = pm_runtime_resume_and_get(cx);
++			if (ret) {
++				if (!err)
++					err = ret;
++				goto out;
++			}
++			power->cx = true;
++		}
++		opp_ret = dev_pm_opp_set_rate(core->dev, 0);
++		/* The OPP core may already have marked a failed vote disabled. */
++		cx_ret = dev_pm_domain_set_performance_state(cx, 0);
++		if (!opp_ret && !cx_ret) {
++			power->vote = false;
++			power->rate_failed = false;
++		}
++		if (!err)
++			err = opp_ret ? opp_ret : cx_ret;
++	}
++
++	if (power->cx) {
++		ret = pm_runtime_put_sync(cx);
++		power->cx = false;
++		if (ret < 0 && !err)
++			err = ret;
++	}
++out:
++	if (err)
++		dev_warn(core->dev, "OPP power cleanup failed: %d\n", err);
++	return err;
++}
++
++static int core_opp_power_v3(struct venus_core *core, int on)
++{
++	struct venus_opp_power *power = &core->opp_power;
++	struct device *cx = core->opp_pmdomain->pd_devs[0];
++	struct device *pd;
++	int ret;
++
++	if (on == POWER_OFF) {
++		core_opp_power_off_v3(core);
++		/* Clocks are off, even if a provider retained a power/BW vote. */
++		return 0;
++	}
++	if (power->recovery_failed)
++		return -EIO;
++	if (power->active)
++		return 0;
++
++	/* Retry failed OPP bookkeeping before permitting clocks to restart. */
++	if (power->vote) {
++		ret = core_opp_power_off_v3(core);
++		if (ret)
++			return ret;
++	}
++	ret = pm_runtime_resume_and_get(cx);
++	if (ret)
++		return ret;
++	power->cx = true;
++
++	ret = core_opp_set_rate_v3(core, power->freq);
++	if (ret)
++		goto err;
++
++	while (power->domains < core->res->vcodec_pmdomains_num) {
++		pd = core->pmdomains->pd_devs[power->domains];
++		ret = pm_runtime_resume_and_get(pd);
++		if (ret)
++			goto err;
++		power->domains++;
++	}
++	ret = core_clks_enable(core);
++	if (ret)
++		goto err;
++	power->core_clks = true;
++
++	ret = vcodec_clks_enable(core, core->vcodec_clks);
++	if (ret)
++		goto err;
++	power->vcodec_clks = true;
++
++	ret = vcodec_domains_set_hw(core, true);
++	if (ret)
++		goto err;
++	power->active = true;
++	return 0;
++err:
++	core_opp_power_off_v3(core);
++	return ret;
++}
++
+ static void core_put_v1(struct venus_core *core)
+ {
++	if (IS_V3(core) && core->opp_pmdomain)
++		core_opp_power_off_v3(core);
+ }
+ 
+ static int core_power_v1(struct venus_core *core, int on)
+ {
+ 	int ret = 0;
++
++	if (IS_V3(core) && core->opp_pmdomain)
++		return core_opp_power_v3(core, on);
+ 
+ 	if (on == POWER_ON) {
+ 		ret = vcodec_domains_enable(core);
+@@ -500,6 +697,9 @@
+ 	struct venus_core *core = dev_get_drvdata(dev);
+ 	int ret = 0;
+ 
++	if (core->opp_power.recovery_failed)
++		return on == POWER_ON ? -EIO : 0;
++
+ 	vcodec_control_v3(core, VIDC_SESSION_TYPE_DEC, true);
+ 
+ 	if (on == POWER_ON)
+@@ -524,6 +724,9 @@
+ {
+ 	struct venus_core *core = dev_get_drvdata(dev);
+ 	int ret = 0;
++
++	if (core->opp_power.recovery_failed)
++		return on == POWER_ON ? -EIO : 0;
+ 
+ 	vcodec_control_v3(core, VIDC_SESSION_TYPE_ENC, true);
+ 
+--- a/drivers/media/platform/qcom/venus/core.c
++++ b/drivers/media/platform/qcom/venus/core.c
+@@ -28,6 +28,54 @@
+ #include "pm_helpers.h"
+ #include "hfi_venus_io.h"
+ 
++static bool venus_uses_opp_v3(struct venus_core *core)
++{
++	return IS_V3(core) && core->res->opp_pmdomain;
++}
++
++static void venus_opp_shutdown_v3(struct venus_core *core)
++{
++	int ret;
++
++	/* PAS shutdown is an SCM call; the non-TZ path accesses registers. */
++	if (!core->use_tz && !core->opp_power.active)
++		return;
++	ret = venus_shutdown(core);
++	if (ret)
++		dev_warn(core->dev, "Firmware shutdown failed: %d\n", ret);
++}
++
++static void venus_opp_release_v3(struct venus_core *core)
++{
++	int ret;
++
++	core->pm_ops->core_power(core, POWER_OFF);
++	ret = icc_set_bw(core->cpucfg_path, 0, 0);
++	if (ret)
++		dev_warn(core->dev, "CPU bandwidth cleanup failed: %d\n", ret);
++	ret = icc_set_bw(core->video_path, 0, 0);
++	if (ret)
++		dev_warn(core->dev, "Video bandwidth cleanup failed: %d\n", ret);
++}
++
++static void venus_opp_stop_recovery_v3(struct venus_core *core)
++{
++	int ret;
++
++	if (!core->opp_power.recovery_failed) {
++		core->opp_power.recovery_failed = true;
++		pm_runtime_disable(core->dev);
++	}
++	core->ops->core_deinit(core);
++	core->state = CORE_UNINIT;
++	venus_opp_shutdown_v3(core);
++	venus_opp_release_v3(core);
++	ret = pm_runtime_set_suspended(core->dev);
++	if (ret)
++		dev_warn(core->dev, "Failed to mark stopped core suspended: %d\n", ret);
++	dev_err(core->dev, "Runtime PM recovery failed; reprobe required\n");
++}
++
+ static void venus_coredump(struct venus_core *core)
+ {
+ 	struct device *dev;
+@@ -94,6 +142,11 @@
+ 
+ 	ret = pm_runtime_get_sync(core->dev);
+ 	if (ret < 0) {
++		if (venus_uses_opp_v3(core)) {
++			pm_runtime_put_noidle(core->dev);
++			venus_opp_stop_recovery_v3(core);
++			return;
++		}
+ 		err_msg = "resume runtime PM";
+ 		max_attempts = 0;
+ 		failed = true;
+@@ -130,6 +183,12 @@
+ 
+ 	ret = pm_runtime_get_sync(core->dev);
+ 	if (ret < 0) {
++		if (venus_uses_opp_v3(core)) {
++			pm_runtime_put_noidle(core->dev);
++			mutex_unlock(&core->lock);
++			venus_opp_stop_recovery_v3(core);
++			return;
++		}
+ 		err_msg = "resume runtime PM";
+ 		failed = true;
+ 	}
+@@ -160,6 +219,10 @@
+ 
+ 	if (failed) {
+ 		disable_irq_nosync(core->irq);
++		if (venus_uses_opp_v3(core)) {
++			venus_opp_stop_recovery_v3(core);
++			return;
++		}
+ 		dev_warn_ratelimited(core->dev,
+ 				     "System error has occurred, recovery failed to %s\n",
+ 				     err_msg);
+@@ -458,8 +521,11 @@
+ 		goto err_runtime_disable;
+ 
+ 	ret = venus_boot(core);
+-	if (ret)
++	if (ret) {
++		if (venus_uses_opp_v3(core))
++			goto err_venus_shutdown;
+ 		goto err_firmware_deinit;
++	}
+ 
+ 	ret = venus_firmware_cfg(core);
+ 	if (ret)
+@@ -484,8 +550,11 @@
+ 	}
+ 
+ 	ret = of_platform_populate(dev->of_node, NULL, NULL, dev);
+-	if (ret)
++	if (ret) {
++		if (venus_uses_opp_v3(core))
++			goto err_of_depopulate;
+ 		goto err_remove_dynamic_nodes;
++	}
+ 
+ 	ret = venus_enumerate_codecs(core, VIDC_SESSION_TYPE_DEC);
+ 	if (ret)
+@@ -512,10 +581,15 @@
+ err_core_deinit:
+ 	hfi_core_deinit(core, false);
+ err_venus_shutdown:
+-	venus_shutdown(core);
++	if (venus_uses_opp_v3(core))
++		venus_opp_shutdown_v3(core);
++	else
++		venus_shutdown(core);
+ err_firmware_deinit:
+ 	venus_firmware_deinit(core);
+ err_runtime_disable:
++	if (venus_uses_opp_v3(core))
++		venus_opp_release_v3(core);
+ 	pm_runtime_put_noidle(dev);
+ 	pm_runtime_disable(dev);
+ 	pm_runtime_set_suspended(dev);
+@@ -538,19 +612,31 @@
+ 	cancel_delayed_work_sync(&core->work);
+ 	ret = pm_runtime_get_sync(dev);
+ 	WARN_ON(ret < 0);
++	if (ret < 0 && venus_uses_opp_v3(core))
++		goto shutdown_firmware;
+ 
+ 	ret = hfi_core_deinit(core, true);
+ 	WARN_ON(ret);
+ 
+-	venus_shutdown(core);
++shutdown_firmware:
++	if (venus_uses_opp_v3(core))
++		venus_opp_shutdown_v3(core);
++	else
++		venus_shutdown(core);
+ 	of_platform_depopulate(dev);
+ 
+ 	venus_firmware_deinit(core);
+ 
+ 	venus_remove_dynamic_nodes(core);
+ 
+-	pm_runtime_put_sync(dev);
+-	pm_runtime_disable(dev);
++	if (venus_uses_opp_v3(core))
++		pm_runtime_put_noidle(dev);
++	else
++		pm_runtime_put_sync(dev);
++	if (!core->opp_power.recovery_failed)
++		pm_runtime_disable(dev);
++	if (venus_uses_opp_v3(core))
++		venus_opp_release_v3(core);
+ 
+ 	if (pm_ops->core_put)
+ 		pm_ops->core_put(core);
+@@ -567,11 +653,76 @@
+ static void venus_core_shutdown(struct platform_device *pdev)
+ {
+ 	struct venus_core *core = platform_get_drvdata(pdev);
+-
+-	pm_runtime_get_sync(core->dev);
+-	venus_shutdown(core);
++	int ret;
++
++	ret = pm_runtime_get_sync(core->dev);
++	if (ret < 0 && venus_uses_opp_v3(core)) {
++		pm_runtime_put_noidle(core->dev);
++		venus_opp_shutdown_v3(core);
++		venus_firmware_deinit(core);
++		venus_opp_release_v3(core);
++		return;
++	}
++	if (venus_uses_opp_v3(core))
++		venus_opp_shutdown_v3(core);
++	else
++		venus_shutdown(core);
+ 	venus_firmware_deinit(core);
+-	pm_runtime_put_sync(core->dev);
++	if (venus_uses_opp_v3(core)) {
++		venus_opp_release_v3(core);
++		pm_runtime_put_noidle(core->dev);
++	} else {
++		pm_runtime_put_sync(core->dev);
++	}
++}
++
++static int venus_runtime_suspend_opp_v3(struct venus_core *core)
++{
++	int ret;
++
++	if (core->opp_power.recovery_failed) {
++		venus_opp_release_v3(core);
++		return 0;
++	}
++	ret = hfi_core_suspend(core);
++	if (ret)
++		return ret;
++
++	venus_opp_release_v3(core);
++
++	/* Do not report active after HFI and the clocks have stopped. */
++	return 0;
++}
++
++static int venus_runtime_resume_opp_v3(struct venus_core *core)
++{
++	int ret, err;
++
++	if (core->opp_power.recovery_failed)
++		return -EIO;
++	ret = icc_set_bw(core->video_path, kbps_to_icc(20000), 0);
++	if (ret)
++		return ret;
++	ret = icc_set_bw(core->cpucfg_path, kbps_to_icc(1000), 0);
++	if (ret)
++		goto err_video;
++	ret = core->pm_ops->core_power(core, POWER_ON);
++	if (ret)
++		goto err_cpucfg;
++	ret = hfi_core_resume(core, false);
++	if (!ret)
++		return 0;
++
++	core->pm_ops->core_power(core, POWER_OFF);
++err_cpucfg:
++	err = icc_set_bw(core->cpucfg_path, 0, 0);
++	if (err)
++		dev_warn(core->dev, "CPU bandwidth cleanup failed: %d\n", err);
++err_video:
++	err = icc_set_bw(core->video_path, 0, 0);
++	if (err)
++		dev_warn(core->dev, "Video bandwidth cleanup failed: %d\n", err);
++	return ret;
+ }
+ 
+ static __maybe_unused int venus_runtime_suspend(struct device *dev)
+@@ -579,6 +730,9 @@
+ 	struct venus_core *core = dev_get_drvdata(dev);
+ 	const struct venus_pm_ops *pm_ops = core->pm_ops;
+ 	int ret;
++
++	if (venus_uses_opp_v3(core))
++		return venus_runtime_suspend_opp_v3(core);
+ 
+ 	ret = hfi_core_suspend(core);
+ 	if (ret)
+@@ -634,6 +788,9 @@
+ 	struct venus_core *core = dev_get_drvdata(dev);
+ 	const struct venus_pm_ops *pm_ops = core->pm_ops;
+ 	int ret;
++
++	if (venus_uses_opp_v3(core))
++		return venus_runtime_resume_opp_v3(core);
+ 
+ 	ret = icc_set_bw(core->video_path, kbps_to_icc(20000), 0);
+ 	if (ret)
+@@ -777,6 +934,37 @@
+ 	.vcodec_clks_num = 1,
+ 	.vcodec_pmdomains = (const char *[]) { "venus", "vcodec0" },
+ 	.vcodec_pmdomains_num = 2,
++	.max_load = 352800,  /* 1080p@30 + 720p@30 */
++	.hfi_version = HFI_VERSION_3XX,
++	.vmem_id = VIDC_RESOURCE_NONE,
++	.vmem_size = 0,
++	.vmem_addr = 0,
++	.cp_start = 0,
++	.cp_size = 0x5dc00000,
++	.cp_nonpixel_start = 0x1000000,
++	.cp_nonpixel_size = 0x24800000,
++	.dma_mask = 0xddc00000 - 1,
++	.fwname = "venus.mdt",
++	.dec_nodename = "video-decoder",
++	.enc_nodename = "video-encoder",
++};
++
++static const struct venus_resources sdm429_res = {
++	.freq_tbl = msm8937_freq_table,
++	.freq_tbl_size = ARRAY_SIZE(msm8937_freq_table),
++	.reg_tbl = msm8916_reg_preset,
++	.reg_tbl_size = ARRAY_SIZE(msm8916_reg_preset),
++	.bw_tbl_enc = msm8917_bw_table_enc,
++	.bw_tbl_enc_size = ARRAY_SIZE(msm8917_bw_table_enc),
++	.bw_tbl_dec = msm8917_bw_table_dec,
++	.bw_tbl_dec_size = ARRAY_SIZE(msm8917_bw_table_dec),
++	.clks = {"core", "iface", "bus" },
++	.clks_num = 3,
++	.vcodec_clks = { "vcodec0_core" },
++	.vcodec_clks_num = 1,
++	.vcodec_pmdomains = (const char *[]) { "venus", "vcodec0" },
++	.vcodec_pmdomains_num = 2,
++	.opp_pmdomain = (const char *[]) { "cx" },
+ 	.max_load = 352800,  /* 1080p@30 + 720p@30 */
+ 	.hfi_version = HFI_VERSION_3XX,
+ 	.vmem_id = VIDC_RESOURCE_NONE,
+@@ -1227,6 +1415,7 @@
+ 	{ .compatible = "qcom,msm8916-venus", .data = &msm8916_res, },
+ 	{ .compatible = "qcom,msm8917-venus", .data = &msm8917_res, },
+ 	{ .compatible = "qcom,msm8937-venus", .data = &msm8937_res, },
++	{ .compatible = "qcom,sdm429-venus", .data = &sdm429_res, },
+ 	{ .compatible = "qcom,msm8996-venus", .data = &msm8996_res, },
+ 	{ .compatible = "qcom,msm8998-venus", .data = &msm8998_res, },
+ 	{ .compatible = "qcom,qcm2290-venus", .data = &qcm2290_res, },

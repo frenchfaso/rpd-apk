@@ -1,0 +1,57 @@
+diff --git a/drivers/media/platform/qcom/venus/vdec.c b/drivers/media/platform/qcom/venus/vdec.c
+index 74591c7a820f5..ae6c2fc65404b 100644
+--- a/drivers/media/platform/qcom/venus/vdec.c
++++ b/drivers/media/platform/qcom/venus/vdec.c
+@@ -1129,33 +1129,51 @@ static int vdec_start_capture(struct venus_inst *inst)
+ free_dpb_bufs:
+ 	venus_helper_free_dpb_bufs(inst);
+ err:
+ 	return ret;
+ }
+ 
+ static int vdec_start_output(struct venus_inst *inst)
+ {
++	struct vb2_queue *dst_vq;
++	bool cap_waiting;
+ 	int ret;
+ 
+ 	if (inst->codec_state == VENUS_DEC_STATE_SEEK) {
+ 		ret = venus_helper_process_initial_out_bufs(inst);
+ 		if (ret)
+ 			return ret;
+ 
+ 		if (inst->next_buf_last) {
+ 			inst->codec_state = VENUS_DEC_STATE_DRC;
+ 		} else {
+ 			inst->codec_state = VENUS_DEC_STATE_DECODING;
+ 
+-			if (inst->streamon_cap) {
++			/*
++			 * If CAPTURE was streamed on first, vdec_start_capture()
++			 * returned early because OUTPUT was not streaming, so
++			 * start the capture side from here.
++			 */
++			dst_vq = v4l2_m2m_get_dst_vq(inst->m2m_ctx);
++			cap_waiting = !inst->streamon_cap && vb2_is_streaming(dst_vq);
++
++			if (inst->streamon_cap || cap_waiting) {
+ 				ret = venus_helper_queue_dpb_bufs(inst);
+ 				if (ret)
+ 					return ret;
+ 			}
++
++			if (cap_waiting) {
++				ret = venus_helper_process_initial_cap_bufs(inst);
++				if (ret)
++					return ret;
++
++				inst->streamon_cap = 1;
++			}
+ 		}
+ 		goto done;
+ 	}
+ 
+ 	if (inst->codec_state == VENUS_DEC_STATE_INIT ||
+ 	    inst->codec_state == VENUS_DEC_STATE_CAPTURE_SETUP) {
+ 		ret = venus_helper_process_initial_out_bufs(inst);
+ 		goto done;

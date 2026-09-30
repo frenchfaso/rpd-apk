@@ -1,0 +1,66 @@
+Subject: [PATCH] drm/msm: preserve private-data ownership during GPU-only removal
+
+The GPU platform driver data becomes adreno_smmu_priv in msm_gpu_init().
+In GPU-only mode it therefore cannot also be read as msm_drm_private by
+removal paths. Retrieve the DRM private state through the initialized GPU,
+and choose component versus standalone removal using the same predicate as
+probe. Keep the DRM private pointer valid across GPU destruction in unbind.
+
+A controlled unbind on A504 otherwise faults in msm_drm_uninit before the
+GPU's devres cleanup runs. This patch changes teardown object lookup only;
+normal rendering, clocks and PM policy are unchanged.
+
+---
+
+diff --git a/drivers/gpu/drm/msm/msm_drv.c b/drivers/gpu/drm/msm/msm_drv.c
+--- a/drivers/gpu/drm/msm/msm_drv.c
++++ b/drivers/gpu/drm/msm/msm_drv.c
+@@ -68,9 +68,15 @@
+ 
+ static int msm_drm_uninit(struct device *dev, const struct component_ops *gpu_ops)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+-	struct msm_drm_private *priv = platform_get_drvdata(pdev);
+-	struct drm_device *ddev = priv->dev;
++	struct msm_drm_private *priv;
++	struct drm_device *ddev;
++
++	/* GPU-only mode stores adreno_smmu_priv in driver data. */
++	if (gpu_ops)
++		priv = dev_to_gpu(dev)->dev->dev_private;
++	else
++		priv = dev_get_drvdata(dev);
++	ddev = priv->dev;
+ 
+ 	/*
+ 	 * Shutdown the hw if we're far enough along where things might be on.
+diff --git a/drivers/gpu/drm/msm/adreno/adreno_device.c b/drivers/gpu/drm/msm/adreno/adreno_device.c
+--- a/drivers/gpu/drm/msm/adreno/adreno_device.c
++++ b/drivers/gpu/drm/msm/adreno/adreno_device.c
+@@ -258,8 +258,8 @@
+ static void adreno_unbind(struct device *dev, struct device *master,
+ 		void *data)
+ {
+-	struct msm_drm_private *priv = dev_get_drvdata(master);
+ 	struct msm_gpu *gpu = dev_to_gpu(dev);
++	struct msm_drm_private *priv = gpu->dev->dev_private;
+ 
+ 	if (pm_runtime_enabled(dev))
+ 		WARN_ON_ONCE(adreno_system_suspend(dev));
+@@ -408,12 +408,11 @@
+ 
+ static void adreno_remove(struct platform_device *pdev)
+ {
+-	struct msm_drm_private *priv = platform_get_drvdata(pdev);
+-
+-	if (priv->kms_init)
++	if (of_device_is_compatible(pdev->dev.of_node, "amd,imageon") ||
++	    msm_gpu_no_components())
++		msm_gpu_remove(pdev, &a3xx_ops);
++	else
+ 		component_del(&pdev->dev, &a3xx_ops);
+-	else
+-		msm_gpu_remove(pdev, &a3xx_ops);
+ }
+ 
+ static void adreno_shutdown(struct platform_device *pdev)

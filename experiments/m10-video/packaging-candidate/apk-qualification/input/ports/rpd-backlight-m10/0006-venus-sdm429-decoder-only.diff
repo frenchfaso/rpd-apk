@@ -1,0 +1,11 @@
+--- a/drivers/media/platform/qcom/venus/core.c
++++ b/drivers/media/platform/qcom/venus/core.c
+@@ -977,7 +977,7 @@
+ 	.dma_mask = 0xddc00000 - 1,
+ 	.fwname = "venus.mdt",
+ 	.dec_nodename = "video-decoder",
+-	.enc_nodename = "video-encoder",
++	.enc_nodename = NULL,
+ };
+ 
+ static const struct freq_tbl msm8996_freq_table[] = {

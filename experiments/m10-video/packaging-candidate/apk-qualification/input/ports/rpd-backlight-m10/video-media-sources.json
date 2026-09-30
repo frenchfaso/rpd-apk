@@ -1,0 +1,301 @@
+{
+  "scope": "Minimal configured framework module closure for real export generation; verified pinned sources from existing kernel or isolated source root",
+  "tag": "v7.1.3-r1",
+  "kernelrelease": "7.1.3-msm89x7",
+  "normalized_config_sha256": "72c151f1bcb983224c604646719f313274e0b52b0be46196e5d666fe02d6e74e",
+  "modversions": false,
+  "config": {
+    "CONFIG_MEDIA_SUPPORT": "m",
+    "CONFIG_VIDEO_DEV": "m",
+    "CONFIG_MEDIA_CONTROLLER": "y",
+    "CONFIG_V4L2_MEM2MEM_DEV": "m",
+    "CONFIG_VIDEOBUF2_CORE": "m",
+    "CONFIG_VIDEOBUF2_MEMOPS": "m",
+    "CONFIG_VIDEOBUF2_V4L2": "m",
+    "CONFIG_VIDEOBUF2_DMA_CONTIG": "m",
+    "CONFIG_USB": "y",
+    "CONFIG_SPI": "y",
+    "CONFIG_TRACEPOINTS": "y",
+    "CONFIG_COMPAT": "y",
+    "CONFIG_VIDEO_V4L2_I2C": "y"
+  },
+  "modules": {
+    "mc": [
+      "mc/mc-device.c",
+      "mc/mc-devnode.c",
+      "mc/mc-entity.c",
+      "mc/mc-request.c",
+      "mc/mc-dev-allocator.c"
+    ],
+    "videodev": [
+      "v4l2-core/v4l2-dev.c",
+      "v4l2-core/v4l2-ioctl.c",
+      "v4l2-core/v4l2-device.c",
+      "v4l2-core/v4l2-fh.c",
+      "v4l2-core/v4l2-event.c",
+      "v4l2-core/v4l2-subdev.c",
+      "v4l2-core/v4l2-common.c",
+      "v4l2-core/v4l2-ctrls-core.c",
+      "v4l2-core/v4l2-ctrls-api.c",
+      "v4l2-core/v4l2-ctrls-request.c",
+      "v4l2-core/v4l2-ctrls-defs.c",
+      "v4l2-core/v4l2-compat-ioctl32.c",
+      "v4l2-core/v4l2-mc.c",
+      "v4l2-core/v4l2-spi.c",
+      "v4l2-core/v4l2-trace.c",
+      "v4l2-core/v4l2-i2c.c"
+    ],
+    "v4l2-mem2mem": [
+      "v4l2-core/v4l2-mem2mem.c"
+    ],
+    "videobuf2-common": [
+      "videobuf2/videobuf2-core.c",
+      "videobuf2/frame_vector.c",
+      "videobuf2/vb2-trace.c"
+    ],
+    "videobuf2-dma-contig": [
+      "videobuf2/videobuf2-dma-contig.c"
+    ],
+    "videobuf2-memops": [
+      "videobuf2/videobuf2-memops.c"
+    ],
+    "videobuf2-v4l2": [
+      "videobuf2/videobuf2-v4l2.c"
+    ]
+  },
+  "files": [
+    {
+      "path": "drivers/media/mc/Makefile",
+      "staged_path": "mc/Makefile",
+      "git_blob_sha1": "2b7af42ba59c19670f51a5e726e707e638d3351a",
+      "bytes": 201,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/mc/Makefile"
+    },
+    {
+      "path": "drivers/media/mc/mc-dev-allocator.c",
+      "staged_path": "mc/mc-dev-allocator.c",
+      "git_blob_sha1": "b700ea73517ec5184b2ca9c4aeb9e39b8e5782bb",
+      "bytes": 3553,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/mc/mc-dev-allocator.c"
+    },
+    {
+      "path": "drivers/media/mc/mc-device.c",
+      "staged_path": "mc/mc-device.c",
+      "git_blob_sha1": "f8ea7cfe10b22eb7e2057a1fb1930003ffb085e5",
+      "bytes": 23990,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/mc/mc-device.c"
+    },
+    {
+      "path": "drivers/media/mc/mc-devnode.c",
+      "staged_path": "mc/mc-devnode.c",
+      "git_blob_sha1": "51260a7d6921cf030b5d1ccddba124c1e5328685",
+      "bytes": 8445,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/mc/mc-devnode.c"
+    },
+    {
+      "path": "drivers/media/mc/mc-entity.c",
+      "staged_path": "mc/mc-entity.c",
+      "git_blob_sha1": "3fa0bc687851b892930d37195ebf8e04b0c59551",
+      "bytes": 41304,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/mc/mc-entity.c"
+    },
+    {
+      "path": "drivers/media/mc/mc-request.c",
+      "staged_path": "mc/mc-request.c",
+      "git_blob_sha1": "13e77648807c29306f2eeb0b6973121e9c301634",
+      "bytes": 13913,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/mc/mc-request.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/Makefile",
+      "staged_path": "v4l2-core/Makefile",
+      "git_blob_sha1": "329f0eadce994cc1c8580beb435f68fa7e2a7aeb",
+      "bytes": 1289,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/Makefile"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-common.c",
+      "staged_path": "v4l2-core/v4l2-common.c",
+      "git_blob_sha1": "554c591e1113310fd8926ebc2cbc4e124bd9f109",
+      "bytes": 38491,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-common.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-compat-ioctl32.c",
+      "staged_path": "v4l2-core/v4l2-compat-ioctl32.c",
+      "git_blob_sha1": "2c88e1175a1059e2e407400c37bb1700b555972d",
+      "bytes": 31380,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-compat-ioctl32.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-ctrls-api.c",
+      "staged_path": "v4l2-core/v4l2-ctrls-api.c",
+      "git_blob_sha1": "93d8d4012d0f4fef004e417d0aee2ae44b1b30bd",
+      "bytes": 36320,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-ctrls-api.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-ctrls-core.c",
+      "staged_path": "v4l2-core/v4l2-ctrls-core.c",
+      "git_blob_sha1": "6b375720e395c4794591f1454dedc13c8899b587",
+      "bytes": 76450,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-ctrls-core.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-ctrls-defs.c",
+      "staged_path": "v4l2-core/v4l2-ctrls-defs.c",
+      "git_blob_sha1": "551426c4cd01638ed2bc1dc085c2a9f4a72f1588",
+      "bytes": 59924,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-ctrls-defs.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-ctrls-priv.h",
+      "staged_path": "v4l2-core/v4l2-ctrls-priv.h",
+      "git_blob_sha1": "f4cf273ecf30a50727bc6aef65a81ba46abfb10e",
+      "bytes": 3195,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-ctrls-priv.h"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-ctrls-request.c",
+      "staged_path": "v4l2-core/v4l2-ctrls-request.c",
+      "git_blob_sha1": "4b7e6981b8d6f591dfae9acd38214586c4a26e11",
+      "bytes": 12776,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-ctrls-request.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-dev.c",
+      "staged_path": "v4l2-core/v4l2-dev.c",
+      "git_blob_sha1": "6ce623a1245a457a6653afad2c4067c84503f592",
+      "bytes": 38633,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-dev.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-device.c",
+      "staged_path": "v4l2-core/v4l2-device.c",
+      "git_blob_sha1": "67e3073de13219f9503f8163d52e5ed070f42aee",
+      "bytes": 7417,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-device.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-event.c",
+      "staged_path": "v4l2-core/v4l2-event.c",
+      "git_blob_sha1": "9dd2aaa95a67406bda3a257325442888895ed088",
+      "bytes": 8711,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-event.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-fh.c",
+      "staged_path": "v4l2-core/v4l2-fh.c",
+      "git_blob_sha1": "b184bed8aca9583d3e6da79f45259e53ecb2540d",
+      "bytes": 2853,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-fh.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-i2c.c",
+      "staged_path": "v4l2-core/v4l2-i2c.c",
+      "git_blob_sha1": "ffc64e10fcaef44b3dd6e7bfaf3c989f6d9fb38e",
+      "bytes": 5082,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-i2c.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-ioctl.c",
+      "staged_path": "v4l2-core/v4l2-ioctl.c",
+      "git_blob_sha1": "a2b650f4ec3c32a4883521f34fb51eed13c71d76",
+      "bytes": 117633,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-ioctl.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-mc.c",
+      "staged_path": "v4l2-core/v4l2-mc.c",
+      "git_blob_sha1": "937d358697e19af88666dc2d8927b521090add2f",
+      "bytes": 16185,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-mc.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-mem2mem.c",
+      "staged_path": "v4l2-core/v4l2-mem2mem.c",
+      "git_blob_sha1": "a65cbb124cfe0702b65e6913d4984307bab8ed2b",
+      "bytes": 45138,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-mem2mem.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-spi.c",
+      "staged_path": "v4l2-core/v4l2-spi.c",
+      "git_blob_sha1": "1baf8e63f19e047171cce1994958ebc2eaa4b5dc",
+      "bytes": 1945,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-spi.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-subdev-priv.h",
+      "staged_path": "v4l2-core/v4l2-subdev-priv.h",
+      "git_blob_sha1": "52391d6d8ab7d1d3175529bb8fb64be77b5ecc55",
+      "bytes": 333,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-subdev-priv.h"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-subdev.c",
+      "staged_path": "v4l2-core/v4l2-subdev.c",
+      "git_blob_sha1": "831c69c958b8a186f4dd4cbd337d7957e676c12c",
+      "bytes": 71772,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-subdev.c"
+    },
+    {
+      "path": "drivers/media/v4l2-core/v4l2-trace.c",
+      "staged_path": "v4l2-core/v4l2-trace.c",
+      "git_blob_sha1": "95f3b02e1f849afc597eedde490c0d2666c28608",
+      "bytes": 379,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/v4l2-core/v4l2-trace.c"
+    },
+    {
+      "path": "drivers/media/common/videobuf2/Makefile",
+      "staged_path": "videobuf2/Makefile",
+      "git_blob_sha1": "a6fe3f304685e9946738fdbaf77d45b967e7205a",
+      "bytes": 652,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/common/videobuf2/Makefile"
+    },
+    {
+      "path": "drivers/media/common/videobuf2/frame_vector.c",
+      "staged_path": "videobuf2/frame_vector.c",
+      "git_blob_sha1": "41f289c75cbb6e17c928265a226fc9cb3cef31c2",
+      "bytes": 5541,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/common/videobuf2/frame_vector.c"
+    },
+    {
+      "path": "drivers/media/common/videobuf2/vb2-trace.c",
+      "staged_path": "videobuf2/vb2-trace.c",
+      "git_blob_sha1": "4c0f39d271f0afd6dc069c7a024f5d2a9493b69b",
+      "bytes": 300,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/common/videobuf2/vb2-trace.c"
+    },
+    {
+      "path": "drivers/media/common/videobuf2/videobuf2-core.c",
+      "staged_path": "videobuf2/videobuf2-core.c",
+      "git_blob_sha1": "adf668b213c2e8ef8751f08fb16b6da0f7b985be",
+      "bytes": 86070,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/common/videobuf2/videobuf2-core.c"
+    },
+    {
+      "path": "drivers/media/common/videobuf2/videobuf2-dma-contig.c",
+      "staged_path": "videobuf2/videobuf2-dma-contig.c",
+      "git_blob_sha1": "9ce6284cd5f266c5c6993c1f3fc68446ff1494d8",
+      "bytes": 21198,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/common/videobuf2/videobuf2-dma-contig.c"
+    },
+    {
+      "path": "drivers/media/common/videobuf2/videobuf2-memops.c",
+      "staged_path": "videobuf2/videobuf2-memops.c",
+      "git_blob_sha1": "f9a4ec44422eb36ffe9c1a9758b7d71d8c9dcb9a",
+      "bytes": 3792,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/common/videobuf2/videobuf2-memops.c"
+    },
+    {
+      "path": "drivers/media/common/videobuf2/videobuf2-v4l2.c",
+      "staged_path": "videobuf2/videobuf2-v4l2.c",
+      "git_blob_sha1": "4baded4fd3b8c7f8d2a5eab29f42f3a878e30342",
+      "bytes": 37345,
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/media/common/videobuf2/videobuf2-v4l2.c"
+    }
+  ],
+  "source_bytes": 822210,
+  "c_objects": 28
+}

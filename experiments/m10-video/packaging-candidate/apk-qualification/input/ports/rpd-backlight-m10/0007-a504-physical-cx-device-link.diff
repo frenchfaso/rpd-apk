@@ -1,0 +1,135 @@
+Subject: [PATCH] drm/msm/adreno: order A504 physical CX and GX
+
+Keep physical CX powered until the A504 GX supplier has suspended. The
+GPU cx attachment is an RPM vote; physical CX belongs to its IOMMU.
+Attach a virtual physical-CX consumer and link GX to it through
+runtime PM. Release the link before detaching the virtual devices on
+probe failure or unbind, without modifying the built-in GCC provider
+or holding the GPU on.
+
+---
+
+diff --git a/drivers/gpu/drm/msm/adreno/adreno_device.c b/drivers/gpu/drm/msm/adreno/adreno_device.c
+--- a/drivers/gpu/drm/msm/adreno/adreno_device.c
++++ b/drivers/gpu/drm/msm/adreno/adreno_device.c
+@@ -7,6 +7,8 @@
+  */
+ 
+ #include <linux/pm_domain.h>
++#include <linux/of_platform.h>
++#include <dt-bindings/clock/qcom,gcc-msm8917.h>
+ 
+ #include "adreno_gpu.h"
+ 
+@@ -270,6 +272,100 @@
+ 	.bind   = adreno_bind,
+ 	.unbind = adreno_unbind,
+ };
++
++struct adreno_a504_cx_link {
++	struct device *pd_dev;
++	struct device_link *link;
++};
++
++static void adreno_a504_detach_cx(void *data)
++{
++	struct adreno_a504_cx_link *cx = data;
++
++	device_link_del(cx->link);
++	dev_pm_domain_detach(cx->pd_dev, true);
++}
++
++static int adreno_a504_attach_cx(struct device *dev, struct device *gx_dev)
++{
++	struct of_phandle_args iommu_spec = {}, cx_spec = {}, gx_spec = {};
++	struct adreno_a504_cx_link *cx;
++	struct platform_device *iommu;
++	int index, ret = -EINVAL;
++
++	/* Physical CX is described on the IOMMU; GPU "cx" is the RPM vote. */
++	if (of_count_phandle_with_args(dev->of_node, "iommus",
++				       "#iommu-cells") != 1)
++		return -EINVAL;
++	ret = of_parse_phandle_with_args(dev->of_node, "iommus",
++					 "#iommu-cells", 0, &iommu_spec);
++	if (ret)
++		return ret;
++	ret = -EINVAL;
++	if (!of_device_is_available(iommu_spec.np) ||
++	    !of_device_is_compatible(iommu_spec.np, "qcom,msm8953-iommu") ||
++	    of_property_present(iommu_spec.np, "required-opps") ||
++	    of_count_phandle_with_args(iommu_spec.np, "power-domains",
++				       "#power-domain-cells") != 1)
++		goto out;
++	ret = of_parse_phandle_with_args(iommu_spec.np, "power-domains",
++					 "#power-domain-cells", 0, &cx_spec);
++	if (ret)
++		goto out;
++	index = of_property_match_string(dev->of_node, "power-domain-names", "gx");
++	if (index < 0) {
++		ret = index;
++		goto out;
++	}
++	ret = of_parse_phandle_with_args(dev->of_node, "power-domains",
++					 "#power-domain-cells", index, &gx_spec);
++	if (ret)
++		goto out;
++	ret = -EINVAL;
++	if (cx_spec.np != gx_spec.np ||
++	    !of_device_is_compatible(cx_spec.np, "qcom,gcc-sdm439") ||
++	    cx_spec.args_count != 1 || cx_spec.args[0] != MSM8937_OXILI_CX_GDSC ||
++	    gx_spec.args_count != 1 || gx_spec.args[0] != OXILI_GX_GDSC)
++		goto out;
++
++	cx = devm_kzalloc(dev, sizeof(*cx), GFP_KERNEL);
++	if (!cx) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	iommu = of_find_device_by_node(iommu_spec.np);
++	if (!iommu) {
++		ret = -EPROBE_DEFER;
++		goto out;
++	}
++	/*
++	 * The IOMMU already has a PM domain. Use genpd to create a separate
++	 * virtual consumer without changing that existing attachment or OPPs.
++	 * The generic attach wrapper rejects an already attached device.
++	 */
++	cx->pd_dev = genpd_dev_pm_attach_by_id(&iommu->dev, 0);
++	put_device(&iommu->dev);
++	if (IS_ERR_OR_NULL(cx->pd_dev)) {
++		ret = cx->pd_dev ? PTR_ERR(cx->pd_dev) : -ENODEV;
++		goto out;
++	}
++
++	/* GX must resume after physical CX and suspend before releasing it. */
++	cx->link = device_link_add(gx_dev, cx->pd_dev,
++				   DL_FLAG_STATELESS | DL_FLAG_PM_RUNTIME);
++	if (!cx->link) {
++		dev_pm_domain_detach(cx->pd_dev, true);
++		ret = -ENODEV;
++		goto out;
++	}
++	/* Registered after the GPU domain list, so this link is removed first. */
++	ret = devm_add_action_or_reset(dev, adreno_a504_detach_cx, cx);
++out:
++	of_node_put(gx_spec.np);
++	of_node_put(cx_spec.np);
++	of_node_put(iommu_spec.np);
++	return ret;
++}
+ 
+ static int adreno_probe(struct platform_device *pdev)
+ {
+@@ -291,6 +387,10 @@
+ 		ret = devm_pm_domain_attach_list(dev, &pd_data, &pds);
+ 		if (ret < 0)
+ 			return dev_err_probe(dev, ret, "Failed to attach GPU power domains\n");
++
++		ret = adreno_a504_attach_cx(dev, pds->pd_devs[1]);
++		if (ret)
++			return dev_err_probe(dev, ret, "Failed to order GPU power domains\n");
+ 
+ 		opp_config.required_dev = pds->pd_devs[0];
+ 		opp_config.required_dev_index = 0;

@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+systemctl disable --now rpd-video-m10.service 2>/dev/null || :
+# Releases only our temporary override. Does not unbind/unload any live module.
+/usr/libexec/rpd-video-m10-load --restore-hold

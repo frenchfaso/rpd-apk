@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 /usr/lib/rpd-gpu-m10/gpu-dtb.py

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+systemctl daemon-reload 2>/dev/null || :
+systemctl preset rpd-video-m10.service 2>/dev/null || :
+# Boot-file regeneration only: do not start native video in the current boot.
+if command -v mkinitfs >/dev/null 2>&1; then
+    mkinitfs
+fi

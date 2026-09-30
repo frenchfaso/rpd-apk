@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+systemctl daemon-reload 2>/dev/null || :
+# Hook 97 is now gone. Recompose from current official source via CPU/audio/GPU
+# hooks; never restore a saved full DT from an older kernel or earlier install.
+if command -v mkinitfs >/dev/null 2>&1; then
+    if ! mkinitfs; then
+        printf '%s\n' 'rpd-video-m10: re-run mkinitfs before reboot to remove optional Venus DT extension' >&2
+        exit 1
+    fi
+fi
+printf '%s\n' 'rpd-video-m10: removed; live modules retained, reboot to use recomposed DT'

@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+# Read package metadata, not the running kernel: installation may precede reboot.
+release=$(python3 -c 'import json; print(json.load(open("/usr/lib/rpd-audio-m10/kernel.json"))["release"])')
+if [ -f "/lib/modules/$release/modules.order" ]; then
+    depmod "$release"
+fi

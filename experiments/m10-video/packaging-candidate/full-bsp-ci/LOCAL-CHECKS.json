@@ -1,0 +1,23 @@
+{
+  "python_ast": "PASS",
+  "sh_syntax": "PASS",
+  "bash_syntax": "PASS",
+  "mac_runner_refusal_before_any_build_or_source_stage": "PASS: explicit non-GitHub guard rechecked, exit 2 before review directory creation",
+  "actual_input_manifest_validation": "PASS",
+  "input_files": 108,
+  "source_bytes": 598799,
+  "excluded_generated_caches": [
+    "ports/rpd-backlight-m10/__pycache__/audio-dtb.cpython-314.pyc",
+    "ports/rpd-backlight-m10/__pycache__/gpu-dtb.cpython-314.pyc",
+    "ports/rpd-backlight-m10/__pycache__/rpd-battery-m10-loadcpython-314.pyc",
+    "ports/rpd-backlight-m10/__pycache__/rpd-charger-m10-loadcpython-314.pyc",
+    "ports/rpd-backlight-m10/__pycache__/rpd-gpu-m10-loadcpython-314.pyc",
+    "ports/rpd-cpu-topology-m10/__pycache__/topology.cpython-314.pyc"
+  ],
+  "workflow_yaml_policy": "PASS: Ruby YAML verified first workflow-file push on exact codex/m10-video-full-bsp branch or manual dispatch, codex job guard, read-only permissions, ARM runner and always cleanup/upload",
+  "scope": "Static syntax/policy and actual source input audit only; no build, source staging, push or dispatch",
+  "initial_guard_probe": "Initial errexit-only guard probe reached an invalid placeholder path on this host; no Docker/source staging occurred. Empty owned directory removed, explicit fail-fast guard applied and actual Mac refusal rechecked PASS.",
+  "packaged_gpu_kernel_identity_guard": "PASS: actual AST compares packaged GPU release and APK to qualified video metadata",
+  "container_logger_status_gate": "PASS: shell syntax and static success-path join, exit receipt and nonzero rejection; no container run",
+  "gpu_select_call_arity": "PASS: actual AST has five positional arguments matching packaged helper"
+}

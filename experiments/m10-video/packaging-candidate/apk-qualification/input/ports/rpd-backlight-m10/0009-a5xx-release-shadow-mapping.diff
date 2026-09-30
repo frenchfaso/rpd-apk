@@ -1,0 +1,29 @@
+Subject: [PATCH] drm/msm/a5xx: release the shadow buffer CPU mapping on teardown
+
+msm_gem_kernel_new() obtains an IOVA pin and a CPU mapping reference
+for the shadow buffer. Dropping only the IOVA pin leaves vmap_count
+and its page pin nonzero when the GEM object is freed. A controlled
+GPU unbind then warns in msm_gem_vunmap and update_lru_locked.
+
+Pair the allocation with msm_gem_kernel_put(), which releases the CPU
+mapping reference, IOVA pin and GEM reference. Firmware buffers have
+different mapping lifetimes and retain their existing teardown. No
+rendering or PM-policy change.
+
+---
+
+diff --git a/drivers/gpu/drm/msm/adreno/a5xx_gpu.c b/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
+--- a/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
++++ b/drivers/gpu/drm/msm/adreno/a5xx_gpu.c
+@@ -1061,10 +1061,7 @@
+ 		drm_gem_object_put(a5xx_gpu->gpmu_bo);
+ 	}
+ 
+-	if (a5xx_gpu->shadow_bo) {
+-		msm_gem_unpin_iova(a5xx_gpu->shadow_bo, gpu->vm);
+-		drm_gem_object_put(a5xx_gpu->shadow_bo);
+-	}
++	msm_gem_kernel_put(a5xx_gpu->shadow_bo, gpu->vm);
+ 
+ 	adreno_gpu_cleanup(adreno_gpu);
+ 	kfree(a5xx_gpu);

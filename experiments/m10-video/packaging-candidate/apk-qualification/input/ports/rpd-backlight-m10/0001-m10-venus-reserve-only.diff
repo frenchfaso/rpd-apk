@@ -1,0 +1,23 @@
+Subject: [DIAGNOSTIC ONLY] arm64: dts: qcom: reserve M10 Venus memory without starting the codec
+
+This is a staged reservation probe, not complete hardware enablement.
+Do not install it as a production DT or attach it to the GPU package.
+
+--- a/arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dts
++++ b/arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dts
+@@ -460,6 +460,15 @@
+ 	status = "okay";
+ };
+ 
++&venus {
++	/* Reserve firmware memory before enabling the codec power path. */
++	status = "disabled";
++};
++
++&venus_mem {
++	status = "okay";
++};
++
+ &wcnss {
+ 	vddpx-supply = <&pm8953_l5>;
+ 

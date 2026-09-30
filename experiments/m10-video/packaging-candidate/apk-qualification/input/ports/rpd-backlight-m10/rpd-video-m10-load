@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""Root-only optional private decoder loader; never remove or replace a live driver."""
+import fcntl
+import importlib.util
+import json
+import os
+from pathlib import Path
+import signal
+import subprocess
+import sys
+import libfdt
+
+DATA = Path('/usr/lib/rpd-video-m10')
+HOLD = 'rpd-video-m10-hold'
+DEVICE = Path('/sys/bus/platform/devices/1d00000.venus')
+DRIVER = Path('/sys/bus/platform/drivers/qcom-venus')
+
+
+def helper(name):
+    spec = importlib.util.spec_from_file_location(name.replace('-', '_'), DATA / name)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def loaded(name):
+    return Path('/sys/module', name.replace('-', '_')).exists()
+
+
+def empty_override(value):
+    # sysfs prints '(null)' for a cleared override on the pinned kernel.
+    return value.strip() in ('', '(null)')
+
+
+def hold_and_bind(device, driver, core, decoder, modules_live, write_override=None, bind=None):
+    """Keep core unprobed until decoder registration; always release our own hold."""
+    override = device / 'driver_override'
+    write_override = write_override or (lambda value: override.write_text(value + '\n'))
+    assert not (device / 'driver').exists(), 'Venus already bound; leave it alone'
+    assert empty_override(override.read_text()), 'foreign driver override; leave it alone'
+    assert not modules_live(), 'Venus module already live; leave it alone'
+    try:
+        write_override(HOLD)
+        assert override.read_text().strip() == HOLD, 'driver hold readback failed'
+        assert not (device / 'driver').exists() and not modules_live(), 'Venus ownership changed'
+        core()
+        assert not (device / 'driver').exists(), 'core unexpectedly probed while held'
+        decoder()
+        assert not (device / 'driver').exists(), 'parent unexpectedly bound before decoder registration'
+        write_override('')
+        assert empty_override(override.read_text()), 'driver hold clear readback failed'
+        if bind is None:
+            (driver / 'bind').write_text(device.name + '\n')
+        else:
+            bind()
+        assert (device / 'driver').resolve(strict=True) == driver.resolve(strict=True), 'parent bind not verified'
+    finally:
+        # Never clear another owner's override, unbind a device or unload modules.
+        if override.read_text().strip() == HOLD:
+            write_override('')
+            assert empty_override(override.read_text()), 'driver hold cleanup failed; reboot required'
+
+
+def restore_hold():
+    override = DEVICE / 'driver_override'
+    if override.exists() and override.read_text().strip() == HOLD:
+        override.write_text('\n')
+        assert empty_override(override.read_text()), 'owned hold could not be restored; reboot required'
+
+
+def active_matches(blob, official, policy):
+    tree = policy.venus.reserve.snapshot(policy.venus.libfdt.Fdt(blob))
+    policy.venus.layout(tree)
+    assert tree[policy.venus.CODEC]['compatible'] == policy.venus.NEW_COMPAT
+    assert tree[policy.venus.CODEC]['status'] == tree[policy.venus.MEMORY]['status'] == b'okay\0'
+    base = policy.venus.reserve.snapshot(policy.venus.libfdt.Fdt(official))
+    for name in ('reg', 'clocks', 'clock-names', 'interrupts', 'iommus', 'memory-region'):
+        assert tree[policy.venus.CODEC][name] == base[policy.venus.CODEC][name], 'active Venus resource changed: ' + name
+    assert not any(path.startswith(policy.venus.CODEC + '/') and path.rsplit('/', 1)[-1] in
+                   ('video-decoder', 'video-encoder') for path in tree), 'unexpected pre-existing video child'
+    return tree
+
+
+def firmware_matches(directory, expected, sha):
+    for name, digest in expected.items():
+        assert sha((directory / name).read_bytes()) == digest, 'qualified stock firmware missing/different: ' + name
+
+
+def main():
+    assert os.geteuid() == 0, 'root required'
+    state = Path('/run/rpd-video-m10')
+    state.mkdir(mode=0o700, exist_ok=True)
+    # A package removal may happen while the oneshot is running. Serialize it.
+    with (state / 'lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if sys.argv[1:] == ['--restore-hold']:
+            restore_hold()
+            return 0
+        assert not sys.argv[1:], 'no public loader options'
+        policy = helper('video-dtb.py')
+        data = json.loads((DATA / 'kernel.json').read_text())
+        qualification = json.loads((DATA / 'video-qualification.json').read_text())
+        apk = policy.installed_apk_version()
+        if not policy.package_matches(data, qualification, apk, os.uname().release):
+            print('rpd-video-m10: optional qualification mismatch; standard modules/software decode unrestricted')
+            return 0
+        policy.private_files(data, DATA)
+        official = Path('/boot/dtbs/qcom/sdm429-lenovo-tbx505x.dtb').read_bytes()
+        policy.official_matches(official, qualification)
+        assert policy.identity((DATA / 'base.dtb').read_bytes()) == policy.identity(official)
+        blob = Path('/sys/firmware/fdt').read_bytes()
+        active_matches(blob, official, policy)
+        assert (DEVICE / 'of_node').resolve(strict=True) == Path('/sys/firmware/devicetree/base/soc@0/venus@1d00000').resolve(strict=True), 'platform/DT identity differs'
+        modules_live = lambda: any(loaded(name) for name in ('venus_core', 'venus_dec', 'venus_enc'))
+        assert not modules_live() and not (DEVICE / 'driver').exists(), 'Venus already live; no replacement'
+        assert empty_override((DEVICE / 'driver_override').read_text()), 'foreign override; no replacement'
+        firmware_matches(Path('/run/msm-firmware-loader/target'), qualification['firmware_sha256'], policy.sha)
+        # DT geometry alone is not allocation evidence. Require same-boot named
+        # ranges plus live memblock NOMAP/reserved coverage and iomem owner checks.
+        allocation = helper('verify-allocation.py')
+        proof = allocation.validate(blob, subprocess.check_output(['dmesg'], text=True),
+                                    Path('/proc/iomem').read_text(),
+                                    Path('/sys/kernel/debug/memblock/memory').read_text(),
+                                    Path('/sys/kernel/debug/memblock/reserved').read_text(), enabled_codec=True)
+        policy.atomic_write(state / 'allocation.json', (json.dumps(proof, indent=2) + '\n').encode())
+        # Prefer genuine installed framework/MDT modules. If absent, use isolated
+        # unchanged-source copies. Their strict MODPOST exports generated the ABI.
+        for name in ('mc', 'videodev', 'videobuf2-common', 'videobuf2-memops',
+                     'videobuf2-v4l2', 'videobuf2-dma-contig', 'v4l2-mem2mem', 'mdt_loader'):
+            if not loaded(name):
+                subprocess.run(['modprobe', name], check=False)
+            if not loaded(name):
+                subprocess.run(['insmod', str(DATA / (name + '.ko'))], check=True)
+            assert loaded(name), 'framework/MDT module not present: ' + name
+        def private_load(name):
+            row = next(row for row in data['modules'] if row['file'] == name + '.ko')
+            assert row.get('srcversion'), 'private source identity unavailable'
+            subprocess.run(['insmod', str(DATA / row['file'])], check=True)
+            version = Path('/sys/module', name.replace('-', '_'), 'srcversion').read_text().strip()
+            assert version == row['srcversion'], 'another Venus module won the load race'
+        hold_and_bind(DEVICE, DRIVER, lambda: private_load('venus-core'),
+                      lambda: private_load('venus-dec'), modules_live)
+        assert not loaded('venus_enc'), 'unexpected encoder module; leave live modules alone, reboot required'
+        children = [path for path in DEVICE.iterdir() if path.name.endswith(':video-encoder')]
+        assert not children, 'unexpected encoder child; leave live modules alone, reboot required'
+        decoder = Path('/sys/bus/platform/devices/1d00000.venus:video-decoder/driver')
+        assert decoder.resolve(strict=True).name == 'qcom-venus-decoder', 'decoder bind not verified'
+        print('rpd-video-m10: guarded private decoder bound; encoder absent')
+        return 0
+
+
+if __name__ == '__main__':
+    def interrupted(signum, frame):
+        raise InterruptedError('loader interrupted; owned override cleanup follows')
+    signal.signal(signal.SIGTERM, interrupted)
+    signal.signal(signal.SIGINT, interrupted)
+    try:
+        sys.exit(main())
+    except (OSError, ValueError, AssertionError, KeyError, libfdt.FdtException, subprocess.SubprocessError) as exc:
+        # Package remains optional: display/software decoder services are not failed.
+        print('rpd-video-m10: optional decoder skipped/partial load left intact: ' + str(exc), file=sys.stderr)
+        sys.exit(1 if sys.argv[1:] == ['--restore-hold'] else 0)

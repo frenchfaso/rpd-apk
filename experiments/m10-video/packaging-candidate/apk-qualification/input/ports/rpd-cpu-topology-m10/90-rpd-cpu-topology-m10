@@ -1,0 +1,10 @@
+#!/bin/sh
+# boot-deploy runs this before selecting/copying DTBs on every kernel update.
+source=/boot/dtbs/qcom/sdm429-lenovo-tbx505x.dtb
+output=/boot/dtbs/rpd/sdm429-lenovo-tbx505x.dtb
+[ -r "$source" ] || exit 0
+if ! python3 /usr/lib/rpd-cpu-topology-m10/topology.py "$source" "$output"; then
+    echo 'rpd-cpu-topology-m10: helper failed; using the current official DTB' >&2
+    mkdir -p "${output%/*}"
+    cp "$source" "$output.tmp" && mv "$output.tmp" "$output"
+fi

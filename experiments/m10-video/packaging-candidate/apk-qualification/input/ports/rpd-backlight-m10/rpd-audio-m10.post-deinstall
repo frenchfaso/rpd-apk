@@ -1,0 +1,5 @@
+#!/bin/sh
+# Regenerate the boot files without the removed audio hook.
+if command -v mkinitfs >/dev/null 2>&1; then
+    mkinitfs
+fi

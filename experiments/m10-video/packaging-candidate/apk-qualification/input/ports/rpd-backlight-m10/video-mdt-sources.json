@@ -1,0 +1,29 @@
+{
+  "tag": "v7.1.3-r1",
+  "kernelrelease": "7.1.3-msm89x7",
+  "normalized_config_sha256": "72c151f1bcb983224c604646719f313274e0b52b0be46196e5d666fe02d6e74e",
+  "module": "mdt_loader",
+  "modversions": false,
+  "config": {
+    "CONFIG_QCOM_MDT_LOADER": "m",
+    "CONFIG_QCOM_SCM": "y"
+  },
+  "files": [
+    {
+      "path": "drivers/soc/qcom/mdt_loader.c",
+      "staged_path": "mdt_loader.c",
+      "bytes": 13528,
+      "git_blob_sha1": "c004d444d6985f1379d343f1ffb0963402ae6f44",
+      "sha256": "aaea94b2a992efc459f5fdd7a0e50d22ec505dd244a9ad564cacd0541764d8a8",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/soc/qcom/mdt_loader.c"
+    },
+    {
+      "path": "drivers/soc/qcom/Makefile",
+      "staged_path": "Makefile",
+      "bytes": 1969,
+      "git_blob_sha1": "d2fe7289cfe9f7f3493bd85cb2b7cf6a423b2fff",
+      "sha256": "3971b1930aedb51dc8dd676959c308c89e744053c58d74307be4035065d4413b",
+      "url": "https://raw.githubusercontent.com/msm89x7-mainline/linux/v7.1.3-r1/drivers/soc/qcom/Makefile"
+    }
+  ]
+}

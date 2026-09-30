@@ -1,0 +1,37 @@
+Subject: [REVIEW ONLY] arm64: dts: qcom: prepare SDM429 Venus OPP metadata, disabled
+
+Apply after 0001. This does not enable the codec. No fallback compatible is
+provided: a kernel without the new resource must not silently bind to the
+old clock-only path. Binding/schema support remains a publication gate.
+
+--- a/arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dts
++++ b/arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dts
+@@ -461,12 +461,27 @@
+ };
+ 
+ &venus {
+-	/* Reserve firmware memory before enabling the codec power path. */
++	compatible = "qcom,sdm429-venus";
++	power-domains = <&gcc VENUS_GDSC>, <&gcc VENUS_CORE0_GDSC>,
++			<&rpmpd SDM439_VDDCX>;
++	power-domain-names = "venus", "vcodec0", "cx";
++	operating-points-v2 = <&venus_opp_table>;
++	/* Keep disabled until the OPP power sequence has been reviewed. */
+ 	status = "disabled";
+ };
+ 
+ &venus_mem {
+ 	status = "okay";
++};
++
++&venus_opp_table {
++	opp-166150000 {
++		required-opps = <&rpmpd_opp_svs>;
++	};
++
++	opp-240000000 {
++		required-opps = <&rpmpd_opp_svs_plus>;
++	};
+ };
+ 
+ &wcnss {

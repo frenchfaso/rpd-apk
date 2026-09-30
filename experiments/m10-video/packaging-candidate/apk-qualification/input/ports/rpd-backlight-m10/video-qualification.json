@@ -1,0 +1,50 @@
+{
+  "status": "UNQUALIFIED packaging candidate; no publication or device deployment",
+  "release": "7.1.3-msm89x7",
+  "apk": "7.1.3-r0",
+  "tag": "v7.1.3-r1",
+  "normalized_config_sha256": "72c151f1bcb983224c604646719f313274e0b52b0be46196e5d666fe02d6e74e",
+  "official_dtb_identity_sha256": "d0308403aa388639db406bb231b0826c6bb9fad4eb0e91b61775548a2f94ac92",
+  "official_dtb_sha256": "f1e33bf16e6a35e945ff2bf205817f014208f94598d93600d4c27df8b5ef0637",
+  "official_dtb_provenance": "experiments/m10-cpu-topology/official-7.1.3.dtb; identical experiments/m10-audio/out/base.dtb, distinct from composed installed preflight e1d63d59547d8126b49a362792689e21145b042426869863c8f2d503d55faa52",
+  "board_source_sha256": "08c85609364f2edfbc90334d67634f545ad43985bcb1c307b24fa9838e1617c9",
+  "firmware_sha256": {
+    "venus.mdt": "063fa9f9447ebd4f55453c1765896a5a35185bbdd3c922198afccf39ff0e9909",
+    "venus.b00": "7afe3ae1fcea0abfbce7e3eda90efed066a463de91d6e5c302f24759ed17508b",
+    "venus.b01": "59e69a79113e47cb2ff786a78fa0488d1023a9f4f2aed46b85efe20443c0752b",
+    "venus.b02": "8b08e351bb73ff1252cfe790e9ad55c2ffe98330205c3b61e856f60061fcecae",
+    "venus.b03": "7456e51558b86b5dbf71a4185f15879182ca899da7a10cc4801c83faa9f407c3",
+    "venus.b04": "43b09596e1496809aaa964b34c146580f0566c86bc9d7218a1288fd15fb93424"
+  },
+  "patches": {
+    "0001-m10-venus-reserve-only.diff": "acf6dc11844dfdd2f129771cbf7c2abd0cff32360890e6a8f5869f81c274da3f",
+    "0002-venus-hfi3xx-opp-ownership.diff": "1c0a41e0ca82120c2ffa70f4d2815a197f1be9ff16fd76b6c8e7b7393486fe9c",
+    "0003-m10-venus-opp-dt-disabled.diff": "e6f2ae1a24aff9a9a5593fe0b542057764a0f9f1c3a511fa6c0d97d83d3c3042",
+    "0004-venus-eos-context-adapted.diff": "3b5c0fd292a7359755a127873a9f9368536510d844c45c050e3d54617fcfbd57",
+    "0005-dt-bindings-media-qcom-sdm429-venus.diff": "41769f5bea4cce6eae0af5a37c1626e933096c13c3ac8510147d57e10bc8f286",
+    "0006-venus-sdm429-decoder-only.diff": "16b05532f7510a43ce8aa3f50e4aff1ef64b3c9518010123019284fdcb039c40",
+    "0007-venus-of-node-ref.diff": "7849069ff053120f2307d29511b9f62f9c7ba188b11892daa90e683ce470fde2",
+    "0008-venus-seek-upstream.diff": "9c3b8b21a7f2f71c351ec1ed5f107880744205dd1de3b5b29446eefa10c7c5b3"
+  },
+  "prepared_venus_core_sha256": "a9ac280fb6bceb6fc1c4e9a25d2e8fadd72f0ef0cc2ab5533e11c0f4e97b1e48",
+  "of_parent_reference_fix": {
+    "message_id": "20260928-venus-of-node-ref-v1-1-7579fb84445a@ixit.cz",
+    "canonical_url": "https://lore.kernel.org/all/20260928-venus-of-node-ref-v1-1-7579fb84445a@ixit.cz/",
+    "original_patch_sha256": "94191aaf45a0b175cefc2fed204e07fb7c1499dab6b923ca34433b0a4cdbcce7",
+    "status": "Primary submission, acceptance unverified; corrected EOS+seek+OFref fresh-boot tested on boot645221e7, extra decoder-only package delta remains unqualified"
+  },
+  "prepared_venus_vdec_sha256": "0fde0e2985412dc776ebbe4aa004e560114555ca3592a87cefad22713e40d6f9",
+  "seek_restart_fix": {
+    "message_id": "20260928-venus-vdec-eos-v1-2-6e9eb3ce9849@ixit.cz",
+    "canonical_url": "https://lore.kernel.org/all/20260928-venus-vdec-eos-v1-2-6e9eb3ce9849@ixit.cz/",
+    "original_patch_sha256": "07f109c683ef19d04eaef0faefc17be10b2e56b23e01789c9c9cd7c561214dcf",
+    "source_application": "Original patch C/context unchanged; single hunk line1128\u21921129 for exact pinned extra include, GNU F0/no offsets",
+    "status": "Primary submission, acceptance unverified; corrected EOS+seek+OFref tested on boot645221e7, extra decoder-only package delta remains unqualified"
+  },
+  "eos_patch_context_refresh": {
+    "scope": "Exact hunk line numbers plus two unchanged suffix context lines, balancing second non-EOF core.h hunk at eight prefix/eight suffix lines; added/removed C bytes unchanged",
+    "previous_patch_sha256": "7e0afe37ac35bf335a789fc5a99dd9c8c73fb454654ac3dcc8785bb76d4ee22b",
+    "native_reason": "GNU patch2.8 F0 rejects the eight-prefix/six-suffix non-EOF hunk even when all context bytes and line numbers match; symmetric retained context is required",
+    "payload_sha256": "78df1cf2681a7fdbc5debc9a56a34e7a304a7a13193386034992681a7bdac4e6"
+  }
+}

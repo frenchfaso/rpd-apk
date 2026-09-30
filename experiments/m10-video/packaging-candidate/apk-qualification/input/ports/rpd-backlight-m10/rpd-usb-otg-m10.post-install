@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+# Module paths are versioned; never constrain the official kernel package.
+for d in /usr/lib/modules/*; do
+    [ ! -f "$d/modules.order" ] || depmod "${d##*/}"
+done
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload
+    if tr '\000' '\n' < /proc/device-tree/compatible 2>/dev/null | grep -qx 'lenovo,tbx505x'; then
+        systemctl enable rpd-usb-otg-m10.service
+        systemctl try-restart rpd-usb-otg-m10.service || true
+    fi
+fi

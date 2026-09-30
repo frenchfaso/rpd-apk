@@ -1,0 +1,15 @@
+[Unit]
+Description=Optional experimental Lenovo M10 Venus decoder
+After=systemd-udev-settle.service msm-firmware-loader.service rpd-gpu-m10.service
+Wants=systemd-udev-settle.service
+ConditionPathExists=/proc/device-tree/soc@0/venus@1d00000
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/rpd-video-m10-load
+ExecStopPost=/usr/libexec/rpd-video-m10-load --restore-hold
+RemainAfterExit=yes
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,106 @@
+--- m10_audio_pmic.c
++++ m10_audio_pmic.c
+@@ -36,38 +36,9 @@
+ 
+ #define N_USIDS(n)		((void *)n)
+ 
++/* PM8953 is absent from the stock table, so its second USID cannot probe. */
+ static const struct of_device_id pmic_spmi_id_table[] = {
+-	{ .compatible = "qcom,pm660", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm660l", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8004", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8005", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8019", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8028", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8110", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8150", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8150b", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8150c", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8150l", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8226", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8841", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8901", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8909", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8916", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8937", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8941", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8950", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8994", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pm8998", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pma8084", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pmd9635", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pmi8950", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pmi8962", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pmi8994", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pmi8998", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pmk8002", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,pmp8074", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,smb2351", .data = N_USIDS(2) },
+-	{ .compatible = "qcom,spmi-pmic", .data = N_USIDS(1) },
++	{ .compatible = "qcom,pm8953", .data = N_USIDS(2) },
+ 	{ }
+ };
+ 
+@@ -216,33 +187,6 @@
+ 	return 0;
+ }
+ 
+-/**
+- * qcom_pmic_get() - Get a pointer to the base PMIC device
+- *
+- * This function takes a struct device for a driver which is a child of a PMIC.
+- * And locates the PMIC revision information for it.
+- *
+- * @dev: the pmic function device
+- * @return: the struct qcom_spmi_pmic* pointer associated with the function device
+- */
+-const struct qcom_spmi_pmic *qcom_pmic_get(struct device *dev)
+-{
+-	struct spmi_device *sdev;
+-	struct qcom_spmi_dev *spmi;
+-
+-	/*
+-	 * Make sure the device is actually a child of a PMIC
+-	 */
+-	if (!of_match_device(pmic_spmi_id_table, dev->parent))
+-		return ERR_PTR(-EINVAL);
+-
+-	sdev = to_spmi_device(dev->parent);
+-	spmi = dev_get_drvdata(&sdev->dev);
+-
+-	return &spmi->pmic;
+-}
+-EXPORT_SYMBOL_GPL(qcom_pmic_get);
+-
+ static const struct regmap_config spmi_regmap_config = {
+ 	.reg_bits	= 16,
+ 	.val_bits	= 8,
+@@ -255,6 +199,10 @@
+ 	struct regmap *regmap;
+ 	struct qcom_spmi_dev *ctx;
+ 	int ret;
++
++	/* Leave the already-supported primary PMIC and all other devices alone. */
++	if (!of_machine_is_compatible("lenovo,tbx505x") || sdev->usid != 1)
++		return -ENODEV;
+ 
+ 	regmap = devm_regmap_init_spmi_ext(sdev, &spmi_regmap_config);
+ 	if (IS_ERR(regmap))
+@@ -297,14 +245,14 @@
+ 	.probe = pmic_spmi_probe,
+ 	.remove = pmic_spmi_remove,
+ 	.driver = {
+-		.name = "pmic-spmi",
++		.name = "m10-audio-pmic",
+ 		.of_match_table = pmic_spmi_id_table,
+ 	},
+ };
+ module_spmi_driver(pmic_spmi_driver);
+ 
+-MODULE_DESCRIPTION("Qualcomm SPMI PMIC driver");
+-MODULE_ALIAS("spmi:spmi-pmic");
++MODULE_DESCRIPTION("Lenovo M10 PM8953 secondary SPMI audio PMIC");
++
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Josh Cartwright <joshc@codeaurora.org>");
+ MODULE_AUTHOR("Stanimir Varbanov <svarbanov@mm-sol.com>");

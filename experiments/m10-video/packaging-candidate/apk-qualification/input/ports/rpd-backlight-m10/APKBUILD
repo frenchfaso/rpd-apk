@@ -1,0 +1,302 @@
+pkgname=rpd-backlight-m10
+pkgver=7.1.3
+pkgrel=66
+pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
+url="https://github.com/frenchfaso/rpd-apk"
+arch="aarch64"
+license="GPL-2.0-only"
+subpackages="rpd-gpu-m10:gpu rpd-usb-otg-m10:otg rpd-battery-m10:battery rpd-charger-m10:charger rpd-audio-m10:audio rpd-video-m10:video"
+install="rpd-video-m10.post-install rpd-video-m10.post-upgrade rpd-video-m10.pre-deinstall rpd-video-m10.post-deinstall rpd-gpu-m10.post-install rpd-gpu-m10.post-upgrade rpd-gpu-m10.pre-deinstall rpd-audio-m10.post-install rpd-audio-m10.post-upgrade rpd-audio-m10.post-deinstall rpd-charger-m10.post-install rpd-charger-m10.post-upgrade rpd-charger-m10.pre-deinstall rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
+_kernel_apk_version=7.1.3-r0
+depends="kmod brightnessctl brightnessctl-udev"
+makedepends="kmod patch mesa-dev clang22 lld22 llvm22 make flex bison perl openssl-dev elfutils-dev pahole python3 py3-libfdt py3-lxml py3-jinja2 dtc rpd-cpu-topology-m10"
+source="test-video-allocation.py 0001-m10-venus-reserve-only.diff 0002-venus-hfi3xx-opp-ownership.diff 0003-m10-venus-opp-dt-disabled.diff 0004-venus-eos-context-adapted.diff 0005-dt-bindings-media-qcom-sdm429-venus.diff 0006-venus-sdm429-decoder-only.diff 0007-venus-of-node-ref.diff 0008-venus-seek-upstream.diff 80-rpd-video-m10.preset 97-rpd-video-m10 build-video.py reserve-only.py rpd-video-m10-load rpd-video-m10.post-deinstall rpd-video-m10.post-install rpd-video-m10.post-upgrade rpd-video-m10.pre-deinstall rpd-video-m10.service test-video.py venus-candidate.py verify-allocation.py video-dtb.py video-mdt-build.py video-mdt-sources.json video-media-build.py video-media-sources.json video-qualification.json video-venus-sources.json rpd-gpu-m10.files gpu-probe.c gpu-renderer.sh test-gpu.py build-gpu.sh gpu-dtb.py 96-rpd-gpu-m10 rpd-gpu-m10-load rpd-gpu-m10.service rpd-gpu-m10.conf 80-rpd-gpu-m10.preset 0002-a5xx-gpmu-registers.diff 0003-adreno-504-rpm-domain.diff 0004-a504-retained-gx-reset.diff 0005-msm-recover-before-retire.diff 0006-msm-recovery-task-ref.diff 0007-a504-physical-cx-device-link.diff 0008-msm-gpu-only-remove-private.diff 0009-a5xx-release-shadow-mapping.diff 0010-a504-bounded-fragment-progress.diff 0001-adreno-504-bringup.diff m10_wcd_analog.c m10_speaker_amp.c m10-audio-pmic.diff m10-audio.dtsi audio-dtb.py test-audio.py 95-rpd-audio-m10 Lenovo-M10.conf HiFi.conf 51-rpd-m10-audio.conf m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
+    kernel.config Makefile m10_firmware_backlight.c
+    rpd-backlight-m10.service rpd-backlight-m10-load
+    m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset
+    m10_battery.c m10_battery_temperature.h m10-adc5-battery.diff rpd-battery-m10-load rpd-battery-m10.service"
+builddir="$srcdir/linux-7.1.3-r1"
+
+build() {
+    unset LDFLAGS
+    export PATH=/usr/lib/llvm22/bin:$PATH
+    cp "$srcdir/kernel.config" .config
+    make LLVM=1 olddefconfig
+    # Native userspace-link capability does not affect the kernel ABI.
+    sed '/^CONFIG_CC_CAN_LINK=y$/d' .config > "$srcdir/config.normalized"
+    sed '/^CONFIG_CC_CAN_LINK=y$/d' "$srcdir/kernel.config" > "$srcdir/config.expected"
+    diff -u "$srcdir/config.expected" "$srcdir/config.normalized"
+    # Generate real export metadata, never suppress modpost errors.
+    make LLVM=1 -j2 vmlinux
+    cp vmlinux.symvers Module.symvers
+    # vmlinux alone does not generate scripts/module.lds for external modules.
+    make LLVM=1 modules_prepare
+    srcdir="$srcdir" sh "$srcdir/build-gpu.sh"
+    mkdir -p "$srcdir/backlight-module"
+    cp "$srcdir/Makefile" "$srcdir/m10_firmware_backlight.c" "$srcdir/m10_otg_id.c" "$srcdir/m10_otg_vbus.c" "$srcdir/backlight-module/"
+    cp "$srcdir/m10_charger.c" "$srcdir/m10_charger_transaction.h" "$srcdir/backlight-module/"
+    cp "$srcdir/m10_battery.c" "$srcdir/m10_battery_temperature.h" "$srcdir/backlight-module/"
+    cp drivers/iio/adc/qcom-spmi-adc5.c "$srcdir/backlight-module/m10_adc5_battery.c"
+    # .diff avoids abuild applying this to the kernel during default_prepare.
+    # Only the standalone module copy receives the battery ADC changes.
+    patch -d "$srcdir/backlight-module" -p0 < "$srcdir/m10-adc5-battery.diff"
+    cp "$srcdir/m10_wcd_analog.c" "$srcdir/m10_speaker_amp.c" "$srcdir/backlight-module/"
+    cp drivers/mfd/qcom-spmi-pmic.c "$srcdir/backlight-module/m10_audio_pmic.c"
+    patch -d "$srcdir/backlight-module" -p0 < "$srcdir/m10-audio-pmic.diff"
+    make LLVM=1 M="$srcdir/backlight-module" modules
+    cc -O2 -Wall -Wextra "$srcdir/gpu-probe.c" -lEGL -lGLESv2 -lgbm -o "$srcdir/gpu-probe"
+    # Build from this kernel's board source; never ship an old full board tree.
+    make LLVM=1 qcom/sdm429-lenovo-tbx505x.dtb
+    cp arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dtb "$srcdir/base.dtb"
+    printf '%s\n' '#include "sdm429-lenovo-tbx505x.dts"' '#include "m10-audio.dtsi"' > "$srcdir/audio.dts"
+    clang -E -nostdinc -undef -D__DTS__ -x assembler-with-cpp \
+        -Iscripts/dtc/include-prefixes -Iarch/arm64/boot/dts/qcom -I"$srcdir" \
+        "$srcdir/audio.dts" -o "$srcdir/audio.pp.dts"
+    dtc -I dts -O dtb -o "$srcdir/audio.dtb" "$srcdir/audio.pp.dts"
+    # Fixed optional qualification is a separate source; kernel tracking cannot
+    # replace its version/config/DT pins when it updates this APKBUILD.
+    python3 "$srcdir/build-video.py" "$builddir" "$srcdir/video-module" \
+        --apk "$_kernel_apk_version" --release "$pkgver-msm89x7" --base "$srcdir/base.dtb"
+}
+
+check() {
+    export PATH=/usr/lib/llvm22/bin:$PATH
+    test "$(make -s LLVM=1 kernelrelease)" = 7.1.3-msm89x7
+    test -s vmlinux.symvers
+    # Every module import must resolve against the verified kernel exports.
+    llvm-nm -u "$srcdir/backlight-module/"*.ko > "$srcdir/imports"
+    python3 - "$srcdir/imports" Module.symvers <<'PY'
+import sys
+imports={s.split()[-1] for s in open(sys.argv[1]) if s.strip() and not s.rstrip().endswith(':')}
+exports={s.split()[1] for s in open(sys.argv[2]) if s.strip()}
+missing=imports-exports
+assert not missing, f'Unresolved kernel exports: {sorted(missing)}'
+PY
+    clang -std=c11 -Wall -Wextra -Werror "$srcdir/test-charger.c" -o "$srcdir/test-charger"
+    "$srcdir/test-charger"
+    sh -n "$srcdir/rpd-backlight-m10-load"
+    python3 "$srcdir/test-otg.py"
+    python3 "$srcdir/test-audio.py" "$srcdir/base.dtb" "$srcdir/audio.dtb"
+    python3 "$srcdir/test-gpu.py" "$srcdir/base.dtb" "$srcdir/audio.dtb"
+    sh -n "$srcdir/gpu-renderer.sh"
+    # Fixed qualification tests apply only to the qualified optional build.
+    # A future official kernel must not fail the shared BSP checks because video
+    # deliberately skipped its old source/config/DT pins.
+    if python3 -c 'import json,sys; sys.exit(not json.load(open(sys.argv[1]))["supported"])' "$srcdir/video-module/kernel.json"; then
+        python3 "$srcdir/test-video.py" "$srcdir/base.dtb" "$srcdir/audio.dtb" "$srcdir/kernel.config" --real-apk-api
+        python3 "$srcdir/venus-candidate.py" "$srcdir/base.dtb" --output "$srcdir/video-allocation-fixture.dtb"
+        python3 "$srcdir/test-video-allocation.py" "$srcdir/video-allocation-fixture.dtb"
+    fi
+    python3 -m py_compile "$srcdir/build-video.py" "$srcdir/rpd-video-m10-load"
+    sh -n "$srcdir/97-rpd-video-m10"
+}
+
+package() {
+    install -Dm644 "$srcdir/backlight-module/m10_firmware_backlight.ko" \
+        "$pkgdir/usr/lib/modules/7.1.3-msm89x7/extra/m10_firmware_backlight.ko"
+    install -Dm644 "$srcdir/rpd-backlight-m10.service" \
+        "$pkgdir/usr/lib/systemd/system/rpd-backlight-m10.service"
+    install -Dm755 "$srcdir/rpd-backlight-m10-load" \
+        "$pkgdir/usr/libexec/rpd-backlight-m10-load"
+}
+
+
+otg() {
+    pkgdesc="Automatic passive USB OTG for Lenovo M10 (500mA)"
+    depends="python3 kmod"
+    for module in m10_otg_id m10_otg_vbus; do
+        install -Dm644 "$srcdir/backlight-module/$module.ko" \
+            "$subpkgdir/usr/lib/modules/$pkgver-msm89x7/extra/$module.ko"
+    done
+    install -Dm755 "$srcdir/rpd-usb-otg-m10" "$subpkgdir/usr/libexec/rpd-usb-otg-m10"
+    install -Dm644 "$srcdir/rpd-usb-otg-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-usb-otg-m10.service"
+    install -Dm644 "$srcdir/80-rpd-usb-otg-m10.preset" "$subpkgdir/usr/lib/systemd/system-preset/80-rpd-usb-otg-m10.preset"
+    mkdir -p "$subpkgdir/usr/lib/rpd-usb-otg-m10"
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" \
+        > "$subpkgdir/usr/lib/rpd-usb-otg-m10/kernel.json"
+}
+
+
+battery() {
+    install -Dm644 "$srcdir/80-rpd-battery-m10.preset" "$subpkgdir/usr/lib/systemd/system-preset/80-rpd-battery-m10.preset"
+    pkgdesc="Lenovo M10 battery current, voltage and OEM thermistor telemetry"
+    depends="python3 kmod rpd-battery>=1.11-r23"
+    for module in m10_battery m10_adc5_battery; do
+        install -Dm644 "$srcdir/backlight-module/$module.ko" \
+            "$subpkgdir/usr/lib/modules/$pkgver-msm89x7/extra/$module.ko"
+    done
+    install -Dm755 "$srcdir/rpd-battery-m10-load" "$subpkgdir/usr/libexec/rpd-battery-m10-load"
+    install -Dm644 "$srcdir/rpd-battery-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-battery-m10.service"
+    mkdir -p "$subpkgdir/usr/lib/rpd-battery-m10"
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" \
+        > "$subpkgdir/usr/lib/rpd-battery-m10/kernel.json"
+}
+
+
+charger() {
+    pkgdesc="Guarded Lenovo M10 OEM charge-termination threshold"
+    depends="python3 kmod rpd-battery-m10=$pkgver-r$pkgrel"
+    install -Dm644 "$srcdir/backlight-module/m10_charger.ko" \
+        "$subpkgdir/usr/lib/modules/$pkgver-msm89x7/extra/m10_charger.ko"
+    install -Dm755 "$srcdir/rpd-charger-m10-load" "$subpkgdir/usr/libexec/rpd-charger-m10-load"
+    install -Dm644 "$srcdir/rpd-charger-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-charger-m10.service"
+    install -Dm644 "$srcdir/80-rpd-charger-m10.preset" "$subpkgdir/usr/lib/systemd/system-preset/80-rpd-charger-m10.preset"
+    mkdir -p "$subpkgdir/usr/lib/rpd-charger-m10"
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" \
+        > "$subpkgdir/usr/lib/rpd-charger-m10/kernel.json"
+}
+
+audio() {
+    pkgdesc="Lenovo M10 PM8953 internal stereo speakers"
+    depends="kmod python3 py3-libfdt alsa-ucm-conf rpd-cpu-topology-m10"
+    for module in m10_audio_pmic m10_wcd_analog m10_speaker_amp; do
+        install -Dm644 "$srcdir/backlight-module/$module.ko" \
+            "$subpkgdir/usr/lib/modules/$pkgver-msm89x7/extra/$module.ko"
+    done
+    for file in audio-dtb.py base.dtb audio.dtb; do
+        install -Dm644 "$srcdir/$file" "$subpkgdir/usr/lib/rpd-audio-m10/$file"
+    done
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" \
+        > "$subpkgdir/usr/lib/rpd-audio-m10/kernel.json"
+    install -Dm755 "$srcdir/95-rpd-audio-m10" "$subpkgdir/usr/share/boot-deploy/hooks/95-rpd-audio-m10"
+    install -Dm644 "$srcdir/Lenovo-M10.conf" "$subpkgdir/usr/share/alsa/ucm2/conf.d/Lenovo-M10/Lenovo-M10.conf"
+    install -Dm644 "$srcdir/HiFi.conf" "$subpkgdir/usr/share/alsa/ucm2/Lenovo/M10/HiFi.conf"
+    install -Dm644 "$srcdir/51-rpd-m10-audio.conf" "$subpkgdir/etc/wireplumber/wireplumber.conf.d/51-rpd-m10-audio.conf"
+    mkdir -p "$subpkgdir/usr/share/mkinitfs-triggers"
+    touch "$subpkgdir/usr/share/mkinitfs-triggers/rpd-audio-m10"
+}
+
+
+gpu() {
+    pkgdesc="Verified Adreno 504 support for Lenovo M10, with kernel upgrade fallback"
+    depends="mesa-egl mesa-gles mesa-gbm mesa-dri-gallium kmod python3 py3-libfdt rpd-audio-m10=$pkgver-r$pkgrel"
+    install -Dm644 "$srcdir/gpu-module/drivers/gpu/drm/msm/msm.ko" "$subpkgdir/usr/lib/rpd-gpu-m10/msm.ko"
+    install -Dm644 "$srcdir/gpu-module/drivers/soc/qcom/ubwc_config.ko" "$subpkgdir/usr/lib/rpd-gpu-m10/ubwc_config.ko"
+    install -Dm755 "$srcdir/gpu-probe" "$subpkgdir/usr/libexec/rpd-gpu-m10-probe"
+    install -Dm644 "$srcdir/gpu-renderer.sh" "$subpkgdir/usr/lib/rpd-gpu-m10/renderer.sh"
+    for file in gpu-dtb.py base.dtb; do
+        install -Dm644 "$srcdir/$file" "$subpkgdir/usr/lib/rpd-gpu-m10/$file"
+    done
+    printf '{"release":"%s-msm89x7","apk":"%s"}\n' "$pkgver" "$_kernel_apk_version" > "$subpkgdir/usr/lib/rpd-gpu-m10/kernel.json"
+    install -Dm755 "$srcdir/96-rpd-gpu-m10" "$subpkgdir/usr/share/boot-deploy/hooks/96-rpd-gpu-m10"
+    install -Dm755 "$srcdir/rpd-gpu-m10-load" "$subpkgdir/usr/libexec/rpd-gpu-m10-load"
+    install -Dm644 "$srcdir/rpd-gpu-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-gpu-m10.service"
+    install -Dm644 "$srcdir/rpd-gpu-m10.files" "$subpkgdir/usr/share/mkinitfs/files/rpd-gpu-m10.files"
+    install -Dm644 "$srcdir/rpd-gpu-m10.conf" "$subpkgdir/etc/modprobe.d/rpd-gpu-m10.conf"
+    install -Dm644 "$srcdir/80-rpd-gpu-m10.preset" "$subpkgdir/usr/lib/systemd/system-preset/80-rpd-gpu-m10.preset"
+    mkdir -p "$subpkgdir/usr/share/mkinitfs-triggers"
+    touch "$subpkgdir/usr/share/mkinitfs-triggers/rpd-gpu-m10"
+}
+
+
+video() {
+    pkgdesc="Experimental optional Lenovo M10 Venus decoder (unqualified candidate)"
+    depends="python3 py3-libfdt kmod rpd-gpu-m10=$pkgver-r$pkgrel"
+    # No standard /usr/lib/modules files, aliases or installed media binaries
+    # are replaced. An unqualified upgrade ships only a disabled metadata payload.
+    for file in kernel.json base.dtb; do
+        if [ -f "$srcdir/video-module/$file" ]; then
+            install -Dm644 "$srcdir/video-module/$file" "$subpkgdir/usr/lib/rpd-video-m10/$file"
+        fi
+    done
+    for file in "$srcdir/video-module/"*.ko; do
+        [ -f "$file" ] || continue
+        install -Dm644 "$file" "$subpkgdir/usr/lib/rpd-video-m10/${file##*/}"
+    done
+    for file in video-dtb.py venus-candidate.py reserve-only.py verify-allocation.py video-qualification.json; do
+        install -Dm644 "$srcdir/$file" "$subpkgdir/usr/lib/rpd-video-m10/$file"
+    done
+    install -Dm755 "$srcdir/rpd-video-m10-load" "$subpkgdir/usr/libexec/rpd-video-m10-load"
+    install -Dm755 "$srcdir/97-rpd-video-m10" "$subpkgdir/usr/share/boot-deploy/hooks/97-rpd-video-m10"
+    install -Dm644 "$srcdir/rpd-video-m10.service" "$subpkgdir/usr/lib/systemd/system/rpd-video-m10.service"
+    install -Dm644 "$srcdir/80-rpd-video-m10.preset" "$subpkgdir/usr/lib/systemd/system-preset/80-rpd-video-m10.preset"
+    mkdir -p "$subpkgdir/usr/share/mkinitfs-triggers"
+    touch "$subpkgdir/usr/share/mkinitfs-triggers/rpd-video-m10"
+}
+
+sha512sums="
+a590ad202cd7220cacafd26db6cb639ee5102d98937b73965c723f8032509ae232a29e61128a83e35cb00951a4b3d35dc013fafc19873c3d735921211e7f51a9  test-video-allocation.py
+20a4b36a21e81d894c4443675ea7a9bada8c2d120b039a698b47d8f0c3cfbcb6c42b0af4ecbe6e585b789beaabbad519b3ad0034908c79fa203bf442e38bc894  0001-m10-venus-reserve-only.diff
+b7719c7ff2a69ef06c7cdeda0044668a65b6c648ca39d42d8b88c15e183b7a951859eb8bcb84ea68c653c3276fd38acd7878dc0d8efc93770ff9653d65fead42  0002-venus-hfi3xx-opp-ownership.diff
+8258ed3313d4df59e97dd513cece0856667274055324ab6715a3f8154c3cad20b73e395f52c8473fa63274d6a89ffb56ea54961a0142110417ff3bb8e02c8005  0003-m10-venus-opp-dt-disabled.diff
+e6f8036abc2f443dfcabc4d75a05752736efe5a979f9c7f4f32766036aa9067204ae455ca5b8aa2d885a644d148265ca3fe1c710973a5e6e81cbbe8321892f73  0004-venus-eos-context-adapted.diff
+488cfd2b43f96ef37ba991a9efc006e9fe87d07fae064b0a62902b961b2d38be317b92c178fc3a16a46f93f820bbcc7444cfa00582554b7880ba019ca81881af  0005-dt-bindings-media-qcom-sdm429-venus.diff
+6fdb74f2eb97f360ccd6c6a0095c0f2e28d01591f97d851b27cfc4b90e0c912ce4637ceb720ec7182d81920ba8294ba634960a66650aac2ffbc3b58fce9562f8  0006-venus-sdm429-decoder-only.diff
+5d356c41826f712c673e713f587eb72998bbc4897f01723c7d17958de9be50983f98c3937297e620d155eaa8c7e39d10270b7e8d0fd4e605003e11dbbe1e01db  0007-venus-of-node-ref.diff
+7d6e6d9217b4d6c556f3912576dba38087cb78ec370f04c312d429724d7767e2838042869cb5c126948ffc4f3c0a8d3416489cf50f1b783fbda817fa4f38efc5  0008-venus-seek-upstream.diff
+263909aa4df7d742bcbf610bfd81b5a309d2e9cbdd94205adf7e5e431b5a3759a335e0833075c8e25f7e4ffa20310da75156d02ddc3634e54eb2c3c4d5dd95b7  80-rpd-video-m10.preset
+07b572fbd256bc8758b8bc146ca4808b2feb981e499c299f4fc928148601529a84fa0668356883652a55a8f2dd5a001f595d43818e106e3c2938763fbf67bc43  97-rpd-video-m10
+754abff561f09684b37724ed0c5e42cf74cc77277e1f36fa18eb27473b1a82c74211a3846c37329d8c6b74fa68ef37acdd095f20ae9cf8467a9bd87885fb9107  build-video.py
+fc29543320ad847de308334f1b83e1070cf83463b3045466fd5a782ebe38deb92589be4e4e696de72f79b97dc1637d21ed471f9b55c99f42e0f321b74ca1a1b2  reserve-only.py
+2b854803bf8929c2fa88a50401b79b9671460db3c92d53dccc6769771964735257570b2f917f5a1b356f825f6ad8481bf955542826a14f8c9f8d95a84b36f113  rpd-video-m10-load
+6eb03cf78324eb1e3f2602569a86ed4bfc79bca5a7f124597694db1623ad5c3544f44c584d3a977f7d1e711a3c2bd8371d7d2ee4b25b5cdf76938519fd703d9c  rpd-video-m10.post-deinstall
+71beb5aebebfa8dc7159500f72c1a45cc9095cd968c5e3557513200829bc7f3723dc649ab3e7be0620a79262428b0600d510e4ea1b2774e24a7394a63b43a619  rpd-video-m10.post-install
+71beb5aebebfa8dc7159500f72c1a45cc9095cd968c5e3557513200829bc7f3723dc649ab3e7be0620a79262428b0600d510e4ea1b2774e24a7394a63b43a619  rpd-video-m10.post-upgrade
+dce0959ba6ce642f55ceb3757857cf57d8a2ba8fb75860dfd77240c875d55571424c5fb41a29f092e06896f8b463725f90e7f263707de4b5ad81f14e83a1d367  rpd-video-m10.pre-deinstall
+88748980102669d8ef019c328ba1638a195da5804ce2d26975a8840a4ff162aa4a42ae9d164b1e8a7477b8f69e53f2e94ee3a18e1c6e4329d92162c4a8c864b7  rpd-video-m10.service
+6af942b151d386258d8a5f1c72fa6d5a6ec3d4761564903be482f061346bdffc5529ebe4e5f1fb2508308bb824c9b2826b1913617b8904f67a7e3f6e9a8c350a  test-video.py
+e0367da37d4073c4f872598ef99f33f1cf48c64e82ce398bca9fdb9804a143dc11975091e379bbf75e1af40b8fd3cab9dbb6b042048465d6e37a64f9c7970f5c  venus-candidate.py
+06f99ebebdd96bad5e5828f1c4e3db0944e8ee3babe9f47899551c7370bf6f7e1e556ad738b944318171d0d197a6763b8d58f09efed99d448c993d5982eb726f  verify-allocation.py
+61725311624004cad4deff5243efca0f462194bbbd207c9985ef91c8a01d79d3430863d7b2364f5284186e96280bb0c648d9d64cbca4663ead968ba361ddf7cb  video-dtb.py
+d3da044e011a02bd806c9da4f6181413cefa4bbb558e8b85c9b46d798e24fd79b2267a6db6b5feaf2291178c39dc163251c5f11c7b890fd8a77ae84a2efb33af  video-mdt-build.py
+2c3dad0eb3137d86525b573e91403e58bea6972e6a368696d583ef0f0414a22df6f100231bddd811ea2f7ab14734a47380c078c14249a929db7dea8975dd2c63  video-mdt-sources.json
+c19ee6f93f05f11801557a2355585ee0aceb14c9d8a0e572cafaed6b836b6bdb651447e7ca61571700b26be0869b6ae23ad42022d4782641bd3c2cf4fb716ab8  video-media-build.py
+bc632ea1a0579803bcbad800bda11ff096e24a4ff0a83e3b4d9781bb1a6684371b21caa2d612d29959a7f7efdb0cacc98b3191b8cf873d9e84a0606d490066b9  video-media-sources.json
+4a13d4622fdb02878aa886e43c03d4e85779b2636f569f466a98afc08f486fdbd79fd1bc710d8759527829fa8bd12d1bfb3e22336540efe8121f181c920332ef  video-qualification.json
+878b82db3fc03e906e9af77f7c30d62e65f7f01a4adc5cc786d85f86609e864ad05df9d18a207fbd3fc40758a545ec147c254c7a60ed834b43ef68a81899445e  video-venus-sources.json
+27ed43d1f821c284c099d75992720e0412ebf861e6cddacbfe085c6f3fcaf05cd724c1f5918b206e150921b1b914af1dbdd31759d9e98c0dc18c09e03187e06c  rpd-gpu-m10.files
+2eaa4011f2427cf3d9c518967d4afc3efec88187b4029afb51b2d17ab7934690a8aefb57af48420669f98751adb7e0de3435fdf0be2886009b3d12bc7bdf2366  gpu-probe.c
+7319acf41940b5fcdb70cecb1d15a89fda484c17e9910ae760a32466c64d27ba0b80ec1ec3a61164b0c106d2aa6875e9e9880b4b4aeb736bed6bf013597caab9  gpu-renderer.sh
+40c673bcc67d8b9746df4c996754ab1f66d29d6b34d3cd0101c266208ae013c6a2b104926103cf5c886544dc6f8164d19402bc904b0e9f9a9001c02c3b7385be  test-gpu.py
+52057ec6dc3d8ef2997aa88d2d9b4a145b18b64b154012ec6bc3dbdde2e48844e13679a7e81054e110b708ac857eb83e3a53d3faa4d7f5eda3045bbf9b84f87c  build-gpu.sh
+8be9f6e6e20dac10c59c927e9314e32deb9b6cee91d93d7e0fdf3300dfc8fd0f3975a1cf8245f1fcc9f48a1da4704ed78684656747490ea260b4d5307c0f41a9  gpu-dtb.py
+5b9a7ed534e93b558f1e7545dce084b49d202a0f4ac64a94fb5f74d1a91b3ea6329e91dbdaa790b6b64dc9b68a7daf037c5c71fbf68dab59e6b75c6502c38fc4  96-rpd-gpu-m10
+5410a91b5fa56681d64f13af2dd35b53f802dceb65aa88cb2837b88f844061e8760ce280e7e9ba1decd42e8a41b647038ff59be2253f76a7c717b9d9406007a4  rpd-gpu-m10-load
+dcd3a650258620e2a0ec419fa7f82eeb016f2327efa3414a8804bf1152aca99df9f02ab07b39fd41bbcfa79606dea660fdf09b653b1ff6bb5a8eaf3a5f75087b  rpd-gpu-m10.service
+ef1e18a5b158dcb80dc9bc5f7a59f0a85fb8e0f697d4ed9b6ae5f7566cc944d7dc087e1c596d436249b048ceefd2c5abdf7f3aa52c965ebb4d65479601c0524d  rpd-gpu-m10.conf
+95dfc71b331e84660dafaa383478570adec9bdd99282b6774b559657a0b22909b1dafdce8c36a038a54a980422e9993f65a70636acc29055646d34cd880b388a  80-rpd-gpu-m10.preset
+b491f2d72fd871bd179bc557dc80cdaee6ee1f5e56b3c7b2bb6af7271d3d9ba87b548b146b88c1a3cb246183d8e136577bcf8a7ec10c591c884edfc2a3eda641  0002-a5xx-gpmu-registers.diff
+01f12f0cab568deeeb0a25d82dcebc3ed6e96bedefe0d807180241e733cb79305ccfc561c3667f220a9a74c7f28d3a733268bf79ca0cc50a9d33379d1b78030d  0003-adreno-504-rpm-domain.diff
+c04f4c9d19932cd1f92e4650549a77bf31f3be9e98e1bef100719bf29546b2cc847b71a335ab65b981aff754cc4951865f0f0e96bed052d089dd942f84a139f1  0004-a504-retained-gx-reset.diff
+21df66bb2aecf5748771b27c48ba1ff460c12dcb792d29d902d1d4c55bd2b6b90f7f6b032709268ba49c850f500f5271f5c24cddc88b792130700939fdc1b3b4  0005-msm-recover-before-retire.diff
+ec823b17e61b93a6ec235965fd28d5dbce16f9564ae545e96d5710ab161fa024023dfeb31841d77d49b6fd6d5a039a23815d4c0257dba2bb946e2ceb1cf380c1  0006-msm-recovery-task-ref.diff
+5063fb265c3d0e39831ecfa83e23a9f7906112ba34f6ea1e2d2de8c2d1843b9f82c6423852418323509e635520fe1f321860153fb477b27a8315817620008d9e  0007-a504-physical-cx-device-link.diff
+370c62970fa8be39df673ef0b78dc26e14fe563c3128d561f361d54773b1e30960409c0ccd0a6e175d1297a4e01d8444000af67a21497f8176f6d5a776f1fb47  0008-msm-gpu-only-remove-private.diff
+d95a936665b015a4d00e1d2c3e3d46fa3b8999131014388c8575dc2137c18e3111be07e8bea1f38948020a41e7b853cf592741f58689b76b0642fb1b4f79178f  0009-a5xx-release-shadow-mapping.diff
+87ce10ec6b6143162cb35e27d2ec6b6bf78e1f4769dd5ea5a31754fff62b3fc24e6482a7569b1d7110af2e72d6767bb4861433b70e50067838ae370946945a93  0010-a504-bounded-fragment-progress.diff
+e241f49690f014e11219e95e02dcac9b1f8b4c6cdb8b7a0183bf13e1d00d04fe5dd520ee17853ad6f71058a754a031937d8b383447f8f1880fcac694ce8c0b4c  0001-adreno-504-bringup.diff
+ac99841a50068ad2f22ffa3d492b8ba57681bbe52d4d83d602d0808cfb961adbef8bc8852aa9b829fc4e5108d0814af99c3ae6450de65067ffe5e4110f2f5a78  m10_wcd_analog.c
+db18236b22b432919e025e24c48fb0c9cdc43e44402d9e56746acc90600a43a3753fe6d74ba6de8559e035292d6a7a7a073c943ad88023892ff65dd0d859189d  m10_speaker_amp.c
+57dd5a3a583c2c4126bf22dd210e2dc429d79ad8f876d66ba6eb60b5bcef6166dfa006240e96651886fcd79b2559fdf402c7afbde231d33ae72ae191fcd1d8a1  m10-audio-pmic.diff
+7d7809f6317adeec56c0d4bd81b45578a5026e201ace7e03d042e49c5ffc9c11db4500570ed657a9d88d70e07cdf115f0af1c083993ce0f30c7c445a218f8b72  m10-audio.dtsi
+3b4c4ad34ca99b4bef5e7f1a996f06ed0de686f56d07eed7a4d2a527b4758938f24e2fef743e28667dc8350bdf65464e6953c53186fc012fefcdbb56e5d6681b  audio-dtb.py
+bfc2f6eb82b79dd1e90801ff9bc403259ccb375aad368e752b7b55a278b829db5ab2f827c274043d2c39e2d28bef28f9d0b20e69a042c9734c02f8093f23a56c  test-audio.py
+b3a69d391e7b181573e2b4b3247269e650fe5f78951f01de6bcdbeee2f02a724097df8e3ef5b71f6f0fb7a3c8c2bbf2232443281f5d6f002499f3a4c0bebc48f  95-rpd-audio-m10
+5028796bcc0eb9bedbb2d52fba3de05d3f0478e2b319616f18f012989e562b814545cb95941f506680d7d4780e1e5c64643df4e80d19b6dca811fdfa3c8ceccc  Lenovo-M10.conf
+bbedfeccb99d98a89b818afa6c9c3822cafe56d1e6891f66100d678a14130ebdfd0e6ec0a8ce10e3aa131d92d32a93322359bb21d8a40aa2aedff224c9fbc331  HiFi.conf
+92124893f19b564bd0eda003f536085194296f8ca0878d594d0daf3abda0a009696326c1062089f6e7a86a73e9ba54a4eca56289320594db31b7953174155a23  51-rpd-m10-audio.conf
+5785d6ffc29bb2efcfa267a69cda50c3ccb69289f37002ed6be61ddbc13804f45028ec539d33fc4c08821403e740cb29daa4f3530208326fea450c1dcef15d3b  m10_charger.c
+92131a7234382b9e95849ee4a0292f668610b8417cc23a00165d88248a7996e95122e11fc1a10b2150d968bd21f80253da7c1aef09c7c65de291e6e770fdfd8b  m10_charger_transaction.h
+dc02cb4b7174ab1f91840a94c7b1436cf16c2ccd36fa3e2ee7460c48a640dc12e2b3ecf513fa8ff3555d20d5a418210ea3d7e1dde4371361b1893296f0d54c6a  test-charger.c
+32a69773c33d32f7717e3e3f96c62e21bcf5f9fefd53464769df62209ac065021dbc070e1ff97526f3cdb073a9ae1fdea5505f8b15aecac54b7055993c421e4d  rpd-charger-m10-load
+e13c0cbd76def7cc382c17e6b2d373424a91a6c5da1f1ef7d833c83e4299b0d3e0851b5879a98485b3e4a0f233578369f5d583ca7d1b217a8b439125864f7593  rpd-charger-m10.service
+f2b7a0d953e799c4eb17dcee05aadc5d8dd3f6ae856c36cb0abae54ce432928b633e32aaab5b1158473178a1d0ae5e6019175dee8e1e561daef160186213f3e7  80-rpd-charger-m10.preset
+42b72db375438a3b354ad858068bbe92de80eb4655554d5ef20cdd30b0ea249c157965919616220d9e85cd447eb2afe9a05a48378b946648c47656750cbf147b  80-rpd-battery-m10.preset
+c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a  linux-v7.1.3-r1.tar.gz
+ffe6bd375fecf5d69c586d821605af94f8d5665ce51fb9471627b52ff54712f1de3bf1e64f65125f7fae9a961f8b9818f870db22029d5185c2caf7e1f7f97354  kernel.config
+50d41a6feb9ec50985e8238ac15029cf83d1dd4a94be1f303e21a3fe86c547744fb1fa865258e8f2e43ffd553ba609af614de4d0ba913653ece855e8e8a50dcf  Makefile
+5ccd612032d35190479e526089ac50e2d9cda9be54f08f00436faaafd14ea950ab7d3e76484421491b4cce53d433b0811371055f4411db94402dda3e3bf05e44  m10_firmware_backlight.c
+c6a52f9fdef8e19515aa7bf1de0bd6ec848901f8985445d8043296d17cda0e94548a27695bf18196bfbdcc8682e956681630b22706613773339935b9dbe2350b  rpd-backlight-m10.service
+436bc87d387c383779e59ae887e0998f42c2861ff91d9a4bbafd7217f114346404d79e3ab3a19d4db71b9542b0be1023b07020afb3a4a205385070eef63e2b4b  rpd-backlight-m10-load
+c338990441970e66599b3903bf1badd158170b13ff609c9e95f96486c1a9994993c839ebbf7f95f9e227650b1212e30255271441a31b8c7d88140c74cdb89ed6  m10_otg_id.c
+8be85a47ad203dc7d9aa0456febd079bf709667008cfc15da6369bad69f0bea5c6ab57518f146ece4c406a584b474c8b9cffdc363aa6adf28eee8d33b25bcf19  m10_otg_vbus.c
+45253473cdf71827c26ab14dfb29fea0829bd89dc86fbd2de86317fe969a36b4d565fad8cfa9ba54cf2e0d1c4acf13f8028e4e053c77c024df9d0527b2ac8419  rpd-usb-otg-m10
+c5b2c1eedc44b6cbfd718808ef5abd2e0d28191c7cedb1132eb5a78c3bf396a4e05d56cd37cb321c6f2745015ceec51946df385114988f243c7111bbea687d2e  rpd-usb-otg-m10.service
+51fb58cd77d82492e22b18ef05cd34e54da0c612200ba5feca469d012885c6515e9f25a09b092865c86526e30528222b99076e3d13c087dc21561da74c0d7f0a  test-otg.py
+203a575e6a5955b708c5ff73956774803aaad67a9652fe0965869a3cfb6cc56dac7c5da2e4af01e7e46a12121ffde8d147cd67fd6f023f28698c7ddc04179570  80-rpd-usb-otg-m10.preset
+e7684c3728e96eccffe32c6bbc1947a2ed183a3e70938b4e6f78e111cd58c132c6b8ccfd744e49db6b9b2a6e519ebca19760da161420709c93b8175ea77ce67c  m10_battery.c
+49e1db7685d1f4033a778a6dbcad19d4593b4cdc9fd201da331aa5cc1749e102d27ada3da5ca7861531dee1874267d49748dedc74de4906fff12f13fe56cf492  m10_battery_temperature.h
+dbe2c4fa198d417cd6a14f3f4e098a394dd64a55bbcda5a42c711fb2825ecd74951433f1c5afa1e25fa260c38eb7a993706a41a28f998a31fdce15aa658f399e  m10-adc5-battery.diff
+fb3f4468669d40a7698b5dd97b504684d64afb920c12aab957741b0e311592f8e4f9093126aee92d281f0c9ef1feb765da4d1fe2aad81c4c5ac63deb56f6abac  rpd-battery-m10-load
+eb1706d6d3e788e1d0c5d5100bd035d9bf00d2421b729ca6948c658fbe4d84a57f3e59741e321bb79149da74f98eb0d9b31dd8c42f40ebe31d1e41311d7d8e6f  rpd-battery-m10.service
+"
