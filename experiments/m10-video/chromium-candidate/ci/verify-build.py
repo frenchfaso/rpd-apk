@@ -33,6 +33,25 @@ def run(args, cwd=None):
     return subprocess.check_output(args, cwd=cwd, text=True, stderr=subprocess.STDOUT)
 
 
+def checksum_order(recipe):
+    """Check the pinned recipe's positional abuild source/checksum contract."""
+    variables = dict(re.findall(r"(?m)^([A-Za-z_][A-Za-z0-9_]*)=([A-Za-z0-9_.-]+)$", recipe))
+    source = re.search(r'(?ms)^source="(.*?)"\n', recipe)
+    sums = re.search(r'(?ms)^sha512sums="(.*?)"\n', recipe)
+    require(source is not None and sums is not None, "source or checksum block missing")
+    expanded = re.sub(r"\$([A-Za-z_][A-Za-z0-9_]*)",
+                      lambda match: variables[match[1]], source[1])
+    names = [token.split("::", 1)[0] if "::" in token else token.rsplit("/", 1)[-1]
+             for token in expanded.split()]
+    words = sums[1].split()
+    require(len(words) == 2 * len(names), "source/checksum count differs")
+    entries = list(zip(words[::2], words[1::2]))
+    require(all(re.fullmatch(r"[0-9a-f]{128}", value) for value, _ in entries),
+            "malformed SHA512 value")
+    require([name for _, name in entries] == names, "source/checksum positional order differs")
+    return entries
+
+
 def inputs(candidate):
     manifest = json.loads((candidate / "source-manifest.json").read_text())
     require(manifest["aports_commit"] == APORTS, "aports pin changed")
@@ -45,6 +64,12 @@ def inputs(candidate):
     for group in (upstream, manifest["patches"], manifest["prepared_files"]):
         for name, expected in group.items():
             require(sha(candidate / name) == expected, "candidate input changed: " + name)
+    original = checksum_order((candidate / "upstream/aports/community/chromium/APKBUILD").read_text())
+    entries = checksum_order((candidate / "prepared/aports/community/chromium/APKBUILD").read_text())
+    broker = candidate / "patches/chromium-linux-v4l2-decoder-broker.patch"
+    require(entries[:-1] == original, "original source checksum values/order changed")
+    require(entries[-1] == (hashlib.sha512(broker.read_bytes()).hexdigest(), broker.name),
+            "broker checksum missing from final source position")
     return manifest
 
 
@@ -93,7 +118,9 @@ def stage(candidate, port):
         expected = manifest["prepared_files"]["prepared/aports/community/chromium/" + name]
         require(sha(port / name) == expected, "staged recipe input differs: " + name)
     return {"status": "PASS", "aports_commit": APORTS, "recipe_patch_apply": result,
-            "staged_recipe_sha256": sha(port / "APKBUILD"), "broker_sha256": sha(broker)}
+            "staged_recipe_sha256": sha(port / "APKBUILD"), "broker_sha256": sha(broker),
+            "source_checksum_pairs": len(checksum_order((port / "APKBUILD").read_text())),
+            "original_source_checksums": "Preserved in original positional order"}
 
 
 def prepared(candidate, source):
@@ -167,7 +194,7 @@ def main():
         data = resources(args.directory)
     elif args.operation == "inputs":
         inputs(args.directory)
-        data = {"status": "PASS", "scope": "Retained candidate inputs only"}
+        data = {"status": "PASS", "scope": "Retained candidate inputs and ordered source checksums"}
     elif args.operation == "stage":
         data = stage(args.candidate, args.directory)
     elif args.operation == "prepared":

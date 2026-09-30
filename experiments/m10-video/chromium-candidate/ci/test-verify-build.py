@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Offline target-discovery and immutable-input fixtures; no build/download."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
@@ -112,6 +114,72 @@ class ResourceGuards(unittest.TestCase):
                 bad = good.copy()
                 bad[field] = value
                 self.assertEqual(verify.assess_resources(*bad)["status"], "FAIL")
+
+
+class PositionalChecksums(unittest.TestCase):
+    def test_original_checksums_preserved_in_source_order(self):
+        original = verify.checksum_order((HERE.parent / "upstream/aports/community/chromium/APKBUILD").read_text())
+        candidate = verify.checksum_order((HERE.parent / "prepared/aports/community/chromium/APKBUILD").read_text())
+        self.assertEqual(candidate[:-1], original)
+        self.assertEqual(candidate[-1][1], "chromium-linux-v4l2-decoder-broker.patch")
+
+    def test_prepend_checksum_regression_rejected(self):
+        recipe = (HERE.parent / "prepared/aports/community/chromium/APKBUILD").read_text()
+        last = verify.checksum_order(recipe)[-1]
+        entry = last[0] + "  " + last[1] + "\n"
+        bad = recipe.replace(entry, "", 1).replace('sha512sums="\n', 'sha512sums="\n' + entry, 1)
+        with self.assertRaisesRegex(ValueError, "positional order"):
+            verify.checksum_order(bad)
+
+    def fetch_fixture(self, reverse=False, corrupt=False):
+        # Run the unchanged primary abuild algorithm, with local files and no
+        # network or recipe evaluation. Its checksum filename words are retained
+        # but default_fetch consumes the sums positionally, using shift 2.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entries = []
+            for name, content in (("archive.tar.xz", b"archive fixture\n"),
+                                  ("broker.patch", b"patch fixture\n")):
+                (root / name).write_bytes(content)
+                entries.append(hashlib.sha512(content).hexdigest() + "  " + name)
+            if reverse:
+                entries.reverse()
+            if corrupt:
+                (root / "archive.tar.xz").write_bytes(b"changed archive\n")
+            sums = "\n".join(entries)
+            script = '''
+set -eu
+. "$1"
+startdir=$2
+srcdir=$2/src
+source="archive.tar.xz broker.patch"
+sha512sums=$3
+sumalgo=sha512
+is_remote() { return 1; }
+die() { echo "$*" >&2; exit 1; }
+# macOS sha512sum does not accept a checksum stream on stdin. Keep the
+# extracted abuild function unchanged and use its SHA512-compatible tool.
+if [ "$(uname -s)" = Darwin ]; then
+    sha512sum() { shasum -a 512 "$@"; }
+fi
+default_fetch
+'''
+            return subprocess.run(["sh", "-c", script, "fixture", str(HERE / "abuild-default-fetch.sh"),
+                                   str(root), sums], capture_output=True, text=True)
+
+    def test_actual_abuild_algorithm_accepts_matching_order(self):
+        result = self.fetch_fixture()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_actual_abuild_algorithm_rejects_same_entries_reordered(self):
+        result = self.fetch_fixture(reverse=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("archive.tar.xz: FAILED", result.stdout)
+
+    def test_actual_abuild_algorithm_rejects_corrupted_source(self):
+        result = self.fetch_fixture(corrupt=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("archive.tar.xz: FAILED", result.stdout)
 
 
 if __name__ == "__main__":

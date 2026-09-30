@@ -60,10 +60,10 @@
   },
   "patches": {
     "patches/chromium-linux-v4l2-decoder-broker.patch": "8324d0665fb86ebdbe3a696ab06319aca2335b68ad6d99be932dae2a59eb2f82",
-    "patches/alpine-chromium-enable-v4l2-aarch64.patch": "a8e51326ce23ee382f68db0c28899539f4f14ff9a80d15b096850d303e9dfd5e"
+    "patches/alpine-chromium-enable-v4l2-aarch64.patch": "b624abfa1a2f1296115edd56919879448e00f045eec058107ac09823186f4ed9"
   },
   "prepared_files": {
-    "prepared/aports/community/chromium/APKBUILD": "70f3bc5ef90447dbaaba2876c41c7a62facbdb6321f803502a02e8c1a4dec527",
+    "prepared/aports/community/chromium/APKBUILD": "ab527886ba48da8bbfb3bbd789e776a53153fc37f3b30588e2bd53ef297931db",
     "prepared/aports/community/chromium/chromium-linux-v4l2-decoder-broker.patch": "8324d0665fb86ebdbe3a696ab06319aca2335b68ad6d99be932dae2a59eb2f82",
     "prepared/chromium/content/common/BUILD.gn": "d3c67bdb73f73facaa35353eaa2b635979cfdc79829af4e9693ad37b9b5217c0",
     "prepared/chromium/content/common/gpu_pre_sandbox_hook_linux.cc": "3ac5c3337af770c9fe493f8322df9884600224b244c6b9eccb996409d452ee78",

@@ -1,24 +1,26 @@
 {
   "status": "PASS",
   "scope": "Offline workflow/script validation only; no downloads, GN, C++ build or workflow run",
-  "tests": 12,
+  "tests": 17,
   "checks": [
     "Python syntax and immutable candidate input hashes",
     "Recipe staging zero-fuzz/no-offset roundtrip",
     "Missing/ambiguous/wrong-source and unsafe-target fixtures",
     "Measured/minimum capacity and five failing resource guards",
     "Container shell syntax",
-    "YAML parse and embedded Bash syntax"
+    "YAML parse and embedded Bash syntax",
+    "Source/checksum positional order and unchanged original sums; real abuild default_fetch local-file regressions"
   ],
   "files_sha256": {
     "native-build.yml": "a5bc5c45fcb45ff83871905b65a0e1b65e8c89195eb795ef045804c6b1a650af",
     "build-in-container.sh": "8b93acf0f1b264b015e83be653ff0908d9bb8bd42b05bc9a1bc8253765dfa638",
-    "verify-build.py": "89606a23f14bb6a708a512454f1b64294ee427572c2d033a2807aa7eec928491",
-    "test-verify-build.py": "b5163f1c21a08cd92c100e2f17facd6f3af864621fa54a7365c57148606693e5",
-    "README.md": "a698c907ad3c59304290623f44c2faa9b6fe9378bc38ab55ee9764a3441c73ee"
+    "verify-build.py": "4cf41539165394ff37619dd787aed64aa2fc83715c1220dcc066069067c93712",
+    "test-verify-build.py": "84631f673295bdb2abf99d1f148d7b2989d2b0e2b57911a04cb5a01342c4872d",
+    "abuild-default-fetch.sh": "3dee74f6e4dea799a2ed187cbcb493b34c5cf3e9802ac0dbbb6471d06527c42e",
+    "README.md": "eb487f47f775185dcafdd8bb989d3c4f69077d0c832df0c9f866fd4d44c537fa"
   },
   "remaining": [
-    "Real native Alpine dependency/source/GN preparation",
+    "Real native Alpine source checksum/unpack/prepare/GN gates",
     "Two modified C++ objects compile",
     "Optional normal full abuild recipe including checks and packaging",
     "Separate M10 sandbox/decoder/NV12 import/render qualification"
@@ -33,12 +35,21 @@
       "GN/source/target/buildflags checks",
       "12 offline fixtures independently passed"
     ],
-    "limit": "Actual dependency installation, GN generation and native C++ compilation remain unexecuted"
+    "limit": "Initial dependency installation passed; actual source checksum/unpack/GN and native C++ compilation remain unproven after ordering fix"
   },
   "bootstrap": {
     "branch": "codex/m10-video-build-preflight",
     "workflow": ".github/workflows/chromium-v4l2-candidate.yml",
     "push_scope": "workflow file or selected Chromium candidate paths",
     "push_full_recipe": false
+  },
+  "first_runner_attempt": {
+    "run": "https://github.com/frenchfaso/rpd-apk/actions/runs/36763888403",
+    "commit": "8bf04c958eecd5eea25fa28fd7a0dcd4bc7ffa30",
+    "full_recipe": false,
+    "capacity_and_input_checks": "PASS",
+    "dependencies": "PASS",
+    "failure": "Wrong positional expected SHA512 used at normal source fetch; recipe order fixed locally, no actual unpack/GN/C++ result yet",
+    "archive_expected_sha512_unchanged": "29c5f18976bec889e4041177c1290353734e42865a1e59a91f8f54e723d97bc9f48a02bb59dc90b2a9aaa55e7126c770d9af1e375f5cb9f509e4de5f3f488a44"
   }
 }

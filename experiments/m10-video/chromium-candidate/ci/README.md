@@ -1,8 +1,7 @@
 # Disposable native build candidate
 
-Prepared workflow only. No run, browser build, production edit or publication
-has been performed by this preparation task. Keep the workflow separate from
-the release signing/deployment pipeline; `native-build.yml` is a reviewable
+The workflow is isolated from the release signing/deployment pipeline.
+`native-build.yml` is a reviewable
 template for `.github/workflows/` on the experimental branch. Its bootstrap
 push event is restricted to `codex/m10-video-build-preflight` and candidate
 paths; a push always uses the units-only default. It requires the
@@ -13,6 +12,18 @@ The CI payload needs `upstream/`, `prepared/`, `patches/`, `ci/` and
 source-audit regeneration scripts are not required by `verify-build.py` and
 need not be copied to the packaging checkout. Its manifest retains their
 provenance hashes, while the CI input checker verifies every actual build input.
+
+The first units-only push, commit `8bf04c9`, reached normal Alpine dependencies
+and fetch but failed before unpack/GN/C++ compilation in
+[run 36763888403](https://github.com/frenchfaso/rpd-apk/actions/runs/36763888403).
+The patch checksum had been prepended while its source was appended. Abuild's
+`default_fetch` consumes checksums positionally; the `.879e9d75` rename suffix
+proved it had compared the Chromium archive against the broker patch checksum.
+The candidate now appends both entries, preserving every original source and
+checksum. Before downloads, the CI checker verifies all positional pairs and
+the unchanged original entries. Offline fixtures exercise the unchanged primary
+abuild `default_fetch` function with local files: correct order passes, reversed
+entries and corrupted bytes fail. No source checksum was refreshed or bypassed.
 
 The manual default builds only the two changed C++ objects. The optional
 `full_recipe` dispatch input continues to normal `abuild -r` only after those
