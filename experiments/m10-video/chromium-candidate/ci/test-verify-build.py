@@ -3,6 +3,7 @@
 import importlib.util
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -233,6 +234,80 @@ class PatchPolicy(unittest.TestCase):
         result, source = self.apply("chromium-linux-v4l2-decoder-broker.patch", long_input=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("old-value", source)
+
+
+class CompilerCommands(unittest.TestCase):
+    def rows(self):
+        return [{"source": source, "target": "obj/" + Path(source).stem + ".o"} for source in verify.UNITS]
+
+    def commands(self, rows):
+        return ["/usr/lib/llvm23/bin/clang++ -DGEN_FLAG=1 -c '../../" + row["source"]
+                + "' -o " + row["target"] for row in rows]
+
+    def test_actual_command_flags_retained_for_both_units(self):
+        rows = self.rows()
+        commands = self.commands(rows)
+        verify.record_commands("irrelevant dependency '\n" + "\n".join(commands), rows)
+        self.assertEqual([row["command"] for row in rows], commands)
+
+    def test_missing_wrong_source_wrong_output_and_duplicate_rejected(self):
+        rows = self.rows()
+        commands = self.commands(rows)
+        for changed in ([commands[0]],
+                        [commands[0].replace(rows[0]["source"], "wrong.cc"), commands[1]],
+                        [commands[0].replace(rows[0]["target"], "wrong.o"), commands[1]],
+                        commands + [commands[0]]):
+            with self.assertRaises(ValueError):
+                verify.record_commands("\n".join(changed), self.rows())
+
+
+class RecipeEnvironment(unittest.TestCase):
+    def test_actual_pinned_recipe_environment(self):
+        recipe = (HERE.parent / "upstream/aports/community/chromium/APKBUILD").read_text()
+        self.assertEqual(verify.recipe_environment(recipe),
+                         {"exports": {"RUSTC_BOOTSTRAP": "1"}, "open_file_limit": 4096})
+
+    def test_missing_changed_duplicate_or_extra_global_export_rejected(self):
+        recipe = (HERE.parent / "upstream/aports/community/chromium/APKBUILD").read_text()
+        for changed in (recipe.replace("export RUSTC_BOOTSTRAP=1", ""),
+                        recipe.replace("export RUSTC_BOOTSTRAP=1", "export RUSTC_BOOTSTRAP=0"),
+                        recipe + "\nexport RUSTC_BOOTSTRAP=1\n", recipe + "\nexport EXTRA=1\n",
+                        recipe.replace("ulimit -n 4096", "ulimit -n 512")):
+            with self.assertRaises(ValueError):
+                verify.recipe_environment(changed)
+
+    def environment_probe(self, omit=None):
+        # Exercise the actual wrapper block with a child environment/limit probe,
+        # not a Rust compiler substitute used by CI or a compilation claim.
+        script = (HERE / "build-in-container.sh").read_text()
+        block = "export RUSTC_BOOTSTRAP=1" + script.split("export RUSTC_BOOTSTRAP=1", 1)[1].split(
+            "# _configure's other exports", 1)[0]
+        if omit is not None:
+            block = block.replace(omit, "")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            probe = root / "rustc"
+            probe.write_text('#!/bin/sh\n[ "$RUSTC_BOOTSTRAP" = 1 ] || exit 3\n'
+                             '[ "$(ulimit -n)" = 4096 ] || exit 4\nprintf "child environment PASS\\n"\n')
+            probe.chmod(0o755)
+            env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"], REVIEW_DIR=str(root))
+            env.pop("RUSTC_BOOTSTRAP", None)
+            result = subprocess.run(["sh", "-c", "set -eu\nulimit -S -n 512\n" + block],
+                                    env=env, text=True, capture_output=True)
+            evidence = root / "compiler-environment.txt"
+            return result.returncode, evidence.read_text() if evidence.exists() else ""
+
+    def test_actual_wrapper_exports_and_limit_reach_child(self):
+        status, evidence = self.environment_probe()
+        self.assertEqual(status, 0)
+        self.assertIn("RUSTC_BOOTSTRAP=1\nopen_file_limit=4096\n", evidence)
+        self.assertIn("child environment PASS", evidence)
+
+    def test_omitting_export_or_limit_breaks_child_environment(self):
+        for omitted in ("export RUSTC_BOOTSTRAP=1", "ulimit -n 4096"):
+            with self.subTest(omitted=omitted):
+                status, _ = self.environment_probe(omitted)
+                self.assertNotEqual(status, 0)
 
 
 class NativeGnTarget(unittest.TestCase):

@@ -59,6 +59,19 @@ python3 "$CANDIDATE_DIR/ci/verify-build.py" targets "$source_dir" "$REVIEW_DIR/c
 set --
 while IFS= read -r target; do set -- "$@" "$target"; done < "$REVIEW_DIR/ninja-targets.txt"
 test "$#" -eq 2
+# abuild's recipe export cannot propagate from its subprocess to this shell.
+# Mirror the exact global export already checked in the pinned/staged recipe.
+export RUSTC_BOOTSTRAP=1
+ulimit -n 4096
+{
+    printf '%s\n' "RUSTC_BOOTSTRAP=$RUSTC_BOOTSTRAP" "open_file_limit=$(ulimit -n)"
+    rustc -vV
+} > "$REVIEW_DIR/compiler-environment.txt"
+# _configure's other exports are consumed by GN getenv and embedded in Ninja.
+# Retain actual safe toolchain sources for that configuration audit; omit keys.
+cp "$source_dir/build/toolchain/linux/unbundle/BUILD.gn" "$REVIEW_DIR/unbundle-BUILD.gn"
+cp "$source_dir/build/toolchain/gcc_toolchain.gni" "$REVIEW_DIR/gcc_toolchain.gni"
+sha256sum "$REVIEW_DIR/unbundle-BUILD.gn" "$REVIEW_DIR/gcc_toolchain.gni" > "$REVIEW_DIR/compiler-configuration.sha256"
 /usr/bin/time -v ninja -C "$source_dir/out/bld" "$@" 2> "$REVIEW_DIR/unit-build-time.txt"
 python3 "$CANDIDATE_DIR/ci/verify-build.py" completed "$source_dir" "$REVIEW_DIR/compiled-units.json"
 if [ "$FULL_RECIPE" = 1 ]; then

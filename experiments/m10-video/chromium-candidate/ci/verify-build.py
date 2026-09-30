@@ -8,6 +8,7 @@ from pathlib import Path
 import platform
 import re
 import shutil
+import shlex
 import struct
 import subprocess
 
@@ -55,6 +56,17 @@ def checksum_order(recipe):
     return entries
 
 
+def recipe_environment(recipe):
+    """Mirror only the pinned recipe's required global Rust compiler export."""
+    values = re.findall(r"(?m)^export ([A-Za-z_][A-Za-z0-9_]*)=(\S+)$", recipe)
+    require(values == [("RUSTC_BOOTSTRAP", "1")], "pinned recipe global compiler exports differ")
+    build = re.search(r"(?ms)^build\(\) \{\n(.*?)^\}", recipe)
+    require(build is not None and "\tulimit -n 4096\n" in build[1]
+            and not re.search(r"(?m)^\s*export ", build[1]),
+            "pinned recipe build-only compiler environment differs")
+    return {"exports": dict(values), "open_file_limit": 4096}
+
+
 def inputs(candidate):
     manifest = json.loads((candidate / "source-manifest.json").read_text())
     require(manifest["aports_commit"] == APORTS, "aports pin changed")
@@ -69,6 +81,8 @@ def inputs(candidate):
             require(sha(candidate / name) == expected, "candidate input changed: " + name)
     original = checksum_order((candidate / "upstream/aports/community/chromium/APKBUILD").read_text())
     entries = checksum_order((candidate / "prepared/aports/community/chromium/APKBUILD").read_text())
+    for prefix in ("upstream", "prepared"):
+        recipe_environment((candidate / prefix / "aports/community/chromium/APKBUILD").read_text())
     broker = candidate / "patches/chromium-linux-v4l2-decoder-broker.patch"
     require(entries[:-1] == original, "original source checksum values/order changed")
     require(entries[-1] == (hashlib.sha512(broker.read_bytes()).hexdigest(), broker.name),
@@ -122,6 +136,7 @@ def stage(candidate, port):
         require(sha(port / name) == expected, "staged recipe input differs: " + name)
     return {"status": "PASS", "aports_commit": APORTS, "recipe_patch_apply": result,
             "staged_recipe_sha256": sha(port / "APKBUILD"), "broker_sha256": sha(broker),
+            "required_compiler_environment": recipe_environment((port / "APKBUILD").read_text()),
             "source_checksum_pairs": len(checksum_order((port / "APKBUILD").read_text())),
             "original_source_checksums": "Preserved in original positional order"}
 
@@ -153,6 +168,24 @@ def select_targets(text, source, query):
         target, detail = matches[0]
         require(re.fullmatch(r"[A-Za-z0-9_./-]+", target) is not None, "unexpected Ninja target syntax")
         selected.append({"source": unit, "target": target, "query": detail})
+    return selected
+
+
+def record_commands(text, selected):
+    """Retain each actual generated C++ command, including GN-captured flags."""
+    for row in selected:
+        matches = []
+        for command in text.splitlines():
+            if row["source"] not in command:
+                continue
+            words = shlex.split(command)
+            if not any(re.fullmatch(r"(?:\.\./)+" + re.escape(row["source"]), word) for word in words):
+                continue
+            if any(word == "-o" and index + 1 < len(words) and words[index + 1] == row["target"]
+                   for index, word in enumerate(words)):
+                matches.append(command)
+        require(len(matches) == 1, "missing or ambiguous generated compiler command for " + row["source"])
+        row["command"] = matches[0]
     return selected
 
 
@@ -229,6 +262,8 @@ def targets(source, diagnostic=None):
     text = run(["ninja", "-C", str(output), "-t", "targets", "all"])
     selected = select_targets(text, source,
                               lambda target: run(["ninja", "-C", str(output), "-t", "query", target]))
+    record_commands(run(["ninja", "-C", str(output), "-t", "commands",
+                         *(row["target"] for row in selected)]), selected)
     return {"status": "PASS", "gn_arguments": flags, "gn_target_evidence": evidence, "objects": selected}
 
 

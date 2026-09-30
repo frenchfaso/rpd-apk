@@ -50,6 +50,28 @@ exact pinned BUILDCONFIG hash; explicit CPU/OS must be arm64/Linux. Independentl
 both completed objects must be little-endian ELF64 with AARCH64 machine type.
 These changes preserve normal recipe defaults and require actual compiler proof.
 
+[Run36769567466](https://github.com/frenchfaso/rpd-apk/actions/runs/36769567466)
+passed those checks with declared CPU/OS both empty, effective native arm64,
+both backends enabled, and two unique generated object targets. Ninja ran
+1,557 of 4,516 dependency actions before its Rust allocator dependency rejected
+`-Z` options. The direct Ninja shell had not inherited the recipe's global
+`export RUSTC_BOOTSTRAP=1` from the earlier abuild subprocess. The wrapper now
+mirrors that exact export and `build()`'s open-file limit4096, recording their
+effective values and actual Rust version. It preserves every compiler option.
+Input guards require the original global export and build-limit contract;
+real child-process fixtures fail if either wrapper setting is omitted.
+
+The remaining `_configure()` exports (C/CPP/CXX flags and AR/CC/CXX/NM, plus
+incoming LDFLAGS) are read by
+[unbundle GN](https://github.com/chromium/chromium/blob/d04cdb24d67b081f6cf80200ffc5233f44b61109/build/toolchain/linux/unbundle/BUILD.gn#L8)
+at generation and embedded literally in
+[tool commands](https://github.com/chromium/chromium/blob/d04cdb24d67b081f6cf80200ffc5233f44b61109/build/toolchain/gcc_toolchain.gni#L357).
+The checker retains each actual generated C++ command, including those flags,
+and the wrapper retains the two small actual toolchain source files/hashes.
+`VPYTHON_BYPASS` and the depot-tools PATH extension belong to `check()`; normal
+full abuild retains that phase. The units-only gate executes neither checks nor
+final browser links and does not claim their qualification.
+
 The manual default builds only the two changed C++ objects. The optional
 `full_recipe` dispatch input continues to normal `abuild -r` only after those
 objects and generated backend flags pass. It uses the recipe's normal
