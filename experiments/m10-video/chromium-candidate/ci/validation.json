@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "scope": "Offline workflow/script validation only; no downloads, GN, C++ build or workflow run",
+  "tests": 12,
+  "checks": [
+    "Python syntax and immutable candidate input hashes",
+    "Recipe staging zero-fuzz/no-offset roundtrip",
+    "Missing/ambiguous/wrong-source and unsafe-target fixtures",
+    "Measured/minimum capacity and five failing resource guards",
+    "Container shell syntax",
+    "YAML parse and embedded Bash syntax"
+  ],
+  "files_sha256": {
+    "native-build.yml": "a5bc5c45fcb45ff83871905b65a0e1b65e8c89195eb795ef045804c6b1a650af",
+    "build-in-container.sh": "8b93acf0f1b264b015e83be653ff0908d9bb8bd42b05bc9a1bc8253765dfa638",
+    "verify-build.py": "89606a23f14bb6a708a512454f1b64294ee427572c2d033a2807aa7eec928491",
+    "test-verify-build.py": "b5163f1c21a08cd92c100e2f17facd6f3af864621fa54a7365c57148606693e5",
+    "README.md": "a698c907ad3c59304290623f44c2faa9b6fe9378bc38ab55ee9764a3441c73ee"
+  },
+  "remaining": [
+    "Real native Alpine dependency/source/GN preparation",
+    "Two modified C++ objects compile",
+    "Optional normal full abuild recipe including checks and packaging",
+    "Separate M10 sandbox/decoder/NV12 import/render qualification"
+  ],
+  "independent_review": {
+    "reviewer": "venus_ffmpeg_eof",
+    "result": "No source-level blocker found",
+    "verified": [
+      "Official abuild deps/verify/prepare dispatch",
+      "Normal full recipe clean/reprepare behavior",
+      "Samurai targets all and query support",
+      "GN/source/target/buildflags checks",
+      "12 offline fixtures independently passed"
+    ],
+    "limit": "Actual dependency installation, GN generation and native C++ compilation remain unexecuted"
+  },
+  "bootstrap": {
+    "branch": "codex/m10-video-build-preflight",
+    "workflow": ".github/workflows/chromium-v4l2-candidate.yml",
+    "push_scope": "workflow file or selected Chromium candidate paths",
+    "push_full_recipe": false
+  }
+}

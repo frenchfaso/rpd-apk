@@ -1,0 +1,97 @@
+name: Experimental native Chromium V4L2 build
+on:
+  push:
+    branches: [codex/m10-video-build-preflight]
+    paths:
+      - .github/workflows/chromium-v4l2-candidate.yml
+      - experiments/m10-video/chromium-candidate/**
+  workflow_dispatch:
+    inputs:
+      full_recipe:
+        description: Run normal full recipe after both changed objects compile
+        type: boolean
+        required: true
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: chromium-v4l2-candidate-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 330
+    env:
+      JOBS: '4'
+      FULL_RECIPE: ${{ inputs.full_recipe && '1' || '0' }}
+      CANDIDATE: experiments/m10-video/chromium-candidate
+      CONTAINER_NAME: chromium-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check native capacity and candidate hashes before large downloads
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/chromium-review"
+          python3 "$CANDIDATE/ci/verify-build.py" resources "$RUNNER_TEMP" "$RUNNER_TEMP/chromium-review/host-resources.json"
+          python3 "$CANDIDATE/ci/verify-build.py" inputs "$CANDIDATE" "$RUNNER_TEMP/chromium-review/retained-inputs.json"
+          docker info --format '{{.Architecture}} {{.DockerRootDir}}' > "$RUNNER_TEMP/chromium-review/docker-info.txt"
+          df -hT / /mnt > "$RUNNER_TEMP/chromium-review/disk-before.txt"
+          free -b > "$RUNNER_TEMP/chromium-review/memory-before.txt"
+      - name: Prepare recipe, verify GN and compile changed objects; optional normal full build
+        timeout-minutes: 305
+        shell: bash
+        run: |
+          set -euo pipefail
+          review="$RUNNER_TEMP/chromium-review"
+          trap 'docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true' EXIT
+          docker pull alpine:edge
+          docker image inspect alpine:edge --format '{{json .RepoDigests}}' > "$review/alpine-image-digest.json"
+          docker run --name "$CONTAINER_NAME" --detach \
+            --mount "type=bind,src=$PWD/$CANDIDATE,dst=/candidate,readonly" \
+            --mount "type=bind,src=$review,dst=/review" \
+            --env JOBS --env FULL_RECIPE alpine:edge sh /candidate/ci/build-in-container.sh
+          docker logs --follow "$CONTAINER_NAME" 2>&1 | tee "$review/build.log" &
+          logger=$!
+          (
+            while [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME")" = true ]; do
+              date -u '+%Y-%m-%dT%H:%M:%SZ'
+              df -B1 /
+              free -b
+              docker stats --no-stream --format '{{.MemUsage}} {{.CPUPerc}} {{.BlockIO}}' "$CONTAINER_NAME"
+              sleep 30
+            done
+          ) > "$review/resource-samples.txt" 2>&1 &
+          monitor=$!
+          set +e
+          timeout --signal=TERM --kill-after=60s 300m docker wait "$CONTAINER_NAME" > "$review/container-exit.txt"
+          wait_rc=$?
+          set -e
+          if [ "$wait_rc" -ne 0 ]; then docker stop --time 30 "$CONTAINER_NAME" || true; fi
+          wait "$logger" || true
+          wait "$monitor" || true
+          test "$wait_rc" -eq 0
+          test "$(cat "$review/container-exit.txt")" = 0
+      - name: Collect bounded review logs
+        if: always()
+        shell: bash
+        run: |
+          review="$RUNNER_TEMP/chromium-review"
+          mkdir -p "$review"
+          docker logs "$CONTAINER_NAME" > "$review/container-last.log" 2>&1 || true
+          docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+          sudo chown -R "$(id -u):$(id -g)" "$review"
+          df -hT / /mnt > "$review/disk-after.txt"
+          free -b > "$review/memory-after.txt"
+          cp "$CANDIDATE/source-manifest.json" "$review/candidate-source-manifest.json"
+          cp "$CANDIDATE/patches/"*.patch "$review/"
+          test -z "$(find "$review" -type f \( -name '*.rsa' -o -name '*.pem' \) -print)"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: chromium-v4l2-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/chromium-review/
+          if-no-files-found: error
+          retention-days: 3

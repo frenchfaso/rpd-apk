@@ -1,0 +1,70 @@
+diff --git a/media/gpu/v4l2/v4l2_device.h b/media/gpu/v4l2/v4l2_device.h
+--- a/media/gpu/v4l2/v4l2_device.h
++++ b/media/gpu/v4l2/v4l2_device.h
+@@ -96,6 +96,10 @@
+   [[nodiscard]] bool Open(Type type, uint32_t v4l2_pixfmt);
+   static base::ScopedFD OpenFDForType(Type type);
+ 
++  // Enumerate devices using the same format checks as Open().
++  // Used before sandbox entry to allow only matching device nodes.
++  static std::vector<std::string> GetDevicePathsForType(Type type);
++
+   // Returns whether Open() has been succeeded.
+   bool IsValid();
+ 
+diff --git a/media/gpu/v4l2/v4l2_device.cc b/media/gpu/v4l2/v4l2_device.cc
+--- a/media/gpu/v4l2/v4l2_device.cc
++++ b/media/gpu/v4l2/v4l2_device.cc
+@@ -143,6 +143,17 @@
+   }
+ 
+   return true;
++}
++
++std::vector<std::string> V4L2Device::GetDevicePathsForType(Type type) {
++  auto dev = base::MakeRefCounted<V4L2Device>();
++  const auto& devices = dev->GetDevicesForType(type);
++  std::vector<std::string> paths;
++  paths.reserve(devices.size());
++  for (const auto& device : devices) {
++    paths.push_back(device.first);
++  }
++  return paths;
+ }
+ 
+ base::ScopedFD V4L2Device::OpenFDForType(Type type) {
+diff --git a/content/common/gpu_pre_sandbox_hook_linux.cc b/content/common/gpu_pre_sandbox_hook_linux.cc
+--- a/content/common/gpu_pre_sandbox_hook_linux.cc
++++ b/content/common/gpu_pre_sandbox_hook_linux.cc
+@@ -118,6 +118,21 @@
+ void AddV4L2GpuPermissions(
+     std::vector<BrokerFilePermission>* permissions,
+     const sandbox::policy::SandboxSeccompBPF::Options& options) {
++#if BUILDFLAG(IS_LINUX) && BUILDFLAG(USE_V4L2_CODEC)
++  if (!UseChromecastSandboxAllowlist()) {
++    // Generic Linux shares /dev/video* with capture devices. Probe
++    // before entering the sandbox and allow only decoder nodes accepted
++    // by the same queue-format checks used for decoder discovery.
++    // Devices loaded later require restarting the GPU process.
++    if (options.accelerated_video_decode_enabled) {
++      for (const auto& path : media::V4L2Device::GetDevicePathsForType(
++               media::V4L2Device::Type::kDecoder)) {
++        permissions->push_back(BrokerFilePermission::ReadWrite(path));
++      }
++    }
++    return;
++  }
++#endif
+   if (options.accelerated_video_decode_enabled) {
+     // Device nodes for V4L2 video decode accelerator drivers.
+     // We do not use a FileEnumerator because the device files may not exist
+@@ -668,6 +683,9 @@
+     }
+   }
+ 
++  if (UseV4L2Codec(options) && !UseChromecastSandboxAllowlist()) {
++    AddV4L2GpuPermissions(&permissions, options);
++  }
+   AddStandardGpuPermissions(&permissions);
+   return permissions;
+ }

@@ -1,0 +1,80 @@
+{
+  "status": "unbuilt candidate; no browser support claim",
+  "chromium_version": "152.0.7977.82",
+  "chromium_commit": "d04cdb24d67b081f6cf80200ffc5233f44b61109",
+  "aports_commit": "a44854115ef1a1cda0c41b3e6f0974f51755d736",
+  "recipe_base": "152.0.7977.82-r1",
+  "candidate_recipe": "152.0.7977.82-r2; experimental revision, not published",
+  "upstream_sources": [
+    {
+      "path": "upstream/aports/community/chromium/APKBUILD",
+      "url": "https://raw.githubusercontent.com/alpinelinux/aports/a44854115ef1a1cda0c41b3e6f0974f51755d736/community/chromium/APKBUILD",
+      "sha256": "11eaf1455db582568e715bb161e4b890618977accf65ac3d89f6f4373bed8252"
+    },
+    {
+      "path": "upstream/chromium/content/common/BUILD.gn",
+      "url": "https://chromium.googlesource.com/chromium/src/+/d04cdb24d67b081f6cf80200ffc5233f44b61109/content/common/BUILD.gn?format=TEXT",
+      "sha256": "d3c67bdb73f73facaa35353eaa2b635979cfdc79829af4e9693ad37b9b5217c0"
+    },
+    {
+      "path": "upstream/chromium/content/common/gpu_pre_sandbox_hook_linux.cc",
+      "url": "https://chromium.googlesource.com/chromium/src/+/d04cdb24d67b081f6cf80200ffc5233f44b61109/content/common/gpu_pre_sandbox_hook_linux.cc?format=TEXT",
+      "sha256": "6484df28cc337258695fdcb99b44f4c28e741e2bb229adde75fefc6fd5612f05"
+    },
+    {
+      "path": "upstream/chromium/media/gpu/v4l2/v4l2_device.cc",
+      "url": "https://chromium.googlesource.com/chromium/src/+/d04cdb24d67b081f6cf80200ffc5233f44b61109/media/gpu/v4l2/v4l2_device.cc?format=TEXT",
+      "sha256": "20c995b1a9e7f05494dd8ecfebaa53dd7f2eefaa5c813fad64df7698aa3a8d55"
+    },
+    {
+      "path": "upstream/chromium/media/gpu/v4l2/v4l2_device.h",
+      "url": "https://chromium.googlesource.com/chromium/src/+/d04cdb24d67b081f6cf80200ffc5233f44b61109/media/gpu/v4l2/v4l2_device.h?format=TEXT",
+      "sha256": "25837406e9371f7ea5ab7a25c47d2d14bd1c26008e439f8e757700ea7ed1ef7b"
+    }
+  ],
+  "reference_files": {
+    "reference/abuild-master-commit.json": "109b2eb3b1e152ba7c5fa8644ed52af200bbbaf778bf377e99e19d8e82c1bf41",
+    "reference/abuild-master.in": "3f22d28f9588c1b4a0b5a0932b2b6e73673286a1315e23a8df499815c7ea1ae6",
+    "reference/alpine-musl-sandbox.patch": "a0b617eec291834abac9bd8affa9c4eebebe7388f601af8a67939925e9c1a4a0",
+    "reference/alpine-no-sandbox-settls.patch": "fca48fcc22f67e8a6077b8879f00e3bb34fbb3934d68b3a29b3e33c0de07a773",
+    "reference/alpine-recipe-commits.json": "3be22f8e1a3063b601caebed8da8f007b9adfbdb3d209a7daacc2084bf472f6e",
+    "reference/alpine-samurai-APKBUILD": "d1654b88dd77ee681b3cb46646018a63dbdf9ff41bc7c4cb982d5eec1494f35d",
+    "reference/build-config.h": "c6e3501edea0833a2ef1b50f5cd27e151d58198af0523fa4d91ebd62a1be2039",
+    "reference/chromium-linux-build-instructions.md": "ed25beb1f3e75e1d146052a4c01b69c08cb33b3bd5fdb90b03de1fa11a0ba45e",
+    "reference/dual-backend-commit.json": "b4c0b0f2087e09050070bad0679634aac76051692776fd49c92df5496e233b4d",
+    "reference/media__base__decoder.cc": "266dbda10b987749dba94dac42186ffd8eb3c8710875c0516dd6f9f02e68c788",
+    "reference/media__base__media_switches.cc": "4e1fe970d335e214965d6c569ca86717fbb351d35630a60315055efc82cc9854",
+    "reference/media__gpu__args.gni": "c177a6591e0f64c7d4ceedb7335da9225d376ec0c3bae45cdbc2d3a078c38dd1",
+    "reference/media__gpu__chromeos__video_decoder_pipeline.cc": "0e43d78b9491354857f4beccddbbc30cfcd43544158d19ec62d3c3bc9914eae5",
+    "reference/media__gpu__sandbox__hardware_video_decoding_sandbox_hook_linux.cc": "48f5d4281feacdae55a0881a573074b5a70e1378417aaddd51d701aa86700155",
+    "reference/media__gpu__v4l2__v4l2_queue.cc": "644cc7ef341ea9bc4b7a7d573f1bb0504f75cdd68ee25f515131d3d714c617bd",
+    "reference/media__gpu__v4l2__v4l2_stateful_video_decoder.cc": "b18de68f5f1fae37da5db74612fea17f6182db22046fa2e1fa9bdab1aefd0ac3",
+    "reference/media__gpu__v4l2__v4l2_utils.cc": "69f5c359113ecfb7161eeb569b0386c6e07f3930b001e09f7ca4c74dbf292eb4",
+    "reference/media__mojo__services__gpu_mojo_media_client_linux.cc": "07e437d15f88c925df17024e2650e823f73824ae5dab23ab8816c566b6ffec52",
+    "reference/packaging-source-state.json": "cb4c3d9d1f11388aa4e0ad088eba32977a9450286d733e4116631bccd9a7de27",
+    "reference/repository-workflow.yml": "496e13acb8a329df209cc9c19f0e832d763020c14629d7fb61f043b3c4323232",
+    "reference/rpd-build.sh": "ea296476f505ee5cfc114c53c1cff98ff176958c271538581f600b7cf8022054",
+    "reference/samurai-1.3-tool.c": "a581f1781e977749b4e2409cfdb9255109dd14e3162150b92f4eae2c8e0c070d",
+    "reference/samurai-tool.c": "d781963dfcb2a648960fc104905557f1843de56b520b8e265e49ea0a949f6c0d",
+    "reference/version.json": "5faaa497541cb6d836f5352f233fc7bc7381e5d314d03c6d8534ba1fb941b8e8"
+  },
+  "patches": {
+    "patches/chromium-linux-v4l2-decoder-broker.patch": "8324d0665fb86ebdbe3a696ab06319aca2335b68ad6d99be932dae2a59eb2f82",
+    "patches/alpine-chromium-enable-v4l2-aarch64.patch": "a8e51326ce23ee382f68db0c28899539f4f14ff9a80d15b096850d303e9dfd5e"
+  },
+  "prepared_files": {
+    "prepared/aports/community/chromium/APKBUILD": "70f3bc5ef90447dbaaba2876c41c7a62facbdb6321f803502a02e8c1a4dec527",
+    "prepared/aports/community/chromium/chromium-linux-v4l2-decoder-broker.patch": "8324d0665fb86ebdbe3a696ab06319aca2335b68ad6d99be932dae2a59eb2f82",
+    "prepared/chromium/content/common/BUILD.gn": "d3c67bdb73f73facaa35353eaa2b635979cfdc79829af4e9693ad37b9b5217c0",
+    "prepared/chromium/content/common/gpu_pre_sandbox_hook_linux.cc": "3ac5c3337af770c9fe493f8322df9884600224b244c6b9eccb996409d452ee78",
+    "prepared/chromium/media/gpu/v4l2/v4l2_device.cc": "e3b23d3e27bf7fc0fad3ce8f4ae1e21343e8cf55c3fff750b2a4786ac0f7fa6e",
+    "prepared/chromium/media/gpu/v4l2/v4l2_device.h": "35d61f3017f0eb7fdaf8631da54aaccc7fe00f00227f138e87e6da98203d0c27"
+  },
+  "chromium_patch_sha512": "879e9d754bccb30b4e27458a9404099d4cb2e361c11040f42ab26980332723d031fb1c79cc1edeebc6b01f18b86d394dcfa7c1c4f1588f8cc4c54f1215d95b09",
+  "runner_evidence": {
+    "path": "runner-preflight-36760452118.log",
+    "url": "https://github.com/frenchfaso/rpd-apk/actions/runs/36760452118",
+    "sha256": "367c58e1a76dbaa623e25b39d72c448d42e6dec4b2bad91c5aa46f76807ac125",
+    "scope": "parent's native standard ARM runner capacity preflight; not a Chromium build"
+  }
+}
