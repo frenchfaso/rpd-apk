@@ -33,7 +33,7 @@ installed with APK. The lock tracks published Raspberry archives, never Git HEAD
 - Native RPCC modules provide appearance, panel, menu, shortcuts and mouse/keyboard preferences. See [ARM Trixie mapping](ARM-TRIXIE.md) for exclusions.
 - The file manager starts with a plain background; large wallpaper collections,
   browser, office and education suites are outside the minimal profile.
-- Chromium is provided by `rpd-desktop-browser`, included on M10, with portable official ARM browser defaults.
+- GNOME Web (stock Alpine Epiphany/WebKitGTK) is provided by `rpd-desktop-browser`, included on M10. Chromium remains optional, with portable official ARM browser defaults when installed.
 - The battery and audio plugins are included as desktop services, but physical
   battery reporting and audio still require working kernel/board support.
 - As in the upstream shutdown dialog, screen locking is offered only when a
@@ -134,7 +134,7 @@ The locale backend records a per-user LANG value for the next login; keyboard la
 
 Display output profiles use a session-scoped kanshi service. Login-screen changes use a constrained, authenticated polkit helper which accepts only font/theme values, output geometry and touch mapping. Arbitrary commands, root destination paths and the rest of user XML are never imported.
 
-VLC uses Raspberry's published GTK2 engine and Qt GTK2 style/platform plugin, sharing the GTK settings. Chromium is now included by the M10 profile. On postmarketOS systemd install `cups-systemd cups-filters-systemd`, start the CUPS socket, and grant a printer administrator appropriate `lpadmin` membership. Printer hardware, Bluetooth/USB mouse and physical gesture tests are distinct from headless build validation.
+VLC uses Raspberry's published GTK2 engine and Qt GTK2 style/platform plugin, sharing the GTK settings. GNOME Web is included by the M10 profile; installed Chromium and Firefox remain selectable in Control Centre. On postmarketOS systemd install `cups-systemd cups-filters-systemd`, start the CUPS socket, and grant a printer administrator appropriate `lpadmin` membership. Printer hardware, Bluetooth/USB mouse and physical gesture tests are distinct from headless build validation.
 
 ## Desktop audio policy
 

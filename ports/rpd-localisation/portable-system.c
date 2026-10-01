@@ -84,11 +84,20 @@ void load_system_tab(GtkBuilder *b) {
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(gtk_builder_get_object(b,"rb_cli")),strcmp(value,"1")!=0);
     g_free(value);g_signal_connect(w,"toggled",G_CALLBACK(boot),NULL);
     value=get("get-browser");
-    const char *names[]={"chromium","firefox"};
-    for(int i=0;i<2;i++) {
+    GtkWidget *web=GTK_WIDGET(gtk_builder_get_object(b,"rb_epiphany"));
+    GtkWidget *chromium=GTK_WIDGET(gtk_builder_get_object(b,"rb_chromium"));
+    if(!web) {
+        web=gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(chromium),"GNOME Web");
+        gtk_box_pack_start(GTK_BOX(gtk_widget_get_parent(chromium)),web,FALSE,TRUE,0);
+        gtk_box_reorder_child(GTK_BOX(gtk_widget_get_parent(chromium)),web,1);
+        gtk_widget_show(web);gtk_builder_expose_object(b,"rb_epiphany",G_OBJECT(web));
+    }
+    const char *names[]={"epiphany","chromium","firefox"};
+    const char *desktop[]={"org.gnome.Epiphany.desktop","chromium.desktop","firefox.desktop"};
+    for(int i=0;i<3;i++) {
         gchar *id=g_strdup_printf("rb_%s",names[i]);w=gtk_builder_get_object(b,id);g_free(id);
         gchar *path=g_find_program_in_path(names[i]);gtk_widget_set_sensitive(GTK_WIDGET(w),path!=NULL);g_free(path);
-        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),g_str_has_prefix(value,names[i]));
+        gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(w),!strcmp(value,desktop[i]));
         g_signal_connect(w,"toggled",G_CALLBACK(browser),(gpointer)names[i]);
     }
     g_free(value);

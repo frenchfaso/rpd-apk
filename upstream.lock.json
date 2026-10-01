@@ -290,7 +290,7 @@
     "version": "2.22",
     "source_version": "2.22",
     "directory": "rc_gui",
-    "pkgrel": 49
+    "pkgrel": 50
   },
   "gtk2-engines-pixflat": {
     "version": "0.5",

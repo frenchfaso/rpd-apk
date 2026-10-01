@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 import os,shutil,subprocess,sys
 default=subprocess.run(['xdg-mime','query','default','x-scheme-handler/http'],text=True,stdout=subprocess.PIPE).stdout.strip()
-browser='firefox' if default=='firefox.desktop' and shutil.which('firefox') else 'chromium'
+browsers={'org.gnome.Epiphany.desktop':'epiphany','chromium.desktop':'chromium','firefox.desktop':'firefox'}
+browser=browsers.get(default)
+if not browser or not shutil.which(browser):
+    browser=next((name for name in browsers.values() if shutil.which(name)),None)
+if browser is None:sys.exit('No supported browser is installed')
 os.execvp(browser,[browser]+sys.argv[1:])

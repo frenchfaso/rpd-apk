@@ -13,9 +13,9 @@ Reference: published Raspberry Pi OS Trixie ARM packages, including rpd-metas 1.
 - Packaged MIME cache repairs the original Raspberry application overrides: file manager, images, PDF, video and archives resolve to their installed applications.
 - ZIP/7z creation/extraction, English spelling dictionary, FFmpeg/GStreamer codecs and Windows share discovery complement the existing accessories, VLC, GVFS and removable-media stack.
 
-## Chromium
+## Browsers
 
-The M10 profile now installs native Alpine Chromium. HTTP, HTTPS, HTML and XHTML default to Chromium. A once-per-user migration adds the browser launcher while preserving existing panel choices; later customisations are not overwritten. Installing Firefox separately makes it selectable in Control Centre.
+The M10 profile installs stock Alpine GNOME Web (Epiphany/WebKitGTK). HTTP, HTTPS, HTML and XHTML default to GNOME Web for new users. This deliberately differs from the official ARM desktop's Chromium default, following the user's 2026-10-01 decision. Existing browser preferences and Chromium installations are preserved. A once-per-user migration adds the shared browser launcher while preserving existing panel choices; later customisations are not overwritten. Installed GNOME Web, Chromium and Firefox are selectable in Control Centre.
 
 `rpd-chromium-defaults` tracks the signed official ARM source of `rpi-chromium-mods`. It packages the original bookmarks and initial preferences, including system theme and the original first-run page, with the bookmarks path adapted to Alpine. Recommended policies select DuckDuckGo, disable search suggestions and show the bookmarks bar; users can override recommended settings. Initial preferences apply to newly created profiles, not existing user profiles.
 
@@ -25,6 +25,6 @@ Linux Chromium’s `distribution.require_eula=false` suppresses its empty unbran
 
 APK updates retain Alpine/postmarketOS repositories. The daily GitHub build tracks explicit Raspberry source packages including browser defaults. A changed official desktop dependency/recommendation manifest stops publication for review, preventing new components from silently being missed or Pi-only packages being imported automatically.
 
-Full printer driver collections remain excluded by user choice; the existing printer UI/basic CUPS stack is retained. Office/education suites, IDEs, Raspberry Connect, imaging/boot/GPIO tools and APT integration are intentionally absent. The Chromium binary is Alpine's, so Raspberry-specific browser patches/extensions are not implied. Hardware audio, battery, acceleration and backlight limitations remain board/kernel issues.
+Full printer driver collections remain excluded by user choice; the existing printer UI/basic CUPS stack is retained. Office/education suites, IDEs, Raspberry Connect, imaging/boot/GPIO tools and APT integration are intentionally absent. The default Epiphany/WebKit packages and optional Chromium binary are Alpine's; Raspberry-specific Chromium patches/extensions are not implied. Hardware audio, battery, acceleration and backlight limitations remain board/kernel issues.
 
 Native ARM headless tests cover MIME defaults, browser configuration, archive round trips and original settings dialogs, alongside existing session, touch-menu ABI and greeter tests. OpenRC setup is implemented but physical OpenRC boot is not qualified by the systemd M10 test. Physical USB media and Bluetooth peripherals need attached hardware to test.

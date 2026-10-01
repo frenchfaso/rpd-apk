@@ -9,9 +9,10 @@ def main():
     elif op=='get-browser':print(run('xdg-mime','query','default','x-scheme-handler/http'))
     elif op=='browser':
         browser,=args
-        if browser not in ('chromium','firefox') or not shutil.which(browser):raise ValueError('Browser is not installed')
+        browsers={'epiphany':'org.gnome.Epiphany.desktop','chromium':'chromium.desktop','firefox':'firefox.desktop'}
+        if browser not in browsers or not shutil.which(browser):raise ValueError('Browser is not installed')
         for mime in ['text/html','application/xhtml+xml','x-scheme-handler/http','x-scheme-handler/https']:
-            run('xdg-mime','default',browser+'.desktop',mime)
+            run('xdg-mime','default',browsers[browser],mime)
     elif op=='get-autologin':
         parser=configparser.ConfigParser(strict=False)
         parser.read([str(p) for directory in ('/usr/share/lightdm/lightdm.conf.d','/etc/lightdm/lightdm.conf.d') for p in sorted(pathlib.Path(directory).glob('*.conf'))]+['/etc/lightdm/lightdm.conf'])

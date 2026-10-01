@@ -1,11 +1,11 @@
 pkgname=rpd-desktop-browser
 pkgver=0.1.0
-pkgrel=76
+pkgrel=77
 pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-browser)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-desktop-lite chromium rpd-chromium-defaults"
+depends="rpd-desktop-lite epiphany rpd-chromium-defaults"
 options="!check"
 
 source="rpd-browser rpd-browser-init rpd-browser.desktop mimeapps.list zz-rpd.conf"
@@ -18,9 +18,9 @@ package() {
 }
 
 sha512sums="
-a77fa0cd9ec458d8325869704a8dd5febd8432f3ef0467ab19b71ee38a769e63b88932b3b15ef17da8584493df91ad84dfd300c4f950d1efefe6869b47a5c378  rpd-browser
+7fb7d0e4694161e9c4b799335e115af6d6946e2f554999f58032898a72a745ee527e5f294cd2a41db82199c8bde5b02aee01da87cff8c61d2069c81aeac586f4  rpd-browser
 72be96dda6a4d290dc31b9fb68f91886c926b720249d00f07418f5fe7394f45d20b04b263efaa266bd60d0724040f1517440655e3d87c9bdc791d878598498f0  rpd-browser-init
 a280b183c0a5396f8a527a4a28d24ea4810c95cae3f32947ef07f3a930113733b543c104490a1ac1b21d0c8240fd2b1d77d762ae44de88f3ea70a379ebea1871  rpd-browser.desktop
-aaa47725de9eab21fed20111f8dd71ba23adaa181365aa883fc414a0be7afa686fa70343c9add70a7489325a27b11392ff11d1f0fe440c457fd37a512e5757fd  mimeapps.list
+8d8d62a88f92bc004aef9711bebc6adfc24b2855a7350bc8dfe7253c49d27fe464625b5749078ea44a206ca77f9db9ad2a2236fbb7f2de64a9faefcf67ae6dab  mimeapps.list
 09aa4a0d140640927392c580396b86526af8cfd1acd6e5a868c8c24f788bc0ce9ddc818634eeef5326e21820284d7f9a46fc93ef7683186d002e4f6e77cef6b1  zz-rpd.conf
 "
