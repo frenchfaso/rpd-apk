@@ -2,7 +2,7 @@
 # Contributor: Danct12 <danct12@disroot.org>
 # Contributor: Rasmus Thomsen <oss@cogitri.dev>
 # Based on Alpine community/squeekboard 1.43.1-r5 (team/phosh).
-# Local patch is opt-in; the greeter retains upstream visibility behavior.
+# Visibility patch is opt-in; the greeter retains upstream visibility behavior.
 pkgname=squeekboard
 pkgver=1.43.1
 pkgrel=143
@@ -34,6 +34,7 @@ source="https://gitlab.gnome.org/World/Phosh/squeekboard/-/archive/v$pkgver/sque
 	systemd-service.patch
 	nix-0.22.3-timespec.patch
 	persistent-visibility.patch
+	close-abi.patch
 	"
 builddir="$srcdir/$pkgname-v$pkgver"
 
@@ -85,4 +86,5 @@ sha512sums="
 e1c2b41c1ea856208d18e296b941d0324b8b3d017637bd1edc7208071385c66f1860a370e848193456796247b264d314836cd3d93eb78403bd9187504909539b  systemd-service.patch
 8283a049711e3195b46681022935c1d520bd2f8ea0078833d4ce173ab7c861d01b3b33687b66a9e24dee9d370394143c162b6b843d71bba8f58889224269b00b  nix-0.22.3-timespec.patch
 2e126dee99872344a4f8349e4ca8008397a1e95ef12073a4996a9f4d9ea787ec652e888f2edbe4741b830b54dec44aae95bda45a4ca91b976e5eca70bb921871  persistent-visibility.patch
+7acf7996dcf38c3569f48e9e29036d38d32124b8d8458f94fa2ba2261c9b1fdd0a136b5f6e42993f7d6a5082a08695d007f4fbac232611deaf8a90b6279cee76  close-abi.patch
 "

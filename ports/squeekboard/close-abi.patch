@@ -1,0 +1,31 @@
+Match libc's close ABI; newer Rust rejects the incorrect declaration.
+Keep the C KeyMap layout unchanged.
+
+--- a/src/vkeyboard.rs
++++ b/src/vkeyboard.rs
+@@ -9,7 +9,7 @@
+ /// Gathers stuff defined in C or called by C
+ pub mod c {
+     use std::ffi::CStr;
+-    use std::os::raw::{ c_char, c_void };
++    use std::os::raw::{ c_char, c_int, c_void };
+     use std::ptr;
+ 
+     #[repr(transparent)]
+@@ -39,14 +39,14 @@
+     impl Drop for KeyMap {
+         fn drop(&mut self) {
+             unsafe {
+-                close(self.fd as u32);
++                close(self.fd as c_int);
+             }
+         }
+     }
+ 
+     extern "C" {
+         // From libc, to let KeyMap get deallocated.
+-        fn close(fd: u32);
++        fn close(fd: c_int) -> c_int;
+ 
+         pub fn eek_virtual_keyboard_v1_key(
+             virtual_keyboard: ZwpVirtualKeyboardV1,
