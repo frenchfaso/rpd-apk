@@ -87,7 +87,9 @@
     "wfplug-volumepulse",
     "wfplug-wlist",
     "wlopm",
-    "xsettingsd"
+    "wlr-randr",
+    "xsettingsd",
+    "xwayland"
   ],
   "rpd-theme": [
     "fonts-liberation2",

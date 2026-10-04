@@ -74,7 +74,9 @@ def main():
         raise ValueError('Alpine Mesa build recipe changed; review required')
     # Authenticate a published binary before following its source release.
     with tempfile.TemporaryDirectory() as temp:
-        subprocess.run(['apk', '--arch', 'aarch64', '--repositories-file',
+        # The native CI container's default keys may belong to a different arch.
+        subprocess.run(['apk', '--arch', 'aarch64', '--keys-dir',
+            '/usr/share/apk/keys/aarch64', '--repositories-file',
             '/dev/null', '--repository', 'https://dl-cdn.alpinelinux.org/alpine/edge/main',
             '--no-cache', 'fetch', '--from', 'none', '--output', temp, 'mesa'], check=True)
         package, = Path(temp).glob('mesa-*.apk')
