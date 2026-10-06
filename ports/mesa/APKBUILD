@@ -2,7 +2,7 @@
 maintainer="team/alpine-desktop <achill@achill.org>"
 pkgname=mesa
 pkgver=26.2.4
-pkgrel=1003
+pkgrel=1004
 pkgdesc="Mesa DRI OpenGL library"
 url="https://www.mesa3d.org"
 arch="aarch64"
