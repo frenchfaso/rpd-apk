@@ -1,15 +1,15 @@
 pkgname=rpd-backlight-m10
 pkgver=7.1.3
-pkgrel=78
+pkgrel=80
 pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="GPL-2.0-only"
 subpackages="rpd-gpu-m10:gpu rpd-usb-otg-m10:otg rpd-battery-m10:battery rpd-charger-m10:charger rpd-audio-m10:audio"
 install="rpd-gpu-m10.post-install rpd-gpu-m10.post-upgrade rpd-gpu-m10.pre-deinstall rpd-audio-m10.post-install rpd-audio-m10.post-upgrade rpd-audio-m10.post-deinstall rpd-charger-m10.post-install rpd-charger-m10.post-upgrade rpd-charger-m10.pre-deinstall rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
-_kernel_apk_version=7.1.3-r0
+_kernel_apk_version=7.1.3-r1
 depends="kmod brightnessctl brightnessctl-udev"
-makedepends="mesa-dev clang22 lld22 llvm22 rust rust-src rust-bindgen make flex bison perl openssl-dev elfutils-dev pahole python3 py3-libfdt py3-lxml py3-jinja2 dtc rpd-cpu-topology-m10"
+makedepends="mesa-dev clang23 lld23 llvm23 rust rust-src rust-bindgen make flex bison perl openssl-dev elfutils-dev pahole python3 py3-libfdt py3-lxml py3-jinja2 dtc rpd-cpu-topology-m10"
 source="rpd-gpu-m10.files gpu-probe.c gpu-renderer.sh test-gpu.py build-gpu.sh gpu-dtb.py 96-rpd-gpu-m10 rpd-gpu-m10-load rpd-gpu-m10.service rpd-gpu-m10.conf 80-rpd-gpu-m10.preset 0002-a5xx-gpmu-registers.diff 0003-adreno-504-rpm-domain.diff 0004-a504-retained-gx-reset.diff 0005-msm-recover-before-retire.diff 0006-msm-recovery-task-ref.diff 0007-a504-physical-cx-device-link.diff 0008-msm-gpu-only-remove-private.diff 0009-a5xx-release-shadow-mapping.diff 0010-a504-bounded-fragment-progress.diff 0001-adreno-504-bringup.diff m10_wcd_analog.c m10_speaker_amp.c m10-audio-pmic.diff m10-audio.dtsi audio-dtb.py test-audio.py 95-rpd-audio-m10 Lenovo-M10.conf HiFi.conf 51-rpd-m10-audio.conf m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
     kernel.config Makefile m10_firmware_backlight.c
     rpd-backlight-m10.service rpd-backlight-m10-load
@@ -19,7 +19,7 @@ builddir="$srcdir/linux-7.1.3-r1"
 
 build() {
     unset LDFLAGS
-    export PATH=/usr/lib/llvm22/bin:$PATH
+    export PATH=/usr/lib/llvm23/bin:$PATH
     cp "$srcdir/kernel.config" .config
     make LLVM=1 olddefconfig
     # Native userspace-link capability does not affect the kernel ABI.
@@ -56,7 +56,7 @@ build() {
 }
 
 check() {
-    export PATH=/usr/lib/llvm22/bin:$PATH
+    export PATH=/usr/lib/llvm23/bin:$PATH
     test "$(make -s LLVM=1 kernelrelease)" = 7.1.3-msm89x7
     test -s vmlinux.symvers
     # Every module import must resolve against the verified kernel exports.
@@ -214,11 +214,11 @@ e13c0cbd76def7cc382c17e6b2d373424a91a6c5da1f1ef7d833c83e4299b0d3e0851b5879a98485
 f2b7a0d953e799c4eb17dcee05aadc5d8dd3f6ae856c36cb0abae54ce432928b633e32aaab5b1158473178a1d0ae5e6019175dee8e1e561daef160186213f3e7  80-rpd-charger-m10.preset
 42b72db375438a3b354ad858068bbe92de80eb4655554d5ef20cdd30b0ea249c157965919616220d9e85cd447eb2afe9a05a48378b946648c47656750cbf147b  80-rpd-battery-m10.preset
 c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a  linux-v7.1.3-r1.tar.gz
-ffe6bd375fecf5d69c586d821605af94f8d5665ce51fb9471627b52ff54712f1de3bf1e64f65125f7fae9a961f8b9818f870db22029d5185c2caf7e1f7f97354  kernel.config
+f4fed9713ddfb399d926f1424f6231137ad64f5d63c1ce25663e48877a425fcdaea1de423f4bbe0f44161611ba305556c1b5b672af36dd7c988a2c715936bd84  kernel.config
 50d41a6feb9ec50985e8238ac15029cf83d1dd4a94be1f303e21a3fe86c547744fb1fa865258e8f2e43ffd553ba609af614de4d0ba913653ece855e8e8a50dcf  Makefile
 5ccd612032d35190479e526089ac50e2d9cda9be54f08f00436faaafd14ea950ab7d3e76484421491b4cce53d433b0811371055f4411db94402dda3e3bf05e44  m10_firmware_backlight.c
 c6a52f9fdef8e19515aa7bf1de0bd6ec848901f8985445d8043296d17cda0e94548a27695bf18196bfbdcc8682e956681630b22706613773339935b9dbe2350b  rpd-backlight-m10.service
-436bc87d387c383779e59ae887e0998f42c2861ff91d9a4bbafd7217f114346404d79e3ab3a19d4db71b9542b0be1023b07020afb3a4a205385070eef63e2b4b  rpd-backlight-m10-load
+103ce34945ebf3486d3079f2ae2967fd6b109237bdf6e618615a47d1ccc489ca7517885c21b45d60de302205b580afa660d988798567ff8a7c109b29d3f519e5  rpd-backlight-m10-load
 c338990441970e66599b3903bf1badd158170b13ff609c9e95f96486c1a9994993c839ebbf7f95f9e227650b1212e30255271441a31b8c7d88140c74cdb89ed6  m10_otg_id.c
 8be85a47ad203dc7d9aa0456febd079bf709667008cfc15da6369bad69f0bea5c6ab57518f146ece4c406a584b474c8b9cffdc363aa6adf28eee8d33b25bcf19  m10_otg_vbus.c
 45253473cdf71827c26ab14dfb29fea0829bd89dc86fbd2de86317fe969a36b4d565fad8cfa9ba54cf2e0d1c4acf13f8028e4e053c77c024df9d0527b2ac8419  rpd-usb-otg-m10
