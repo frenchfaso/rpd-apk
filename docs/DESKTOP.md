@@ -134,7 +134,7 @@ The locale backend records a per-user LANG value for the next login; keyboard la
 
 Display output profiles use a session-scoped kanshi service. Login-screen changes use a constrained, authenticated polkit helper which accepts only font/theme values, output geometry and touch mapping. Arbitrary commands, root destination paths and the rest of user XML are never imported.
 
-VLC uses Raspberry's published GTK2 engine and Qt GTK2 style/platform plugin, sharing the GTK settings. GNOME Web is included by the M10 profile; installed Chromium and Firefox remain selectable in Control Centre. On postmarketOS systemd install `cups-systemd cups-filters-systemd`, start the CUPS socket, and grant a printer administrator appropriate `lpadmin` membership. Printer hardware, Bluetooth/USB mouse and physical gesture tests are distinct from headless build validation.
+Qt5 and Qt6 applications use Raspberry's published GTK2 engine and matching GTK2 style/platform plugins, sharing the GTK settings. Native CI checks actual Qt6 plugin loading in the desktop session. GNOME Web is included by the M10 profile; installed Chromium and Firefox remain selectable in Control Centre. On postmarketOS systemd install `cups-systemd cups-filters-systemd`, start the CUPS socket, and grant a printer administrator appropriate `lpadmin` membership. Printer hardware, Bluetooth/USB mouse and physical gesture tests are distinct from headless build validation.
 
 ## Desktop audio policy
 

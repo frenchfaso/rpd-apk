@@ -34,4 +34,4 @@ M10 touch extension: one simultaneous two-finger tap generates a right click at 
 
 Login appearance and touch/display mapping use an authenticated polkit helper with fixed destinations and validated values. CUPS on a systemd postmarketOS host additionally needs `cups-systemd cups-filters-systemd`; enable the distribution's CUPS socket/service. The UI can discover/configure printers but successful physical printing requires a printer-specific test.
 
-Qt5's original GTK2 platform/style plugin reads the shared GTK settings directly; qt5ct is not available in Alpine edge and is not required for this integration. The original Qt configuration assets remain available for upstream appearance tooling.
+The original Qt5 and Qt6 GTK2 platform/style plugins read the shared GTK settings directly. Raspberry's qt6gtk2 component is built from its signed source release; qt5ct is not required for this integration. The original Qt configuration assets remain available for upstream appearance tooling.

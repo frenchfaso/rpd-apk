@@ -30,6 +30,7 @@
     "qt5-style-plugins",
     "qt5ct",
     "qt6ct",
+    "qt6gtk2",
     "raspi-config",
     "rfkill",
     "rpd-plym-splash",

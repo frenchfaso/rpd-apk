@@ -9,8 +9,8 @@ cp /etc/apk/repositories "$root/etc/apk/repositories"
 apk --root "$root" --initdb --no-scripts add rpd-desktop-m10
 ! apk --root "$root" info | grep -E '^(raspi-config|raspberrypi-bootloader|linux-rpi|rpi-eeprom|apt|dpkg)$'
 # The runtime theme must not pull GTK headers and their development toolchain.
-! apk --root "$root" info | grep -E '^(rpd-gtk2-engine-dev|gtk\+2\.0-dev)$'
-for path in usr/lib/udev/rules.d/99-rpd-m10-storage.rules usr/share/mkinitfs/hooks/20-rpd-lvm-m10.sh usr/lib/rpd-cpu-topology-m10/topology.py usr/share/boot-deploy/hooks/90-rpd-cpu-topology-m10 etc/deviceinfo usr/bin/rpd-autorotate usr/lib/rpd-autorotate/main.py etc/xdg/rpd/autorotate.conf usr/bin/epiphany usr/share/applications/org.gnome.Epiphany.desktop usr/bin/rpd-browser usr/sbin/rpd-configure-host usr/libexec/rpd-system-settings usr/share/raspi-ui-overrides/applications/mimeinfo.cache usr/bin/vlc usr/bin/rpd-localisation usr/bin/rpd-apply-greeter usr/lib/rpcc/librpcc_raindrop.so usr/lib/rpcc/librpcc_rpinters.so usr/lib/rpcc/librpcc_rc_gui.so usr/bin/rpcc usr/bin/lxtask usr/bin/gui-runcmd usr/bin/gui-screenshot usr/bin/galculator usr/bin/eom usr/bin/evince usr/lib/wf-panel-pi/libsmenu.so usr/lib/rpcc/librpcc_pipanel.so usr/lib/rpcc/librpcc_wf-panel-pi.so usr/bin/wf-panel-pi usr/bin/pcmanfm usr/bin/rpd-session usr/bin/squeekboard usr/bin/labwc usr/lib/wf-panel-pi/libnmenu.so usr/lib/wf-panel-pi/libtlist.so usr/lib/wf-panel-pi/libsqueek.so usr/lib/wf-panel-pi/libejecter.so usr/lib/wf-panel-pi/libnetman.so usr/lib/wf-panel-pi/libvolumepulse.so usr/lib/wf-panel-pi/libbatt.so usr/bin/xdg-user-dirs-update usr/bin/udisksctl usr/libexec/gvfs/gvfs-udisks2-volume-monitor usr/libexec/polkit-mate-authentication-agent-1 usr/bin/pishutdown usr/lib/wf-panel-pi/libbluetooth.so usr/sbin/pi-greeter usr/bin/rpd-greeter-session usr/share/xgreeters/rpd-greeter-labwc.desktop; do
+! apk --root "$root" info | grep -E '^(rpd-gtk2-engine-dev|gtk\+2\.0-dev|qt6-qtbase-dev|qt6-qtbase-private-dev)$'
+for path in usr/lib/qt6/plugins/platformthemes/libqt6gtk2.so usr/lib/qt6/plugins/styles/libqt6gtk2-style.so usr/lib/udev/rules.d/99-rpd-m10-storage.rules usr/share/mkinitfs/hooks/20-rpd-lvm-m10.sh usr/lib/rpd-cpu-topology-m10/topology.py usr/share/boot-deploy/hooks/90-rpd-cpu-topology-m10 etc/deviceinfo usr/bin/rpd-autorotate usr/lib/rpd-autorotate/main.py etc/xdg/rpd/autorotate.conf usr/bin/epiphany usr/share/applications/org.gnome.Epiphany.desktop usr/bin/rpd-browser usr/sbin/rpd-configure-host usr/libexec/rpd-system-settings usr/share/raspi-ui-overrides/applications/mimeinfo.cache usr/bin/vlc usr/bin/rpd-localisation usr/bin/rpd-apply-greeter usr/lib/rpcc/librpcc_raindrop.so usr/lib/rpcc/librpcc_rpinters.so usr/lib/rpcc/librpcc_rc_gui.so usr/bin/rpcc usr/bin/lxtask usr/bin/gui-runcmd usr/bin/gui-screenshot usr/bin/galculator usr/bin/eom usr/bin/evince usr/lib/wf-panel-pi/libsmenu.so usr/lib/rpcc/librpcc_pipanel.so usr/lib/rpcc/librpcc_wf-panel-pi.so usr/bin/wf-panel-pi usr/bin/pcmanfm usr/bin/rpd-session usr/bin/squeekboard usr/bin/labwc usr/lib/wf-panel-pi/libnmenu.so usr/lib/wf-panel-pi/libtlist.so usr/lib/wf-panel-pi/libsqueek.so usr/lib/wf-panel-pi/libejecter.so usr/lib/wf-panel-pi/libnetman.so usr/lib/wf-panel-pi/libvolumepulse.so usr/lib/wf-panel-pi/libbatt.so usr/bin/xdg-user-dirs-update usr/bin/udisksctl usr/libexec/gvfs/gvfs-udisks2-volume-monitor usr/libexec/polkit-mate-authentication-agent-1 usr/bin/pishutdown usr/lib/wf-panel-pi/libbluetooth.so usr/sbin/pi-greeter usr/bin/rpd-greeter-session usr/share/xgreeters/rpd-greeter-labwc.desktop; do
     test -f "$root/$path" || { echo "Missing $path" >&2; exit 1; }
 done
 if apk --root "$root" info -e chromium >/dev/null 2>&1; then
@@ -46,14 +46,14 @@ grep -q 'greeter-session=rpd-greeter-labwc' out/lightdm-config.txt
 grep -q 'user-session=rpd-session-m10' out/lightdm-config.txt
 printf 'Clean-root dependency and executable checks passed\n' > out/validation.txt
 
-apk add --upgrade rpd-desktop-m10 grim procps wlrctl gtk-layer-shell-rpd-test
+apk add --upgrade rpd-desktop-m10 grim procps wlrctl gtk-layer-shell-rpd-test qt6-qtbase-dev
 # Provide a real system D-Bus for service activation in the disposable test.
 mkdir -p /run/dbus
 dbus-uuidgen --ensure
 [ -S /run/dbus/system_bus_socket ] || dbus-daemon --system --fork
 # Mesa/libseat do not permit root sessions; use the existing builder account.
 su builder -c "cd /home/builder/rpd-build && RPD_TWO_FINGER_RIGHT_CLICK=1 sh scripts/headless.sh"
-cp /tmp/rpd-vlc.png /tmp/rpd-vlc.log /tmp/rpd-headless.log /tmp/rpd-headless.png /tmp/rpd-keyboard.png /tmp/rpd-classic-menu.png /tmp/rpd-control-center.png /tmp/rpd-control-center.log out/
+cp /tmp/rpd-qt6-theme.log /tmp/rpd-vlc.png /tmp/rpd-vlc.log /tmp/rpd-headless.log /tmp/rpd-headless.png /tmp/rpd-keyboard.png /tmp/rpd-classic-menu.png /tmp/rpd-control-center.png /tmp/rpd-control-center.log out/
 printf 'Native headless compositor test passed\n' >> out/validation.txt
 
 sh scripts/greeter-smoke.sh

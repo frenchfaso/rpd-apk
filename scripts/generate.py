@@ -12,11 +12,12 @@ NAMES['rc-gui']='rpd-localisation'
 NAMES['rpi-chromium-mods']='rpd-chromium-defaults'
 NAMES['gtk2-engines-pixflat']='rpd-gtk2-engine'
 NAMES['qtstyleplugins-src']='rpd-qt-gtk2'
+NAMES['qt6gtk2']='rpd-qt6-gtk2'
 NAMES.update({'raindrop': 'rpd-display-settings', 'rpinters': 'rpd-printer-settings', 'rp-bookshelf': 'rpd-bookshelf'})
 for name,m in lock.items():
  pkg=NAMES[name];p=ROOT/'ports'/pkg;p.mkdir(parents=True,exist_ok=True)
  asset=name in ['pixtrix-theme','pixtrix-icons','rpd-metas','rpi-chromium-mods']
- license='MIT' if name=='wf-panel-pi' else 'GPL-2.0-or-later' if asset or name in ['pcmanfm-pi','pplug-netman','pi-greeter','lxtask','gtk2-engines-pixflat'] else 'BSD-3-Clause'
+ license='MIT' if name=='wf-panel-pi' else 'GPL-2.0-or-later' if asset or name in ['pcmanfm-pi','pplug-netman','pi-greeter','lxtask','gtk2-engines-pixflat','qt6gtk2'] else 'BSD-3-Clause'
  if name=='rpd-metas':license='BSD-3-Clause'
  if name=='qtstyleplugins-src':license='GPL-3.0-only'
  if name in ['pplug-menu','gui-runcmd']:license='BSD-3-Clause AND GPL-2.0-or-later'
@@ -24,7 +25,7 @@ for name,m in lock.items():
  if name in ['pipanel','merp','pished','rasputin']:depends='rpd-control-center procps-ng grep'
  if name=='pipanel':depends+=' rpd-settings-backend'
  if name=='rasputin':depends+=' rpd-localisation'
- if name=='qtstyleplugins-src':depends='rpd-gtk2-engine'
+ if name in ['qtstyleplugins-src','qt6gtk2']:depends='rpd-gtk2-engine'
  if name=='pixtrix-theme':depends='rpd-gtk2-engine'
  if name=='rc-gui':depends='rpd-control-center rpd-settings-backend python3 musl-locales musl-locales-lang xkeyboard-config tzdata'
  if name=='raindrop':depends='rpd-control-center rpd-settings-backend wlr-randr kanshi procps-ng libinput-tools'
@@ -58,7 +59,7 @@ url="https://github.com/frenchfaso/rpd-apk"
 arch="{'noarch' if asset else 'aarch64'}"
 license="{license}"
 depends="{depends}"
-makedepends="{('desktop-file-utils' if name=='rpd-metas' else 'python3' if name=='rpi-chromium-mods' else '') if asset else COMMON + {'pplug-netman':' networkmanager-dev libnma-dev libsecret-dev','pplug-volumepulse':' pulseaudio-dev','qtstyleplugins-src':' qt5-qtbase-dev gtk+2.0-dev libx11-dev','gtk2-engines-pixflat':' gtk+2.0-dev autoconf automake libtool intltool','rc-gui':' python3 musl-locales musl-locales-lang iso-codes xkeyboard-config','rpinters':' samba-dev cups-dev polkit-dev gsettings-desktop-schemas-dev','rp-bookshelf':' curl-dev','lxtask':' autoconf automake libtool intltool','pi-greeter':' lightdm-dev autoconf automake libtool intltool gobject-introspection-dev'}.get(name,'') + (' rpd-panel-dev' if depends.startswith('rpd-panel') else '')}"
+makedepends="{('desktop-file-utils' if name=='rpd-metas' else 'python3' if name=='rpi-chromium-mods' else '') if asset else 'pkgconf qt6-qtbase-dev qt6-qtbase-private-dev gtk+2.0-dev libx11-dev' if name=='qt6gtk2' else COMMON + {'pplug-netman':' networkmanager-dev libnma-dev libsecret-dev','pplug-volumepulse':' pulseaudio-dev','qtstyleplugins-src':' qt5-qtbase-dev gtk+2.0-dev libx11-dev','gtk2-engines-pixflat':' gtk+2.0-dev autoconf automake libtool intltool','rc-gui':' python3 musl-locales musl-locales-lang iso-codes xkeyboard-config','rpinters':' samba-dev cups-dev polkit-dev gsettings-desktop-schemas-dev','rp-bookshelf':' curl-dev','lxtask':' autoconf automake libtool intltool','pi-greeter':' lightdm-dev autoconf automake libtool intltool gobject-introspection-dev'}.get(name,'') + (' rpd-panel-dev' if depends.startswith('rpd-panel') else '')}"
 options="!check"
 # Upstream has no applicable test suite; repository smoke tests run separately.
 source="{m['url']}"
@@ -68,7 +69,7 @@ builddir="$srcdir/{m['directory']}"{extra}
  if patches:text+='source="$source '+' '.join('patches/'+x.name for x in patches)+'"\n'
  if name=='rpi-chromium-mods':text+='source="$source prepare-defaults.py"\n'
  if name=='rc-gui':text+='source="$source rpd-localisation generate-data.py portable-system.c"\n'
- if name in ['lxtask','qtstyleplugins-src']:
+ if name in ['lxtask','qtstyleplugins-src','qt6gtk2']:
   text+='source="$source '+m['debian']['url']+'"\n'
  if name=='lxtask':
   text+='''
@@ -97,6 +98,19 @@ prepare() {
 }
 build() {
     /usr/lib/qt5/bin/qmake
+    make
+}
+'''
+ elif name=='qt6gtk2':
+  text+='''
+prepare() {
+    default_prepare
+    # The reviewed Raspberry Debian archive contains no source patches.
+    test ! -e "$srcdir/debian/patches"
+    cp -a "$srcdir/debian" .
+}
+build() {
+    /usr/bin/qmake6
     make
 }
 '''
@@ -140,6 +154,7 @@ build() {
  if name=='rpd-metas':body+='\n    update-desktop-database \"$pkgdir/usr/share/raspi-ui-overrides/applications\"'
  if name=='rc-gui':body+='\n    install -Dm755 "$srcdir/rpd-localisation" "$pkgdir/usr/bin/rpd-localisation"\n    python3 "$srcdir/generate-data.py" "$pkgdir/usr/share/rpd-localisation"'
  if name=='qtstyleplugins-src':body='make INSTALL_ROOT="$pkgdir" install\n    rm -f "$pkgdir"/usr/lib/qt5/plugins/styles/libqcleanlooksstyle.so "$pkgdir"/usr/lib/qt5/plugins/styles/libqmotifstyle.so "$pkgdir"/usr/lib/qt5/plugins/styles/libqplastiquestyle.so'
+ if name=='qt6gtk2':body='make INSTALL_ROOT="$pkgdir" install'
  if name in ['pi-greeter','lxtask','gtk2-engines-pixflat']:body='make DESTDIR="$pkgdir" install'
  text+='\npackage() {\n    '+body+'\n    install -Dm644 debian/copyright "$pkgdir/usr/share/licenses/$pkgname/copyright"\n}\n'
  sums=[f"{m['sha512']}  {m['filename']}"]+[hashlib.sha512(x.read_bytes()).hexdigest()+'  '+x.name for x in patches]

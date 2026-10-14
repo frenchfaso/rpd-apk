@@ -54,6 +54,9 @@ done
 test -f "$HOME/autostart-passed"
 export DISPLAY=$(cat "$HOME/rpd-display")
 python3 scripts/desktop-integration-probe.py
+# Load the actual Qt6 platform-theme and style in the real Xwayland session.
+c++ -std=c++17 $(pkg-config --cflags Qt6Widgets) scripts/qt6-theme-probe.cpp -o "$XDG_RUNTIME_DIR/qt6-theme-probe" $(pkg-config --libs Qt6Widgets)
+QT_QPA_PLATFORM=xcb "$XDG_RUNTIME_DIR/qt6-theme-probe" > /tmp/rpd-qt6-theme.log 2>&1 || { cat /tmp/rpd-qt6-theme.log; exit 1; }
 for directory in DESKTOP DOWNLOAD DOCUMENTS MUSIC PICTURES VIDEOS; do
     location=$(xdg-user-dir "$directory")
     [ "$location" != "$HOME" ] && [ -d "$location" ]

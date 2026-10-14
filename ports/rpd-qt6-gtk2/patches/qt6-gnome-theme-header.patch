@@ -1,0 +1,5 @@
+--- a/src/qt6gtk2-qtplugin/qt6gtk2theme.h
++++ b/src/qt6gtk2-qtplugin/qt6gtk2theme.h
+@@ -24 +24 @@
+-#include <private/qgenericunixthemes_p.h>
++#include <private/qgnometheme_p.h>

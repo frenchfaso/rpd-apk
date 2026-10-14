@@ -327,5 +327,21 @@
     "sha512": "7bddb2dd77c88c5e734812b5caa869fce0cf80b6e2b1905e48066cdd1031ede3fd7929cd368f568f963f7434cee0e90d9012204e3b004fe3cdfd37f1174ef13b",
     "filename": "rpi-chromium-mods_20260211.tar.xz",
     "directory": "rpi-chromium-mods"
+  },
+  "qt6gtk2": {
+    "url": "https://archive.raspberrypi.com/debian/pool/main/q/qt6gtk2/qt6gtk2_0.3.orig.tar.xz",
+    "sha256": "83ffc7089b87d5cf71aeece6b780c45609a113aa15afabc4808a012d5a5721a6",
+    "sha512": "579f61a25890c5e321a2586d4b7230470a710d23d81a89c80b07095cb18371cead567dee7b91c8a9c3c93dc272d5697a00f9709e213941bb76b49a9958cbf477",
+    "filename": "qt6gtk2_0.3.orig.tar.xz",
+    "version": "0.3",
+    "source_version": "0.3-1+rpt1",
+    "directory": "qt6gtk2-0.3",
+    "pkgrel": 0,
+    "debian": {
+      "url": "https://archive.raspberrypi.com/debian/pool/main/q/qt6gtk2/qt6gtk2_0.3-1+rpt1.debian.tar.xz",
+      "sha256": "936b8682f53fa1133e981aafe69d2d273e07328920a15507ca06f2f2690c088b",
+      "sha512": "914e13157a0f77ea7a16be8b039d0441db8fe569a69877f6c780e403d6002f61da8667be8e120b8ec5633b402e4e04ed3dda3633b7e30a4444b470042c8c94db",
+      "filename": "qt6gtk2_0.3-1+rpt1.debian.tar.xz"
+    }
   }
 }
