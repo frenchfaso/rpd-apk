@@ -14,6 +14,13 @@ selects it, and normal boot-deploy copies it to the active boot directory.
 The standard `/usr/share/boot-deploy/hooks` integration regenerates this copy
 before each kernel deployment, including the mkinitfs trigger on `apk upgrade`.
 A `/usr/share/mkinitfs-triggers` marker also deploys it on initial installation.
+The boot hook queues a final mkinitfs pass in `/run/rpd-m10-boot.pending`.
+`/etc/apk/commit_hooks.d/90-rpd-m10-boot` performs that pass after APK saves its
+installed database. APK 3.0.8 runs package triggers before saving the database;
+without this final pass, audio/GPU hooks can see the previous kernel version
+during an upgrade and omit matching hardware support. Their exact version and
+DTB checks remain unchanged. Failed regeneration preserves the pending request
+and reports the error; plain Alpine roots without deviceinfo/mkinitfs are skipped.
 There is no kernel-version dependency, pinned kernel, custom kernel build,
 boot-time hotplug or module. Existing `/etc/deviceinfo` customizations must be
 merged with the packaged override if APK preserves that file as a user config.

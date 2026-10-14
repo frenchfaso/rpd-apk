@@ -3,6 +3,10 @@
 source=/boot/dtbs/qcom/sdm429-lenovo-tbx505x.dtb
 output=/boot/dtbs/rpd/sdm429-lenovo-tbx505x.dtb
 [ -r "$source" ] || exit 0
+# APK triggers run before the installed database is committed. Request one
+# final pass so audio/GPU kernel-version checks see the committed version.
+mkdir -p /run
+touch /run/rpd-m10-boot.pending
 if ! python3 /usr/lib/rpd-cpu-topology-m10/topology.py "$source" "$output"; then
     echo 'rpd-cpu-topology-m10: helper failed; using the current official DTB' >&2
     mkdir -p "${output%/*}"

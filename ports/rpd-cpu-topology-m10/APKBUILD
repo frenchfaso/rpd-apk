@@ -1,6 +1,6 @@
 pkgname=rpd-cpu-topology-m10
 pkgver=0.1.0
-pkgrel=58
+pkgrel=59
 pkgdesc="Correct Lenovo M10 SDM429 CPU topology using the current official DTB"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
@@ -10,13 +10,15 @@ license="MIT"
 depends="python3 py3-libfdt"
 makedepends="python3 py3-libfdt"
 install="$pkgname.post-deinstall"
-source="topology.py test-topology.py 90-rpd-cpu-topology-m10 deviceinfo"
+source="topology.py test-topology.py commit.py 90-rpd-m10-boot 90-rpd-cpu-topology-m10 deviceinfo"
 check() {
     cd "$srcdir"
     python3 test-topology.py
 }
 package() {
     install -Dm644 "$srcdir/topology.py" "$pkgdir/usr/lib/$pkgname/topology.py"
+    install -Dm644 "$srcdir/commit.py" "$pkgdir/usr/lib/$pkgname/commit.py"
+    install -Dm755 "$srcdir/90-rpd-m10-boot" "$pkgdir/etc/apk/commit_hooks.d/90-rpd-m10-boot"
     install -Dm755 "$srcdir/90-rpd-cpu-topology-m10" "$pkgdir/usr/share/boot-deploy/hooks/90-rpd-cpu-topology-m10"
     install -Dm644 "$srcdir/deviceinfo" "$pkgdir/etc/deviceinfo"
     mkdir -p "$pkgdir/usr/share/mkinitfs-triggers"
@@ -26,6 +28,8 @@ package() {
 sha512sums="
 b85bd1796a7d474edabdda2a2f8c79998deecc1e7a17b019b6686c606149a627176c32622331287554d6f62009e3c4b672dd6eb92faf3f06bdcc596e6d4202b9  topology.py
 637c63549551b0316c05c1ff5cb44917f4fbb0a0268e149d4acc455fe94ab7d8f437f1220f20416a98f4cfe9c236fe8ed2bb4145bc9a10ec51c58a74a28b32e2  test-topology.py
-4b5d656c0556fa393f8467b8c85e0b4cf813af31fd4cda992d1fc7b0ca9d98d8901199937fab92ef25dcdf7b8ab625d7457098ca78efeb3d3f95f3f80bfc9e59  90-rpd-cpu-topology-m10
+1cfca16b0f007c16db87b03afa4359e162c40c0343b3cebd90e8c4d4cb78a6efe76bcbc6bb28e8b89479400316b894ebb4c386372c470b0204df49fa37cf56f7  commit.py
+4ddbdeaeeaf0fdb7568519e5df072c4a79dc69863eceb382f2de4dfe4d4488d8c4c0e7d81d32451d7310247c87343d35920813d478706d251b6015cb6f3042f1  90-rpd-m10-boot
+da9bc2f68aa28bed6282ce6367a434aac7265209d4c234f038d6a8857bbd7954ad2c7ec86e5f13a45a39a00f4bc6e49163e125458d391047a1f47a8118b84fbe  90-rpd-cpu-topology-m10
 34636278cb3ef364a139330c6f808fa25d8a04b7d3caa362f5dccc39799abfb429c122d2f6891b88ea7ae19f6d2e0b6bd488b3366e64340b26cee391f9d06f0a  deviceinfo
 "
