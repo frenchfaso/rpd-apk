@@ -41,8 +41,19 @@ jobs:
           git push origin HEAD:main
       - id: revision
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-  build:
+  qt6:
     needs: prepare
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+          persist-credentials: false
+      - name: Verify Qt6 GTK2 compatibility before the full build
+        run: docker run --rm -v "$PWD:/work" -w /work alpine:edge sh scripts/qt6-preflight.sh
+  build:
+    needs: [prepare, qt6]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     steps:
