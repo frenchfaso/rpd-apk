@@ -33,11 +33,14 @@ static bool check_rendering(QApplication &app, QStyle::ComplexControl control,
                 continue;
             painted = true;
             if (!rect.adjusted(-4, -4, 4, 4).contains(x, y)) {
-                std::cerr << "Qt6 GTK2 painted outside the control's position\n";
+                std::cerr << "Qt6 GTK2 control " << control << " painted outside its position at "
+                          << x << ',' << y << '\n';
                 return false;
             }
         }
     }
+    if (!painted)
+        std::cerr << "Qt6 GTK2 control painted no pixels\n";
     return painted;
 }
 
@@ -69,7 +72,8 @@ int main(int argc, char **argv)
     slider.minimum = 0;
     slider.maximum = 100;
     slider.sliderPosition = slider.sliderValue = 50;
-    slider.subControls = QStyle::SC_DialGroove | QStyle::SC_DialHandle;
+    slider.tickInterval = 10;
+    slider.subControls = QStyle::SC_DialGroove | QStyle::SC_DialHandle | QStyle::SC_DialTickmarks;
     if (!check_rendering(app, QStyle::CC_Dial, slider, dial))
         return 1;
     QComboBox box;

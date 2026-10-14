@@ -11,6 +11,24 @@
      qt6gtk2theme.h \
 --- a/src/qt6gtk2-style/qstylehelper.cpp
 +++ b/src/qt6gtk2-style/qstylehelper.cpp
+@@ -119,7 +119,7 @@
+     qreal len = r - QStyleHelper::calcBigLineSize(r) - 3;
+     qreal back = offset * len;
+     QPointF pos(QPointF(xc + back * qCos(a), yc - back * qSin(a)));
+-    return pos;
++    return pos + dial->rect.topLeft();
+ }
+ 
+ qreal angle(const QPointF &p1, const QPointF &p2)
+@@ -192,7 +192,7 @@
+             poly[2 * i + 1] = QPointF(xc + (r - 1) * c, yc -(r - 1) * s);
+         }
+     }
+-    return poly;
++    return poly.translated(dial->rect.topLeft());
+ }
+ 
+ // This will draw a nice and shiny QDial for us. We don't want
 @@ -218,68 +218,70 @@
          painter->drawLines(QStyleHelper::calcLines(option));
      }
