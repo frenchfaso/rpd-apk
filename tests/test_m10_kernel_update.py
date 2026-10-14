@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import pathlib
+import re
 import shutil
 import tempfile
 import unittest
@@ -19,8 +20,9 @@ class KernelUpdateTests(unittest.TestCase):
                         ignore=shutil.ignore_patterns('src','pkg','*.tar.*'))
         self.config=(self.port/'kernel.config').read_text()
         self.recipe=(self.port/'upstream-APKBUILD.reference').read_text()
-        self.old_ver=u.field(self.recipe,'pkgver')
-        self.old_package=self.old_ver+'-r'+u.field(self.recipe,'pkgrel')
+        packaged=(self.port/'APKBUILD').read_text()
+        self.old_ver=u.field(packaged,'pkgver')
+        self.old_package=u.field(packaged,'_kernel_apk_version')
         parts=self.old_ver.split('.'); parts[-1]=str(int(parts[-1])+1)
         self.new_ver='.'.join(parts)
         self.version=self.new_ver+'-r0'
@@ -49,6 +51,23 @@ class KernelUpdateTests(unittest.TestCase):
     def test_same_version_config_change_is_rejected(self):
         self.version=self.old_package; self.config+='\nCONFIG_UNREVIEWED=y\n'
         with self.assertRaisesRegex(ValueError,'without an APK version bump'):u.main()
+    def test_reviewed_apk_revision_updates_config_compiler_and_provenance(self):
+        before=(self.port/'APKBUILD').read_text()
+        revision=int(self.old_package.rsplit('-r',1)[1])+1
+        self.version=self.old_ver+'-r'+str(revision)
+        self.recipe=re.sub(r'^pkgrel=\d+$','pkgrel='+str(revision),self.recipe,flags=re.M)
+        (self.port/'upstream-APKBUILD.reference').write_text(self.recipe)
+        self.config=re.sub(r'^CONFIG_CLANG_VERSION=\d+$','CONFIG_CLANG_VERSION=230103',self.config,flags=re.M)
+        u.main()
+        updated=(self.port/'APKBUILD').read_text()
+        self.assertEqual(u.field(updated,'_kernel_apk_version'),self.version)
+        self.assertEqual(int(u.field(updated,'pkgrel')),int(u.field(before,'pkgrel'))+1)
+        self.assertIn('clang23 lld23 llvm23',updated)
+        self.assertIn('/usr/lib/llvm23/bin',updated)
+        self.assertEqual((self.port/'kernel.config').read_text(),self.config)
+        self.assertIn('expected_apk='+self.version,(self.port/'rpd-backlight-m10-load').read_text())
+        for name in ['kernel.config','rpd-backlight-m10-load']:
+            self.assertIn(u.hashlib.sha512((self.port/name).read_bytes()).hexdigest()+'  '+name,updated)
     def test_new_patch_in_recipe_requires_review(self):
         self.recipe=self.recipe.replace('pkgver='+self.old_ver,'pkgver='+self.new_ver).replace('pkgrel='+u.field(self.recipe,'pkgrel'),'pkgrel=0')+'\n# New source patch\n'
         with self.assertRaisesRegex(ValueError,'recipe changed'):u.main()
