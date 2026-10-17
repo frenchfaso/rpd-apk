@@ -1,5 +1,6 @@
 {
   "rpd-common": [
+    "brightnessctl",
     "desktop-file-utils",
     "firmware-brcm80211",
     "fonts-droid-fallback",
