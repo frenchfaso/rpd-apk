@@ -11,7 +11,7 @@ _kernel_apk_version=7.1.3-r1
 depends="kmod brightnessctl brightnessctl-udev"
 makedepends="mesa-dev clang23 lld23 llvm23 make flex bison perl openssl-dev elfutils-dev pahole python3 py3-libfdt py3-lxml py3-jinja2 dtc rpd-cpu-topology-m10"
 source="rpd-gpu-m10.files gpu-probe.c gpu-renderer.sh test-gpu.py build-gpu.sh gpu-dtb.py 96-rpd-gpu-m10 rpd-gpu-m10-load rpd-gpu-m10.service rpd-gpu-m10.conf 80-rpd-gpu-m10.preset 0002-a5xx-gpmu-registers.diff 0003-adreno-504-rpm-domain.diff 0004-a504-retained-gx-reset.diff 0005-msm-recover-before-retire.diff 0006-msm-recovery-task-ref.diff 0007-a504-physical-cx-device-link.diff 0008-msm-gpu-only-remove-private.diff 0009-a5xx-release-shadow-mapping.diff 0010-a504-bounded-fragment-progress.diff 0001-adreno-504-bringup.diff m10_wcd_analog.c m10_speaker_amp.c m10-audio-pmic.diff m10-audio.dtsi audio-dtb.py test-audio.py 95-rpd-audio-m10 Lenovo-M10.conf HiFi.conf 51-rpd-m10-audio.conf m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
-    kernel.config Makefile m10_firmware_backlight.c
+    kernel.config check-kernel-config.py Makefile m10_firmware_backlight.c
     rpd-backlight-m10.service rpd-backlight-m10-load
     m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset
     m10_battery.c m10_battery_temperature.h m10-adc5-battery.diff rpd-battery-m10-load rpd-battery-m10.service"
@@ -22,10 +22,7 @@ build() {
     export PATH=/usr/lib/llvm23/bin:$PATH
     cp "$srcdir/kernel.config" .config
     make LLVM=1 olddefconfig
-    # Native userspace-link capability does not affect the kernel ABI.
-    sed '/^CONFIG_CC_CAN_LINK=y$/d' .config > "$srcdir/config.normalized"
-    sed '/^CONFIG_CC_CAN_LINK=y$/d' "$srcdir/kernel.config" > "$srcdir/config.expected"
-    diff -u "$srcdir/config.expected" "$srcdir/config.normalized"
+    python3 "$srcdir/check-kernel-config.py" "$srcdir/kernel.config" .config "$PWD"
     # Generate real export metadata, never suppress modpost errors.
     make LLVM=1 -j2 vmlinux
     cp vmlinux.symvers Module.symvers
@@ -175,6 +172,7 @@ gpu() {
 }
 
 sha512sums="
+b61ada4914236f2a908c5c1518836a137d079684bfa283a5b12a1aa6aaf291848216c8d7b9c4b06eab1446acfee91e2158706f1f32779a938646c2d89001178b  check-kernel-config.py
 27ed43d1f821c284c099d75992720e0412ebf861e6cddacbfe085c6f3fcaf05cd724c1f5918b206e150921b1b914af1dbdd31759d9e98c0dc18c09e03187e06c  rpd-gpu-m10.files
 2eaa4011f2427cf3d9c518967d4afc3efec88187b4029afb51b2d17ab7934690a8aefb57af48420669f98751adb7e0de3435fdf0be2886009b3d12bc7bdf2366  gpu-probe.c
 7319acf41940b5fcdb70cecb1d15a89fda484c17e9910ae760a32466c64d27ba0b80ec1ec3a61164b0c106d2aa6875e9e9880b4b4aeb736bed6bf013597caab9  gpu-renderer.sh

@@ -1,5 +1,13 @@
 # M10 INX JD9365 backlight
 
+The build compares the complete generated kernel configuration with the signed
+official configuration. The existing native `CONFIG_CC_CAN_LINK` exception is
+retained. A numeric `CONFIG_PAHOLE_VERSION` change is accepted only when the
+kernel's own `scripts/Kbuild.include` and `scripts/Makefile.btf` produce identical
+pahole and BTF-resolver flags for both vmlinux and external modules. Actual BTF,
+module ABI and compiler configuration changes still stop the build. Kernel
+release, export resolution and modpost checks are unchanged.
+
 `rpd-backlight-m10` adds a firmware-handoff DSI backlight module for the verified
 Lenovo TB-X505L INX JD9365 800p panel and kernel **7.1.3-msm89x7**. It is included
 in the M10 desktop profile, but requires explicit per-device activation after
