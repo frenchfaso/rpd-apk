@@ -8,6 +8,6 @@ if [ -d /run/systemd/system ]; then
     systemctl daemon-reload
     if tr '\000' '\n' < /proc/device-tree/compatible 2>/dev/null | grep -qx 'lenovo,tbx505x'; then
         systemctl enable rpd-usb-otg-m10.service
-        systemctl try-restart rpd-usb-otg-m10.service || true
+        # Same-release kernel updates require a reboot before loading new modules.
     fi
 fi
