@@ -27,7 +27,11 @@ jobs:
           PACKAGE: ${{ matrix.package }}
         run: |
           mkdir -p out-security
-          docker run --rm -v "$PWD:/work:ro" -v "$PWD/out-security:/out" -w /work alpine:edge sh scripts/runtime-security-build.sh "$PACKAGE"
+          docker run --rm \
+            -e ABUILD_LAST_COMMIT="$GITHUB_SHA" \
+            -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+            -v "$PWD:/work:ro" -v "$PWD/out-security:/out" -w /work \
+            alpine:edge sh scripts/runtime-security-build.sh "$PACKAGE"
           sudo chown -R "$(id -u):$(id -g)" out-security
           git archive --format=tar.gz HEAD > "out-security/$PACKAGE/sources/rpd-apk-packaging.tar.gz"
           git rev-parse HEAD > "out-security/$PACKAGE/source-commit.txt"

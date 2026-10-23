@@ -1,0 +1,45 @@
+name: Verify complete M10 security kernel candidate
+on:
+  push:
+    branches: [codex/security-runtime-20261023]
+    paths:
+      - ports/linux-postmarketos-qcom-msm89x7/**
+      - scripts/kernel-security-build.sh
+      - .github/workflows/kernel-security.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: m10-kernel-security-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  kernel:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build complete kernel and matching RPD modules
+        shell: bash
+        env:
+          RPD_SOURCE_COMMIT: ${{ github.sha }}
+          ABUILD_LAST_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p out-kernel-security
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          docker run --rm -e RPD_SOURCE_COMMIT -e ABUILD_LAST_COMMIT -e SOURCE_DATE_EPOCH \
+            -v "$PWD:/work:ro" -v "$PWD/out-kernel-security:/out" \
+            -w /work alpine:edge sh scripts/kernel-security-build.sh \
+            2>&1 | tee out-kernel-security/build.log
+          sudo chown -R "$(id -u):$(id -g)" out-kernel-security
+          git archive --format=tar.gz HEAD > out-kernel-security/sources/rpd-apk-packaging.tar.gz
+          git rev-parse HEAD > out-kernel-security/source-commit.txt
+      - name: Preserve candidate evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: m10-complete-kernel-security-candidate
+          path: out-kernel-security/
+          retention-days: 7
