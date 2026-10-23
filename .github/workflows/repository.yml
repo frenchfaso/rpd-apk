@@ -122,6 +122,15 @@ jobs:
           path: out-kernel/
           retention-days: 3
           compression-level: 0
+      - name: Retain failed kernel build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-kernel-failure-diagnostics
+          path: |
+            out-kernel/proof/
+            out-kernel/metrics/
+          retention-days: 3
   webkit:
     needs: [prepare, qt6]
     runs-on: ubuntu-24.04-arm

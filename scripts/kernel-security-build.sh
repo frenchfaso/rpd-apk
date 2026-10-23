@@ -97,11 +97,13 @@ cp "$work/ports/linux-postmarketos-qcom-msm89x7/security-fixes.json" "$out/proof
 
 build() {
     /usr/bin/time -v -o "$out/metrics/$1.txt" \
-        su builder -c "cd $work/ports/$1 && abuild -r"
+        su builder -c "cd $work/ports/$1 && abuild -r -K"
     apk update
 }
 
 build rpd-cpu-topology-m10
+# Exercise abuild's retention option before either expensive kernel build.
+test -f "$work/ports/rpd-cpu-topology-m10/src/topology.py"
 apk add --no-cache rpd-cpu-topology-m10
 python3 "$work/scripts/m10-toolchain.py" install
 {
@@ -110,6 +112,16 @@ python3 "$work/scripts/m10-toolchain.py" install
     apk info --installed -v clang23 clang23-libs lld23 llvm23 llvm23-libs
 } > "$out/proof/toolchain.txt"
 build linux-postmarketos-qcom-msm89x7
+kernel="$work/ports/linux-postmarketos-qcom-msm89x7/src/linux-7.1.3-r1"
+# Preserve real build evidence, then release the first tree before the next build.
+cp "$kernel/.config" "$out/proof/kernel.config"
+cp "$kernel/Module.symvers" "$out/proof/kernel.Module.symvers"
+cp "$kernel/vmlinux.symvers" "$out/proof/kernel.vmlinux.symvers"
+cp "$kernel/include/config/kernel.release" "$out/proof/kernel.release"
+cp "$kernel/include/generated/utsversion.h" "$out/proof/kernel.utsversion.h"
+cp "$kernel/arch/arm64/boot/vmlinuz" "$out/proof/kernel.vmlinuz"
+cp "$kernel/arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dtb" "$out/proof/kernel.board.dtb"
+su builder -c "cd $work/ports/linux-postmarketos-qcom-msm89x7 && abuild clean undeps"
 
 # Both recipes declare the same authenticated archive under different aliases.
 # Verify bytes before sharing a cache inode, avoiding another 250 MiB download.
@@ -134,20 +146,14 @@ else:
 PY
 build rpd-backlight-m10
 
-kernel="$work/ports/linux-postmarketos-qcom-msm89x7/src/linux-7.1.3-r1"
 module="$work/ports/rpd-backlight-m10/src/linux-7.1.3-r1"
 # A successful compile alone is insufficient: require identical generated config
 # and real built-in export metadata from both full preparations.
-cmp "$kernel/.config" "$module/.config"
-cmp "$kernel/vmlinux.symvers" "$module/vmlinux.symvers"
-cp "$kernel/.config" "$out/proof/kernel.config"
-cp "$kernel/Module.symvers" "$out/proof/kernel.Module.symvers"
-cp "$kernel/vmlinux.symvers" "$out/proof/kernel.vmlinux.symvers"
+cmp "$out/proof/kernel.config" "$module/.config"
+cmp "$out/proof/kernel.vmlinux.symvers" "$module/vmlinux.symvers"
 cp "$module/.config" "$out/proof/module.config"
 cp "$module/Module.symvers" "$out/proof/module.Module.symvers"
 cp "$module/vmlinux.symvers" "$out/proof/module.vmlinux.symvers"
-cp "$kernel/include/config/kernel.release" "$out/proof/kernel.release"
-cp "$kernel/include/generated/utsversion.h" "$out/proof/kernel.utsversion.h"
 for fix in 0001-CVE-2026-98858.patch 0002-CVE-2026-98823.patch \
            0003-CVE-2026-72112.patch 0004-CVE-2026-98850.patch \
            0005-CVE-2026-100077.patch 0006-CVE-2026-93059.patch \
@@ -155,6 +161,7 @@ for fix in 0001-CVE-2026-98858.patch 0002-CVE-2026-98823.patch \
     patch --batch --reverse --fuzz=0 --dry-run -d "$module" -p1 \
         < "$work/ports/rpd-backlight-m10/$fix"
 done
+su builder -c "cd $work/ports/rpd-backlight-m10 && abuild clean undeps"
 python3 "$work/scripts/m10-toolchain.py" restore
 
 cp "$REPODEST"/ports/aarch64/*.apk "$out/aarch64/"
@@ -189,10 +196,10 @@ PY
 apk --root "$root" --no-scripts add "$out"/aarch64/*.apk
 apk --root "$root" info -e linux-postmarketos-qcom-msm89x7=7.1.3-r100
 apk --root "$root" info --installed -v > "$out/proof/installed-packages.txt"
-cmp "$root/boot/config" "$kernel/.config"
-cmp "$root/boot/vmlinuz" "$kernel/arch/arm64/boot/vmlinuz"
+cmp "$root/boot/config" "$out/proof/kernel.config"
+cmp "$root/boot/vmlinuz" "$out/proof/kernel.vmlinuz"
 cmp "$root/boot/dtbs/qcom/sdm429-lenovo-tbx505x.dtb" \
-    "$kernel/arch/arm64/boot/dts/qcom/sdm429-lenovo-tbx505x.dtb"
+    "$out/proof/kernel.board.dtb"
 grep -qx 'expected_apk=7.1.3-r100' "$root/usr/libexec/rpd-backlight-m10-load"
 python3 - "$root" "$out" <<'PY'
 import hashlib,json,os
