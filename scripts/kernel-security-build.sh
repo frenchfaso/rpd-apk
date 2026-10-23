@@ -72,6 +72,12 @@ assert [fix['cve'] for fix in metadata['fixes']] == [
     'CVE-2026-100077', 'CVE-2026-93059', 'CVE-2026-81000', 'CVE-2026-98829']
 recipe = (module/'APKBUILD').read_text()
 assert re.search(r'^pkgver=7\.1\.3$', recipe, re.M)
+revision = re.search(r'^pkgrel=(\d+)$', recipe, re.M)
+assert revision is not None and int(revision[1]) < 100
+# Give the coordinated module family a distinct candidate version too. Reusing
+# a published revision would make APK treat different module payloads as equal.
+recipe, count = re.subn(r'^pkgrel=\d+$', 'pkgrel=100', recipe, flags=re.M)
+assert count == 1
 recipe, count = re.subn(r'^_kernel_apk_version=7\.1\.3-r1$', '_kernel_apk_version=7.1.3-r100', recipe, flags=re.M)
 assert count == 1
 loader = module/'rpd-backlight-m10-load'
