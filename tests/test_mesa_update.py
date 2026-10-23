@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 import json
 from pathlib import Path
 import subprocess
@@ -7,6 +8,7 @@ import unittest
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts'))
 spec = importlib.util.spec_from_file_location('mesa_update', ROOT/'scripts/update-mesa.py')
 update = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(update)

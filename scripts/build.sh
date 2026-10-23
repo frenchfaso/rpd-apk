@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 mkdir -p /usr/lib/modules
 [ -e /lib/modules ] || ln -s /usr/lib/modules /lib/modules
 sh scripts/test-kernel-priority.sh
-apk add --no-cache alpine-sdk abuild-rootbld meson samurai python3 git sudo
+apk add --no-cache alpine-sdk abuild-rootbld meson samurai python3 git sudo curl
 # Keep shared build dependencies installed between ports.
 apk add --no-cache pkgconf gettext-dev gtk+3.0-dev gtkmm3-dev gtk-layer-shell-dev glm-dev wayland-dev wayland-protocols libxml2-dev libinput-dev libevdev-dev eudev-dev libdbusmenu-gtk3-dev menu-cache-dev networkmanager-dev libnma-dev libsecret-dev pulseaudio-dev
 python3 tests/verify_charge_status.py ports/rpd-backlight-m10/m10_battery.c
@@ -23,6 +23,8 @@ adduser -D builder 2>/dev/null || true
 addgroup builder abuild 2>/dev/null || true
 printf 'builder ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/rpd-builder
 mkdir -p /home/builder/.abuild /home/builder/packages
+install -m644 scripts/source-download.curlrc /home/builder/.curlrc
+chown builder:builder /home/builder/.curlrc
 chown -R builder:builder /home/builder/.abuild /home/builder/packages
 # A throwaway build key; production signing happens only after validation.
 if [ -n "${RPD_SIGNING_KEY:-}" ]; then

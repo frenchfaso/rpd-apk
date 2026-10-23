@@ -12,6 +12,11 @@ Session configuration is in `/etc/xdg/rpd/`. `rpd-session` initialises standard 
 
 GitHub Actions checks the signed official Trixie source index daily, selects our explicit component allowlist, validates tarball hashes and rebuilds native ARM64 APKs against Alpine edge. The build job uses a disposable signing key and runs clean-root installation and headless graphical tests. A separate job replaces the test signatures using the dedicated `APK_SIGNING_KEY` Actions secret, checks the production signatures and installation, and publishes with GitHub Pages. The production key is never exposed to upstream build scripts or included in public artifacts. The Mac is not required.
 
+Upstream HTTP downloads use bounded retries for temporary connection errors and
+server throttling. Source builds use abuild's native curl downloader with
+`scripts/source-download.curlrc`; Python release trackers share `http_fetch.py`.
+Signature, checksum and compatibility failures still stop publication.
+
 Every run allocates increasing package revisions in Git before building, so `apk upgrade` can install ABI rebuilds. Failed builds leave a skipped revision but do not deploy. Scheduled runs can be delayed or disabled by GitHub's inactivity policy; the Actions page shows their status. The workflow can also be started manually.
 
 Push-triggered builds use the pushed commit's pinned sources, so a reviewed

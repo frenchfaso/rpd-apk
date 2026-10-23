@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Follow published Raspberry Trixie sources; verify signatures and content hashes."""
-import argparse,gzip,hashlib,io,json,pathlib,re,subprocess,tarfile,tempfile,urllib.request
+import argparse,gzip,hashlib,io,json,pathlib,re,subprocess,tarfile,tempfile
+from http_fetch import fetch as fetch_bytes
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 BASE='https://archive.raspberrypi.com/debian/'
 FINGERPRINT='CF8A1AF502A2AA2D763BAE7E82B129927FA3303E'
 def fetch(url):
     if not url.startswith(BASE): raise ValueError('Unapproved upstream URL')
-    with urllib.request.urlopen(url,timeout=90) as r:return r.read()
+    return fetch_bytes(url)
 def paragraphs(text):
     for block in text.split('\n\n'):
         d={};key=None

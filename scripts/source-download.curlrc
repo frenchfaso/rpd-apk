@@ -1,0 +1,7 @@
+# abuild-fetch uses curl when installed. Retry only transient download failures;
+# abuild still verifies every source checksum before unpacking or compiling.
+retry = 4
+retry-max-time = 300
+connect-timeout = 30
+max-time = 600
+retry-connrefused

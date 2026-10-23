@@ -4,11 +4,12 @@ set -eu
 [ "$(uname -m)" = aarch64 ]
 export ABUILD_USERDIR=/home/builder/.abuild
 export REPODEST=/home/builder/packages
-apk add --no-cache alpine-sdk python3 git sudo
+apk add --no-cache alpine-sdk python3 git sudo curl
 adduser -D builder
 addgroup builder abuild
 printf 'builder ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/rpd-builder
 mkdir -p /home/builder/.abuild /home/builder/packages /home/builder/rpd-qt6-preflight
+install -m644 scripts/source-download.curlrc /home/builder/.curlrc
 cp -a . /home/builder/rpd-qt6-preflight/
 chown -R builder:builder /home/builder
 su builder -c 'abuild-keygen -a -i -n'

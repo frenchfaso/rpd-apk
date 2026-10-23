@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
-import urllib.request
+from http_fetch import fetch
 
 ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / 'ports/mesa'
@@ -30,11 +30,6 @@ PATCHES = (
     'ir3-504-barrier-residency.patch',
     'musl-stacksize.patch',
 )
-
-
-def fetch(url):
-    with urllib.request.urlopen(url, timeout=90) as response:
-        return response.read()
 
 
 def field(text, name):

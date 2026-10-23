@@ -2,7 +2,8 @@
 """Track a signed, published pmOS kernel; rebuild its matching backlight module.
 Run in disposable Alpine with python3/apk-tools. Never execute upstream APKBUILD.
 """
-import gzip, hashlib, io, pathlib, re, subprocess, tarfile, tempfile, urllib.request
+import gzip, hashlib, io, pathlib, re, subprocess, tarfile, tempfile
+from http_fetch import fetch
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 PORT=ROOT/'ports/rpd-backlight-m10'
 PACKAGE='linux-postmarketos-qcom-msm89x7'
@@ -49,8 +50,7 @@ def main():
         return
     if subprocess.check_output(['apk','version','-t',version,previous],text=True).strip()!='>':
         raise ValueError('Published kernel version regressed')
-    with urllib.request.urlopen(RECIPE,timeout=90) as response:
-        recipe=response.read().decode()
+    recipe=fetch(RECIPE).decode()
     if field(recipe,'pkgver')+'-r'+field(recipe,'pkgrel')!=version:
         raise ValueError('Published binary and upstream recipe differ; defer until matched')
     if recipe_shape(recipe)!=recipe_shape((PORT/'upstream-APKBUILD.reference').read_text()):

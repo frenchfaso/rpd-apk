@@ -1,5 +1,5 @@
 import importlib.util
-import io
+import sys
 import pathlib
 import re
 import shutil
@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts'))
 spec=importlib.util.spec_from_file_location('updater',ROOT/'scripts/update-m10-kernel.py')
 u=importlib.util.module_from_spec(spec);spec.loader.exec_module(u)
 
@@ -30,7 +31,7 @@ class KernelUpdateTests(unittest.TestCase):
                       patch.object(u.subprocess,'run',side_effect=self.fake_run),
                       patch.object(u.subprocess,'check_output',return_value='>\n'),
                       patch.object(u,'read_package',side_effect=lambda _:('pkgver = '+self.version+'\n',self.config)),
-                      patch.object(u.urllib.request,'urlopen',side_effect=lambda *a,**kw:io.BytesIO(self.recipe.encode()))]
+                      patch.object(u,'fetch',side_effect=lambda _:self.recipe.encode())]
         for p in self.patches:p.start()
         self.addCleanup(self.temp.cleanup)
         self.addCleanup(lambda:[p.stop() for p in reversed(self.patches)])
