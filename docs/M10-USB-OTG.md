@@ -1,9 +1,9 @@
 # Lenovo M10 passive USB OTG
 
 `rpd-usb-otg-m10` is included in `rpd-desktop-m10` and built alongside the
-backlight modules against the same verified official kernel. It does not depend
-on a particular kernel package version, so official kernel upgrades are never
-held back. Startup skips activation if the running release or installed kernel
+backlight modules against the same verified kernel. It has no exact kernel
+dependency; the temporary security kernel's package ordering is described in
+[security updates](SECURITY-UPDATES.md). Startup skips activation if the running release or installed kernel
 APK revision differs; a later repository build provides matching modules.
 
 On the verified TB-X505L, the service detects a passive micro-USB OTG adapter and

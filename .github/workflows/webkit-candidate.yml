@@ -1,14 +1,6 @@
 name: Build native WebKitGTK security candidate
 on:
   workflow_dispatch:
-  push:
-    branches: [codex/security-runtime-20261023]
-    paths:
-      - ports/webkit2gtk-6.0/**
-      - scripts/webkit-build.sh
-      - scripts/source-download.curlrc
-      - tests/test_webkit_candidate.py
-      - .github/workflows/webkit-candidate.yml
 permissions:
   contents: read
 concurrency:
@@ -35,6 +27,8 @@ jobs:
           docker run --rm --pull=never \
             -e RPD_DISPOSABLE_BUILD=1 \
             -e RPD_SOURCE_REVISION="$GITHUB_SHA" \
+            -e ABUILD_LAST_COMMIT="$GITHUB_SHA" \
+            -e 'PACKAGER=RPD CI <rpd-ci-webkit@rpd.invalid>' \
             -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
             -v "$PWD:/work:ro" -v "$PWD/out-webkit:/out" -w /work \
             alpine:edge sh scripts/webkit-build.sh 2>&1 | tee out-webkit/reports/build.log

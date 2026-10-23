@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 expected=7.1.3-msm89x7
-expected_apk=7.1.3-r1
+expected_apk=7.1.3-r100
 if [ "$(uname -r)" != "$expected" ] || ! apk info -e "linux-postmarketos-qcom-msm89x7=$expected_apk" >/dev/null 2>&1; then
     echo "M10 backlight skipped: module built for $expected (APK $expected_apk); kernel upgrades remain unrestricted."
     exit 0

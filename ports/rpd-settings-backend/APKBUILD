@@ -5,7 +5,7 @@ pkgdesc="Portable settings integration for Raspberry Pi Desktop"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="bash bash-completion python3 polkit openssh"
+depends="bash bash-completion python3 polkit>=9999127-r100 openssh"
 source="rpd-configure-host rpd-list-touchscreens rpd-user-settings rpd-system-settings org.rpd.system-settings.policy test-system-settings.py rpd-apply-greeter rpd-greeter-settings org.rpd.greeter-settings.policy test-settings.py"
 check() {
     python3 "$srcdir/test-system-settings.py" "$srcdir/rpd-system-settings"

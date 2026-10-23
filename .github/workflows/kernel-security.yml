@@ -1,11 +1,5 @@
 name: Verify complete M10 security kernel candidate
 on:
-  push:
-    branches: [codex/security-runtime-20261023]
-    paths:
-      - ports/linux-postmarketos-qcom-msm89x7/**
-      - scripts/kernel-security-build.sh
-      - .github/workflows/kernel-security.yml
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,6 +24,7 @@ jobs:
           mkdir -p out-kernel-security
           export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
           docker run --rm -e RPD_SOURCE_COMMIT -e ABUILD_LAST_COMMIT -e SOURCE_DATE_EPOCH \
+            -e 'PACKAGER=RPD CI <rpd-ci-kernel@rpd.invalid>' \
             -v "$PWD:/work:ro" -v "$PWD/out-kernel-security:/out" \
             -w /work alpine:edge sh scripts/kernel-security-build.sh \
             2>&1 | tee out-kernel-security/build.log

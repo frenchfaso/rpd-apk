@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Replace APK v2 test signatures using Alpine's own abuild-sign.
 
-Control and data gzip members remain byte-for-byte unchanged. No package code
-is executed in this job. Format: https://wiki.alpinelinux.org/wiki/Apk_spec
+Control and data gzip members remain byte-for-byte unchanged. This signing
+entrypoint does not execute package code. Format: https://wiki.alpinelinux.org/wiki/Apk_spec
 """
 import hashlib, io, pathlib, subprocess, sys, tarfile, tempfile, zlib
 root = pathlib.Path(__file__).resolve().parents[1]

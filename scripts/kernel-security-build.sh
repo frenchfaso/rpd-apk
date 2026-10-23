@@ -16,6 +16,7 @@ work=/home/builder/rpd-kernel-security
 mkdir -p "$out/metrics" "$out/proof" "$out/sources" "$out/aarch64" "$out/keys"
 date -u +%FT%TZ > "$out/started.txt"
 apk add --no-cache alpine-sdk python3 sudo curl time util-linux
+python3 scripts/update-m10-kernel.py --validate-local > "$out/proof/kernel-provider-validation.json"
 install -m644 keys/build.postmarketos.org.rsa.pub /etc/apk/keys/
 printf '\n@pmos https://mirror.postmarketos.org/postmarketos/main\n' >> /etc/apk/repositories
 # Keep its world entry untagged so the official-only toolchain helper can retain
@@ -54,11 +55,11 @@ apk --root "$root" info --installed -v > "$out/proof/runtime-dependency-prefligh
 sha256sum keys/rpd-apk.rsa.pub > "$out/proof/published-repository-key.sha256"
 printf '\n%s/ports\n' "$REPODEST" >> /etc/apk/repositories
 
-# Only this private build-tree copy gets the coordinated kernel-identity overlay.
+# Build the reviewed canonical recipes; no candidate-only recipe rewriting.
 python3 - "$work" <<'PY'
 import hashlib, json
 from pathlib import Path
-import re, shutil, sys
+import re, sys
 root = Path(sys.argv[1])
 module = root / 'ports/rpd-backlight-m10'
 kernel = root / 'ports/linux-postmarketos-qcom-msm89x7'
@@ -73,37 +74,20 @@ assert [fix['cve'] for fix in metadata['fixes']] == [
 recipe = (module/'APKBUILD').read_text()
 assert re.search(r'^pkgver=7\.1\.3$', recipe, re.M)
 revision = re.search(r'^pkgrel=(\d+)$', recipe, re.M)
-assert revision is not None and int(revision[1]) < 100
-# Give the coordinated module family a distinct candidate version too. Reusing
-# a published revision would make APK treat different module payloads as equal.
-recipe, count = re.subn(r'^pkgrel=\d+$', 'pkgrel=100', recipe, flags=re.M)
-assert count == 1
-recipe, count = re.subn(r'^_kernel_apk_version=7\.1\.3-r1$', '_kernel_apk_version=7.1.3-r100', recipe, flags=re.M)
-assert count == 1
-loader = module/'rpd-backlight-m10-load'
-text, count = re.subn(r'^expected_apk=7\.1\.3-r1$', 'expected_apk=7.1.3-r100', loader.read_text(), flags=re.M)
-assert count == 1
-loader.write_text(text)
-recipe, count = re.subn(r'^[0-9a-f]{128}  rpd-backlight-m10-load$',
-    hashlib.sha512(loader.read_bytes()).hexdigest()+'  rpd-backlight-m10-load', recipe, flags=re.M)
-assert count == 1
-patches = []
+assert revision is not None and int(revision[1]) >= 100
+assert re.search(r'^_kernel_apk_version=7\.1\.3-r100$', recipe, re.M)
+assert re.search(r'^expected_apk=7\.1\.3-r100$', (module/'rpd-backlight-m10-load').read_text(), re.M)
 for fix in metadata['fixes']:
     name = fix['patch']
     assert re.fullmatch(r'000[1-8]-CVE-2026-[0-9]+\.patch', name)
-    assert name not in recipe
     data = (kernel/name).read_bytes()
     assert hashlib.sha256(data).hexdigest() == fix['sha256']
-    shutil.copy2(kernel/name, module/name)
-    patches.append(name)
-source = re.search(r'^source="(.*?)"\n', recipe, re.M | re.S)
-assert source is not None
-recipe = recipe[:source.end(1)]+'\n    '+' '.join(patches)+recipe[source.end(1):]
-sums = re.search(r'^sha512sums="\n(.*?)"', recipe, re.M | re.S)
-assert sums is not None
-rows = ''.join(hashlib.sha512((module/name).read_bytes()).hexdigest()+'  '+name+'\n' for name in patches)
-recipe = recipe[:sums.end(1)]+rows+recipe[sums.end(1):]
-(module/'APKBUILD').write_text(recipe)
+    assert (module/name).read_bytes() == data
+    for port in (module,kernel):
+        text = (port/'APKBUILD').read_text()
+        source = re.search(r'^source="(.*?)"\n',text,re.M|re.S)
+        assert source is not None and source[1].split().count(name) == 1
+        assert re.findall(r'^([0-9a-f]{128})  '+re.escape(name)+r'$',text,re.M) == [hashlib.sha512(data).hexdigest()]
 PY
 chown -R builder:builder "$work"
 cp "$work/ports/rpd-backlight-m10/APKBUILD" "$out/proof/rpd-backlight-m10.APKBUILD"

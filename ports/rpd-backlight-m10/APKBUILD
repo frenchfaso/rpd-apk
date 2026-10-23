@@ -1,20 +1,21 @@
 pkgname=rpd-backlight-m10
 pkgver=7.1.3
-pkgrel=97
+pkgrel=100
 pkgdesc="Firmware DSI backlight for verified Lenovo M10 INX JD9365 panels"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="aarch64"
 license="GPL-2.0-only"
 subpackages="rpd-gpu-m10:gpu rpd-usb-otg-m10:otg rpd-battery-m10:battery rpd-charger-m10:charger rpd-audio-m10:audio"
 install="rpd-gpu-m10.post-install rpd-gpu-m10.post-upgrade rpd-gpu-m10.pre-deinstall rpd-audio-m10.post-install rpd-audio-m10.post-upgrade rpd-audio-m10.post-deinstall rpd-charger-m10.post-install rpd-charger-m10.post-upgrade rpd-charger-m10.pre-deinstall rpd-backlight-m10.post-install rpd-backlight-m10.post-upgrade rpd-usb-otg-m10.post-install rpd-usb-otg-m10.post-upgrade rpd-usb-otg-m10.pre-deinstall rpd-battery-m10.post-install rpd-battery-m10.post-upgrade rpd-battery-m10.pre-deinstall"
-_kernel_apk_version=7.1.3-r1
+_kernel_apk_version=7.1.3-r100
 depends="kmod brightnessctl brightnessctl-udev"
 makedepends="mesa-dev clang23 lld23 llvm23 make flex bison perl openssl-dev elfutils-dev pahole python3 py3-libfdt py3-lxml py3-jinja2 dtc rpd-cpu-topology-m10"
 source="rpd-gpu-m10.files gpu-probe.c gpu-renderer.sh test-gpu.py build-gpu.sh gpu-dtb.py 96-rpd-gpu-m10 rpd-gpu-m10-load rpd-gpu-m10.service rpd-gpu-m10.conf 80-rpd-gpu-m10.preset 0002-a5xx-gpmu-registers.diff 0003-adreno-504-rpm-domain.diff 0004-a504-retained-gx-reset.diff 0005-msm-recover-before-retire.diff 0006-msm-recovery-task-ref.diff 0007-a504-physical-cx-device-link.diff 0008-msm-gpu-only-remove-private.diff 0009-a5xx-release-shadow-mapping.diff 0010-a504-bounded-fragment-progress.diff 0001-adreno-504-bringup.diff m10_wcd_analog.c m10_speaker_amp.c m10-audio-pmic.diff m10-audio.dtsi audio-dtb.py test-audio.py 95-rpd-audio-m10 Lenovo-M10.conf HiFi.conf 51-rpd-m10-audio.conf m10_charger.c m10_charger_transaction.h test-charger.c rpd-charger-m10-load rpd-charger-m10.service 80-rpd-charger-m10.preset 80-rpd-battery-m10.preset linux-v7.1.3-r1.tar.gz::https://github.com/msm89x7-mainline/linux/archive/refs/tags/v7.1.3-r1.tar.gz
     kernel.config check-kernel-config.py Makefile m10_firmware_backlight.c
     rpd-backlight-m10.service rpd-backlight-m10-load
     m10_otg_id.c m10_otg_vbus.c rpd-usb-otg-m10 rpd-usb-otg-m10.service test-otg.py 80-rpd-usb-otg-m10.preset
-    m10_battery.c m10_battery_temperature.h m10-adc5-battery.diff rpd-battery-m10-load rpd-battery-m10.service"
+    m10_battery.c m10_battery_temperature.h m10-adc5-battery.diff rpd-battery-m10-load rpd-battery-m10.service
+    0001-CVE-2026-98858.patch 0002-CVE-2026-98823.patch 0003-CVE-2026-72112.patch 0004-CVE-2026-98850.patch 0005-CVE-2026-100077.patch 0006-CVE-2026-93059.patch 0007-CVE-2026-81000.patch 0008-CVE-2026-98829.patch"
 builddir="$srcdir/linux-7.1.3-r1"
 
 build() {
@@ -216,7 +217,7 @@ b61ada4914236f2a908c5c1518836a137d079684bfa283a5b12a1aa6aaf291848216c8d7b9c4b06e
 50d41a6feb9ec50985e8238ac15029cf83d1dd4a94be1f303e21a3fe86c547744fb1fa865258e8f2e43ffd553ba609af614de4d0ba913653ece855e8e8a50dcf  Makefile
 5ccd612032d35190479e526089ac50e2d9cda9be54f08f00436faaafd14ea950ab7d3e76484421491b4cce53d433b0811371055f4411db94402dda3e3bf05e44  m10_firmware_backlight.c
 c6a52f9fdef8e19515aa7bf1de0bd6ec848901f8985445d8043296d17cda0e94548a27695bf18196bfbdcc8682e956681630b22706613773339935b9dbe2350b  rpd-backlight-m10.service
-103ce34945ebf3486d3079f2ae2967fd6b109237bdf6e618615a47d1ccc489ca7517885c21b45d60de302205b580afa660d988798567ff8a7c109b29d3f519e5  rpd-backlight-m10-load
+e7c3562bc551551c82632af35b79bbca1a1810207edc740a09d57d1ae84b34fb30ad6ef69d287381487f1ad466c233860e9d587988a7ecc1e1b21ad69aa7fc04  rpd-backlight-m10-load
 c338990441970e66599b3903bf1badd158170b13ff609c9e95f96486c1a9994993c839ebbf7f95f9e227650b1212e30255271441a31b8c7d88140c74cdb89ed6  m10_otg_id.c
 8be85a47ad203dc7d9aa0456febd079bf709667008cfc15da6369bad69f0bea5c6ab57518f146ece4c406a584b474c8b9cffdc363aa6adf28eee8d33b25bcf19  m10_otg_vbus.c
 45253473cdf71827c26ab14dfb29fea0829bd89dc86fbd2de86317fe969a36b4d565fad8cfa9ba54cf2e0d1c4acf13f8028e4e053c77c024df9d0527b2ac8419  rpd-usb-otg-m10
@@ -228,4 +229,12 @@ e7684c3728e96eccffe32c6bbc1947a2ed183a3e70938b4e6f78e111cd58c132c6b8ccfd744e49db
 dbe2c4fa198d417cd6a14f3f4e098a394dd64a55bbcda5a42c711fb2825ecd74951433f1c5afa1e25fa260c38eb7a993706a41a28f998a31fdce15aa658f399e  m10-adc5-battery.diff
 fb3f4468669d40a7698b5dd97b504684d64afb920c12aab957741b0e311592f8e4f9093126aee92d281f0c9ef1feb765da4d1fe2aad81c4c5ac63deb56f6abac  rpd-battery-m10-load
 eb1706d6d3e788e1d0c5d5100bd035d9bf00d2421b729ca6948c658fbe4d84a57f3e59741e321bb79149da74f98eb0d9b31dd8c42f40ebe31d1e41311d7d8e6f  rpd-battery-m10.service
+81d6d5984dc8638b72f9e51f9254624bb0e18fd69f9d2616e3d853918f009036c3f67aa53ff8e94886b70744bf2e6510135d09d49edfb5dc44166365cbda7bf2  0001-CVE-2026-98858.patch
+4b7761949bf12147e8613487a38f212c83a2de9e6ce07f7a953155a3cbdd9657c57a3dea6b376468a0db6a7e5274ea6159ec606fa26d4ac43a0bf1b0269e3489  0002-CVE-2026-98823.patch
+39bdeadbd275e19fe5d37eca030794f233ce36299c6817ffa9ad7445034c95547614caaa082f752f92462b3f25def01931e3572ea8d7dc609ad9606f0017fb5b  0003-CVE-2026-72112.patch
+e5d7b3b2a81199db40a971becbc169240f9dfd11193b657eb0f80893cc0f3f089216d70481d820077ecaa102a9c363c5986c6a9f07c6ba9af66bad8e82570bf9  0004-CVE-2026-98850.patch
+21df66bb2aecf5748771b27c48ba1ff460c12dcb792d29d902d1d4c55bd2b6b90f7f6b032709268ba49c850f500f5271f5c24cddc88b792130700939fdc1b3b4  0005-CVE-2026-100077.patch
+ec823b17e61b93a6ec235965fd28d5dbce16f9564ae545e96d5710ab161fa024023dfeb31841d77d49b6fd6d5a039a23815d4c0257dba2bb946e2ceb1cf380c1  0006-CVE-2026-93059.patch
+f0ed270d14f79b76615594c1bf042fd3656e20814e68021c7433bcb1f17ccdc1628e6101122fadcfa80b6c7b21f306fdb5924dfdaf6809c8076c6d518ed3c66f  0007-CVE-2026-81000.patch
+fe688f499dfaaf392d29d4811a1a9b736479308ea93ea9d1d6b911bf0db55d131f179f5744786df14d002856b06429c6cc1d48d0c45d7270efe65c2679b34165  0008-CVE-2026-98829.patch
 "

@@ -1,12 +1,5 @@
 name: Verify native runtime security candidates
 on:
-  push:
-    branches: [codex/security-runtime-20261023]
-    paths:
-      - ports/polkit/**
-      - ports/squeekboard/**
-      - scripts/runtime-security-build.sh
-      - .github/workflows/runtime-security.yml
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,6 +22,7 @@ jobs:
           mkdir -p out-security
           docker run --rm \
             -e ABUILD_LAST_COMMIT="$GITHUB_SHA" \
+            -e "PACKAGER=RPD CI <rpd-ci-$PACKAGE@rpd.invalid>" \
             -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
             -v "$PWD:/work:ro" -v "$PWD/out-security:/out" -w /work \
             alpine:edge sh scripts/runtime-security-build.sh "$PACKAGE"
