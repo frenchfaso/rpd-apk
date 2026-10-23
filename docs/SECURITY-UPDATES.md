@@ -33,6 +33,11 @@ its locked, offline Rust dependency graph is checked during compilation. A scann
 may still identify GLib 0.18.5 by version, so the backported fix is documented in
 the package sources rather than presented as a new upstream GLib release.
 
+On 23 October 2026 the optional Alpine Chromium provider was still below the
+Chrome 156.0.8078.47 fix for [CVE-2026-113303](https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02018666648.html).
+It is not included in this browser profile. Check for a corrected provider before
+installing it separately; browser configuration files are not a Chromium engine.
+
 Build jobs use temporary signing keys. A separate job signs the tested repository
 with the existing production key; users keep the same repository trust anchor.
 Source archives, package provenance and validation reports accompany publication.

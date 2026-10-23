@@ -26,8 +26,7 @@ sudo reboot
 
 Replace `YOUR_USERNAME` with your existing username. Sign in at the graphical login after rebooting.
 
-GNOME Web is the default browser. Chromium is optional (`sudo apk add chromium`)
-and can be selected in Control Centre when installed.
+GNOME Web is the default browser.
 
 ## Update
 
