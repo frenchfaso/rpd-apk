@@ -4,7 +4,11 @@ set -eu
 [ "$(uname -m)" = aarch64 ]
 export ABUILD_USERDIR=/home/builder/.abuild
 export REPODEST=/home/builder/packages
+export RPD_DISPOSABLE_BUILD=1
 apk add --no-cache alpine-sdk python3 git sudo curl
+# Catch compiler/archive incompatibilities before the full Mesa/kernel build.
+python3 scripts/m10-toolchain.py install
+python3 scripts/m10-toolchain.py restore
 adduser -D builder
 addgroup builder abuild
 printf 'builder ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/rpd-builder

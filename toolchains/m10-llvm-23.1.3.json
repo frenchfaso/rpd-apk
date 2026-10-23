@@ -1,0 +1,59 @@
+{
+  "version": "23.1.3",
+  "packages": [
+    {
+      "name": "clang23",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/clang23-23.1.3-r0.apk",
+      "sha512": "de3dba11c7590d93f179f66105d7abbcd2492055742650fefbb03817114bc03cb548160db291b807bb72850a4c9fb61b0a6c006ccd89b2584211971c084457cd"
+    },
+    {
+      "name": "clang23-libs",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/clang23-libs-23.1.3-r0.apk",
+      "sha512": "9cdaacc5e233cfdbaf16e89551a8fb6ad5ea2c6feb1be199af679f95c0f7eeac99d2bc5f9833b3928c2fd53fb3c830f7f6732e2c1c3ad626e8457ba4dfb8b710"
+    },
+    {
+      "name": "clang23-headers",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/clang23-headers-23.1.3-r0.apk",
+      "sha512": "aa0748e01f20d9a67e17453fc8cf5e24ce02093872f0778e3d10092d349a289c5fb30c5c4fba95f73ee88745784f78c64952a26ed4ebb548dfffb4a650285bcd"
+    },
+    {
+      "name": "llvm23",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/llvm23-23.1.3-r0.apk",
+      "sha512": "7332e0c75332b3612b943c137ef33a1d8b80670f8d095577bf23a1d0945e0c44d8a57abb338703f7653df8cce06c379254e24835781350779053e6fe8ea93db3"
+    },
+    {
+      "name": "llvm23-libs",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/llvm23-libs-23.1.3-r0.apk",
+      "sha512": "eefa650151c8275cba59404960cf606fe71b836ed2ca92b82d1792801f34a61e26c7fceaa70578fb1208c092be9eb71552dae89f188e3222502df1ead2ec6fff"
+    },
+    {
+      "name": "llvm23-linker-tools",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/llvm23-linker-tools-23.1.3-r0.apk",
+      "sha512": "e09f2878be6258dea53f2f2d7cb00141952a10c39a6f0625c90b55992387a57fb69f04e92d856ecfc51ac54a04f7a348edc86f6f56366015f035ff4d16c77839"
+    },
+    {
+      "name": "lld23",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/lld23-23.1.3-r0.apk",
+      "sha512": "35495d4a206019ad50268b838c9029124c71ceea940b53015b646afc1f7086ff12d6bf4423c345d842887968c47955839a153f657094ce903b42643a32e56aff"
+    },
+    {
+      "name": "lld23-libs",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/lld23-libs-23.1.3-r0.apk",
+      "sha512": "44843969503f88e94c3f8c261f29c448333785d74ad068934fd9b074cc4acff34dbf76c8062fd930b0066925275683c2554d787de66767223bf7f23df9935698"
+    },
+    {
+      "name": "scudo-malloc",
+      "version": "23.1.3-r0",
+      "url": "https://github.com/frenchfaso/rpd-apk/releases/download/m10-llvm-23.1.3/scudo-malloc-23.1.3-r0.apk",
+      "sha512": "68be76e5cf3879d1bc7b85f5938c601967efa732c9ff79f9c3afd57c5a62bddf5019294773fa5798d710c06f27af1eb7667c127a2382d2a3b20e3fd0b2c7f166"
+    }
+  ]
+}

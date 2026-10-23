@@ -4,6 +4,7 @@ set -eu
 # Keep output/key paths stable across abuild releases adopting XDG defaults.
 export ABUILD_USERDIR=/home/builder/.abuild
 export REPODEST=/home/builder/packages
+export RPD_DISPOSABLE_BUILD=1
 cd "$(dirname "$0")/.."
 [ "$(uname -m)" = aarch64 ] || { echo 'Native aarch64 build required' >&2; exit 1; }
 # pmOS installs modules under /usr; Alpine's depmod still reads /lib.
@@ -41,7 +42,9 @@ cp -a . /home/builder/rpd-build/
 chown -R builder:builder /home/builder/rpd-build /home/builder/packages
 printf '\n/home/builder/packages/ports\n' >> /etc/apk/repositories
 for pkg in mesa rpd-lvm-m10 squeekboard rpd-cpu-topology-m10 rpd-backlight-m10 rpd-settings-backend rpd-autorotate labwc gtk-layer-shell rpd-chromium-defaults rpd-gtk2-engine rpd-qt-gtk2 rpd-qt6-gtk2 rpd-theme rpd-icons rpd-menu-data rpd-panel rpd-clock rpd-keyboard-button rpd-window-list rpd-menu rpd-file-manager rpd-ejecter rpd-network rpd-volume rpd-battery rpd-power rpd-shutdown rpd-bluetooth rpd-greeter rpd-task-manager rpd-control-center rpd-appearance rpd-run rpd-screenshot rpd-menu-editor rpd-shortcuts rpd-localisation rpd-input-settings rpd-classic-menu rpd-display-settings rpd-printer-settings rpd-bookshelf rpd-session rpd-login rpd-desktop-lite rpd-desktop-browser rpd-desktop-m10; do
+    if [ "$pkg" = rpd-backlight-m10 ]; then python3 scripts/m10-toolchain.py install; fi
     su builder -c "cd /home/builder/rpd-build/ports/$pkg && abuild -r"
+    if [ "$pkg" = rpd-backlight-m10 ]; then python3 scripts/m10-toolchain.py restore; fi
     if [ "$pkg" = rpd-battery ]; then
         su builder -c "cd /home/builder/rpd-build/ports/rpd-battery && abuild fetch unpack prepare"
         python3 tests/verify_battery_sysfs.py /home/builder/rpd-build/ports/rpd-battery/src/pplug-batt

@@ -142,3 +142,15 @@ outside the brightness-state lock, so its delay-inhibitor callback cannot deadlo
 Normal sleep inhibitors are respected; for example, an active SSH PAM session can
 block suspend. A rejected request restores the display. No deep sleep, hibernation,
 automatic logout or screen lock is added by this policy.
+
+## Matching build compiler
+
+The official kernel enables CFI. Its exact Alpine Clang/LLD version is required;
+compiler metadata is never ignored to make a build pass. The disposable builder
+first tries the current signed Alpine toolchain. If its version differs,
+`scripts/m10-toolchain.py` uses a reviewed `toolchains/m10-llvm-<version>.json`
+manifest, pinned SHA512 hashes and the original Alpine APK signatures to install
+the matching archived toolchain. Current Alpine LLVM is restored immediately
+after the M10 modules are built, before desktop compilation and runtime tests.
+The Qt6 preflight checks both toolchain installation and restoration early.
+These compiler packages are build inputs only; they are not installed on the M10.
