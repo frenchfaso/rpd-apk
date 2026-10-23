@@ -70,6 +70,29 @@ class ToolchainTests(unittest.TestCase):
         self.fetch.assert_not_called()
         self.assertEqual(self.run.call_count, 1)
 
+    def test_compiler_probes_use_actual_alpine_package_paths(self):
+        clang = f'/usr/lib/llvm{self.major}/bin/clang'
+        commands = {
+            (clang, '-dumpversion'): self.version,
+            (clang, '--version'): self.banner + '\nTarget: aarch64',
+            ('/usr/bin/ld.lld', '--version'): 'LLD ' + self.version,
+            ('apk', '--arch', 'aarch64', '--keys-dir', toolchain.KEYS,
+             '--repositories-file', '/dev/null', 'info', '--installed', '-v',
+             f'clang{self.major}-libs', f'llvm{self.major}-libs'):
+                f'clang{self.major}-libs-{self.version}-r0\n'
+                f'llvm{self.major}-libs-{self.version}-r0\n',
+        }
+
+        def execute(command, text):
+            self.assertTrue(text)
+            try:
+                return commands[tuple(command)]
+            except KeyError:
+                raise FileNotFoundError(command[0])
+
+        self.output.side_effect = execute
+        self.assertTrue(toolchain.matches(self.major, self.version, self.banner))
+
     def test_archived_closure_is_hashed_authenticated_and_pinned(self):
         self.probes('23.1.4', self.version)
         calls = []

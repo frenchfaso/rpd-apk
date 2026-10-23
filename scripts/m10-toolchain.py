@@ -95,7 +95,7 @@ def matches(major, version, banner):
     bindir = f'/usr/lib/llvm{major}/bin/'
     clang = subprocess.check_output([bindir + 'clang', '-dumpversion'], text=True).strip()
     identity = subprocess.check_output([bindir + 'clang', '--version'], text=True).splitlines()[0]
-    linker = subprocess.check_output([bindir + 'ld.lld', '--version'], text=True).strip()
+    linker = subprocess.check_output(['/usr/bin/ld.lld', '--version'], text=True).strip()
     if (clang != version or identity != banner or
             re.match(r'^LLD ' + re.escape(version) + r'(?:\s|$)', linker) is None):
         return False
