@@ -59,6 +59,10 @@ build() {
 	export PATH=/usr/lib/llvm23/bin:$PATH
 	make ARCH="$_carch" LLVM=1 olddefconfig
 	python3 "$srcdir/check-kernel-config.py" "$srcdir/$_config" .config "$PWD"
+	# The explicit target writes real built-in exports to vmlinux.symvers.
+	# A full build writes Module.symvers instead and preserves that first table.
+	make ARCH="$_carch" LLVM=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1))-postmarketOS" vmlinux
 	make ARCH="$_carch" LLVM=1 \
 		KBUILD_BUILD_VERSION="$((pkgrel + 1))-postmarketOS"
 }
