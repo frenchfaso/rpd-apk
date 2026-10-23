@@ -1,0 +1,17 @@
+{
+  "version": "2.54.2",
+  "source": {
+    "url": "https://webkitgtk.org/releases/webkitgtk-2.54.2.tar.xz",
+    "sha256": "a76345b391bef6211fb5ab6cfab2e86b285d18cda17cbb9ade595f1252b86065",
+    "sha512": "5e35d8d5d74e5e648df112db082cdb3b99949ce2a81c87af2462ebb5aba4e7e122b04ba421d826deebbffcd7fe2d620957450308539907ae2f41bdef7b5def24"
+  },
+  "alpine_gtk4_base": {
+    "commit": "e57b89272298556d050031a6e4ba575937f86c8e",
+    "url": "https://gitlab.alpinelinux.org/alpine/aports/-/blob/e57b89272298556d050031a6e4ba575937f86c8e/community/webkit2gtk-6.0/APKBUILD"
+  },
+  "alpine_254_upgrade_reference": {
+    "commit": "d6c3bcca622d63e356beb851d60232c6c9597895",
+    "url": "https://gitlab.alpinelinux.org/alpine/aports/-/merge_requests/109558",
+    "scope": "GTK3 2.54.1 recipe, patch selection and bounded ARM64 compilation; not a GTK4 2.54.2 binary."
+  }
+}

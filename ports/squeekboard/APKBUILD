@@ -33,6 +33,9 @@ source="https://gitlab.gnome.org/World/Phosh/squeekboard/-/archive/v$pkgver/sque
 	sm.puri.OSK0.desktop
 	systemd-service.patch
 	nix-0.22.3-timespec.patch
+	memmap2-0.9.11.diff
+	glib-0.18.5-variant-str-iter.patch
+	cargo-locked.patch
 	persistent-visibility.patch
 	close-abi.patch
 	"
@@ -43,7 +46,9 @@ provider_priority=10
 replaces="phosh"
 
 prepare() {
-	# Temporarily vendor to patch nix crate
+	# Apply the reviewed lock update before resolving the exact vendor tree.
+	# .diff keeps default_prepare from applying this a second time.
+	patch -p1 < "$srcdir/memmap2-0.9.11.diff"
 	cargo vendor --locked
 
 	mkdir -p .cargo
@@ -54,9 +59,17 @@ prepare() {
 		[source.vendored-sources]
 		directory = "vendor"
 	EOF
-	sed -i 's/\("files":{\)[^}]*/\1/' vendor/nix/.cargo-checksum.json
-
 	default_prepare
+	# Retain Cargo's integrity checks for every file, including our backports.
+	for file in nix/src/sys/time.rs nix/src/sys/timerfd.rs glib/src/variant_iter.rs; do
+		crate=${file%%/*}
+		path=${file#*/}
+		checksum=$(sha256sum "vendor/$file")
+		checksum=${checksum%% *}
+		sed -i "s|\"$path\":\"[a-f0-9]*\"|\"$path\":\"$checksum\"|" \
+			"vendor/$crate/.cargo-checksum.json"
+		grep -Fq "\"$path\":\"$checksum\"" "vendor/$crate/.cargo-checksum.json"
+	done
 	# Preserve exact Rust dependencies with our other published source archives.
 	tar -czf "$SRCDEST/squeekboard-vendor-$pkgver.tar.gz" vendor
 }
@@ -85,6 +98,9 @@ sha512sums="
 39072909e750ba3a635b4245f45d969129e5e846aaa83af7530b265ccf31b5758f03520ebdb19dfe7a3494a6203d543addae1c9afba51ac5aafec044683e4172  sm.puri.OSK0.desktop
 e1c2b41c1ea856208d18e296b941d0324b8b3d017637bd1edc7208071385c66f1860a370e848193456796247b264d314836cd3d93eb78403bd9187504909539b  systemd-service.patch
 8283a049711e3195b46681022935c1d520bd2f8ea0078833d4ce173ab7c861d01b3b33687b66a9e24dee9d370394143c162b6b843d71bba8f58889224269b00b  nix-0.22.3-timespec.patch
+ec6313825beb2b471195413887e1f037bdc714729b4277469c3c965b049d10ebd1b1646e20af3c49fee99ee618b0c9dfc24e789aa1506d3de4dbaf3addd66264  memmap2-0.9.11.diff
+82f7634c83d41bef862e23ace78a7db0c68eae940f0cc93a96b4ea9fe9a27bb8af11ae17071d80381f4f870ef91d08f7e7844c7d3786d1214d323df652b79cc0  glib-0.18.5-variant-str-iter.patch
+cba1adf9acd17777e4362707c96472d9aa31e071278810cd623ede9593c7fb09ff290a52fd59185a7ed727415412c6583fea57f1e477b7546a3f966e87dc1eda  cargo-locked.patch
 2e126dee99872344a4f8349e4ca8008397a1e95ef12073a4996a9f4d9ea787ec652e888f2edbe4741b830b54dec44aae95bda45a4ca91b976e5eca70bb921871  persistent-visibility.patch
 7acf7996dcf38c3569f48e9e29036d38d32124b8d8458f94fa2ba2261c9b1fdd0a136b5f6e42993f7d6a5082a08695d007f4fbac232611deaf8a90b6279cee76  close-abi.patch
 "
