@@ -141,7 +141,7 @@ else
     [ "$result" -eq 0 ]
     apk info -e gtk-layer-shell=0.10.1-r196
     apk info -e gtk-layer-shell-dev=0.10.1-r196
-    [ "$(pkg-config --modversion gtk-layer-shell)" = 0.10.1 ]
+    [ "$(pkg-config --modversion gtk-layer-shell-0)" = 0.10.1 ]
     if [ "$MODE" = real-systemd ]; then real_provider; else eudev_provider; fi
     python3 - <<'PY'
 from pathlib import Path
