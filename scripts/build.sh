@@ -59,7 +59,16 @@ for pkg in mesa rpd-lvm-m10 squeekboard rpd-cpu-topology-m10 rpd-backlight-m10 r
         python3 tests/verify_bookshelf_batch.py /home/builder/rpd-build/ports/rpd-bookshelf/src/bookshelf/src/rp_bookshelf.c
     fi
     apk update
-    if [ "$pkg" = gtk-layer-shell ]; then apk add --upgrade gtk-layer-shell gtk-layer-shell-dev; fi
+    if [ "$pkg" = gtk-layer-shell ]; then
+        # Install this build without upgrading unrelated dependency providers.
+        set -- "$REPODEST/ports/aarch64"/gtk-layer-shell-[0-9]*.apk
+        [ "$#" -eq 1 ] && [ -f "$1" ] || exit 1
+        gtk_main=$1
+        set -- "$REPODEST/ports/aarch64"/gtk-layer-shell-dev-[0-9]*.apk
+        [ "$#" -eq 1 ] && [ -f "$1" ] || exit 1
+        gtk_dev=$1
+        apk add "$gtk_main" "$gtk_dev"
+    fi
     # The next plugin needs the panel's exported headers and pkg-config file.
     if [ "$pkg" = rpd-panel ]; then apk add rpd-panel-dev; fi
 done
