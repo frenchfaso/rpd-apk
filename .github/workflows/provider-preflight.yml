@@ -1,0 +1,50 @@
+name: Native GTK provider diagnostic
+on:
+  push:
+    branches: [codex/security-provider-preflight-20261024]
+permissions:
+  contents: read
+jobs:
+  provider:
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [baseline, real-systemd, exact-files]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test the real GTK dependency transaction in a clean container
+        shell: bash
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          set -euo pipefail
+          mkdir -p "out-provider/$MODE/sources"
+          git archive --format=tar.gz HEAD > "out-provider/$MODE/sources/rpd-apk-packaging.tar.gz"
+          docker run --rm --cpus=2 --memory=2g \
+            -e "MODE=$MODE" \
+            -e "ABUILD_LAST_COMMIT=$(git rev-parse HEAD)" \
+            -e "SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)" \
+            -e "PACKAGER=RPD provider diagnostic <rpd-provider-$MODE@rpd.invalid>" \
+            -v "$PWD:/work:ro" -v "$PWD/out-provider/$MODE:/out" -w /work \
+            alpine:edge sh scripts/provider-preflight.sh 2>&1 | tee "out-provider/$MODE/container.log"
+      - id: evidence
+        name: Retain diagnostic evidence without private keys
+        if: always()
+        shell: bash
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          set -euo pipefail
+          sudo chown -R "$(id -u):$(id -g)" "out-provider/$MODE"
+          test -z "$(find "out-provider/$MODE" -type f \( -name '*.rsa' -o -name '*.pem' \) -print)"
+          test -z "$(find "out-provider/$MODE" -type l -print)"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: provider-${{ matrix.mode }}
+          path: out-provider/${{ matrix.mode }}/
+          retention-days: 3
