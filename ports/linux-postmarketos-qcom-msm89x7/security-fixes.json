@@ -1,0 +1,95 @@
+{
+  "kind": "temporary-emergency-backport",
+  "maintained_upstream_series": false,
+  "kernel_package": "linux-postmarketos-qcom-msm89x7",
+  "kernel_apk_version": "7.1.3-r100",
+  "kernel_release": "7.1.3-msm89x7",
+  "base_board_commit": "50f9719b10cef792432485b0139fbcb913316e07",
+  "base_board_archive_sha512": "c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a",
+  "canonical_config_sha256": "1b0eee41ffbf59b12da95e2e692c56f75d1d7ff8e3ecc97df5503f53ee43fd08",
+  "config_comparison": "Exact semantic/ABI/compiler fields; existing CC_CAN_LINK and proven equivalent pahole metadata exceptions only.",
+  "fixes": [
+    {
+      "cve": "CVE-2026-98858",
+      "commit": "891bd8335a0de3bb15c3b797ce3026bbb0dbef6c",
+      "source": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux/+/891bd8335a0de3bb15c3b797ce3026bbb0dbef6c",
+      "patch": "0001-CVE-2026-98858.patch",
+      "sha256": "7b832504c8bac319bc0449756d98ca26e05f9383e0cd281cfb6676c309b6aaaa",
+      "context_adaptation": "Move the RCU guard hunk to io_uring/tw.c where this board tree keeps io_req_normal_work_add; identical security additions/deletions."
+    },
+    {
+      "cve": "CVE-2026-98823",
+      "commit": "5f27581c176f84b52ec0ab9be7b500c10667ef60",
+      "source": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux/+/5f27581c176f84b52ec0ab9be7b500c10667ef60",
+      "patch": "0002-CVE-2026-98823.patch",
+      "sha256": "6087a3fa8f309680fbdbd8c2e264df569c947ed70a10c6996b8a62b35bda000d",
+      "context_adaptation": null
+    },
+    {
+      "cve": "CVE-2026-72112",
+      "commit": "0639ea767fe04c288a8d6cb826100fe3d95d4936",
+      "source": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux/+/0639ea767fe04c288a8d6cb826100fe3d95d4936",
+      "patch": "0003-CVE-2026-72112.patch",
+      "sha256": "c121516bfa7d16af8cea3025fdd1945f986bd31b76be9ce35d21d07d905caca7",
+      "context_adaptation": null
+    },
+    {
+      "cve": "CVE-2026-98850",
+      "commit": "9fd63d284e251332f4874ef9023cde472f315f86",
+      "source": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux/+/9fd63d284e251332f4874ef9023cde472f315f86",
+      "patch": "0004-CVE-2026-98850.patch",
+      "sha256": "e13f383787acb16ae06fe7d9980865ae4ca49446ac6ea38c30ba77beab72ba59",
+      "context_adaptation": "Only context uses dev->hard_header_len rather than the newer local hard_header_len; identical security additions/deletions."
+    },
+    {
+      "cve": "CVE-2026-100077",
+      "commit": "b303e1d52811de7d1bcf793560754d4df68d4a1c",
+      "source": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=b303e1d52811de7d1bcf793560754d4df68d4a1c",
+      "patch": "0005-CVE-2026-100077.patch",
+      "sha256": "fa1c299f6f3f0d29ad1f8bde7cecb32eb6f83e5247a68f63207fd68409a028ed",
+      "context_adaptation": null,
+      "existing_rpd_patch": "0005-msm-recover-before-retire.diff",
+      "scope": "Retain the existing deployed RPD security fix in stock msm.ko fallback as well as the custom GPU module."
+    },
+    {
+      "cve": "CVE-2026-93059",
+      "commit": "40b793714ad8f393ab3d469f9d00b20ebda46257",
+      "source": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=40b793714ad8f393ab3d469f9d00b20ebda46257",
+      "patch": "0006-CVE-2026-93059.patch",
+      "sha256": "e9681f0c5a906729b8774ad6ff239d7cde2400edf99c2d0662493bc01140f42e",
+      "context_adaptation": null,
+      "existing_rpd_patch": "0006-msm-recovery-task-ref.diff",
+      "scope": "Retain the existing deployed RPD security fix in stock msm.ko fallback as well as the custom GPU module."
+    },
+    {
+      "cve": "CVE-2026-81000",
+      "commit": "0ada54ea63e48b9c1608e917ccb7dfadbe86db28",
+      "source": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux/+/0ada54ea63e48b9c1608e917ccb7dfadbe86db28",
+      "patch": "0007-CVE-2026-81000.patch",
+      "sha256": "1ed0cc09b0a490c79abea2325f8d80186a4d6360b59f27ee610111ca30056217",
+      "context_adaptation": null,
+      "applicability": "conditional; affected enabled code, practical M10 trigger not demonstrated",
+      "scope": "TUN is modular; Open vSwitch is disabled, but the bridge headroom caller is modular. Exploitation on this M10 is not demonstrated; retain VPN/TUN support and fix the complete input validation."
+    },
+    {
+      "cve": "CVE-2026-98829",
+      "commit": "870b8cb9baa9bd859deceb33ae158011e6ba2360",
+      "source": "https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux/+/870b8cb9baa9bd859deceb33ae158011e6ba2360",
+      "patch": "0008-CVE-2026-98829.patch",
+      "sha256": "8c9853990ecd966138ef7f4e44154ad2fceeb98c486a245fe17fc10ee393f664",
+      "context_adaptation": null,
+      "applicability": "conditional; affected enabled code, practical M10 trigger not demonstrated",
+      "scope": "mac80211 and WCN36xx are modular. Normal WCN MPDU limits constrain the trigger, but firmware A-MSDU unchaining prevents proving complete exclusion. Exploitation on this M10 is not demonstrated."
+    }
+  ],
+  "preserve_existing_gpu_backports": [
+    "b303e1d52811de7d1bcf793560754d4df68d4a1c",
+    "40b793714ad8f393ab3d469f9d00b20ebda46257"
+  ],
+  "limits": [
+    "Complete kernel and all matching RPD modules must be built together; no reused 7.1.3-r1 module qualification.",
+    "Same kernelrelease by explicit project decision; runtime APK-version gates must become 7.1.3-r100 before device qualification.",
+    "Not a maintained upstream series or a substitute for resolving the supported-kernel migration."
+  ],
+  "stock_module_fallback_fixed": true
+}

@@ -5,7 +5,7 @@ pkgdesc="Minimal portable Raspberry Pi desktop (rpd-desktop-browser)"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="rpd-desktop-lite epiphany rpd-chromium-defaults"
+depends="rpd-desktop-lite epiphany webkit2gtk-6.0>=2.54.2 rpd-chromium-defaults"
 options="!check"
 
 source="rpd-browser rpd-browser-init rpd-browser.desktop mimeapps.list zz-rpd.conf"

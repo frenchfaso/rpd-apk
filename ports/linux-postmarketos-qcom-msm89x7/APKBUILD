@@ -1,0 +1,121 @@
+# Temporary complete-kernel security backport; upstream Linux 7.1 is EOL.
+# Based on the reviewed official pmOS 7.1.3-r1 recipe. See security-fixes.json.
+maintainer="Barnabas Czeman <barnabas.czeman@postmarketos.org>"
+_flavor="postmarketos-qcom-msm89x7"
+pkgname=linux-postmarketos-qcom-msm89x7
+pkgver=7.1.3
+pkgrel=100
+pkgdesc="Mainline MSM89x7 kernel with temporary M10 security backports"
+arch="aarch64"
+_carch="arm64"
+url="https://github.com/msm89x7-mainline/linux"
+license="GPL-2.0-only"
+options="!strip !tracedeps
+	pmb:cross-native
+	pmb:kconfigcheck-nftables
+	pmb:kconfigcheck-uefi
+"
+makedepends="
+	bison
+	clang23
+	elfutils-dev
+	findutils
+	flex
+	linux-headers
+	lld23
+	llvm23
+	openssl-dev
+	pahole
+	perl
+	postmarketos-installkernel
+	python3
+	zstd
+"
+_tag="$pkgver-r1"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-v$_tag.tar.gz::$url/archive/v$_tag.tar.gz
+	$_config
+	check-kernel-config.py
+	security-fixes.json
+	0001-CVE-2026-98858.patch
+	0002-CVE-2026-98823.patch
+	0003-CVE-2026-72112.patch
+	0004-CVE-2026-98850.patch
+	0005-CVE-2026-100077.patch
+	0006-CVE-2026-93059.patch
+	0007-CVE-2026-81000.patch
+	0008-CVE-2026-98829.patch
+"
+builddir="$srcdir/linux-$_tag"
+
+prepare() {
+	default_prepare
+	cp "$srcdir/$_config" .config
+}
+
+build() {
+	unset LDFLAGS
+	export PATH=/usr/lib/llvm23/bin:$PATH
+	make ARCH="$_carch" LLVM=1 olddefconfig
+	python3 "$srcdir/check-kernel-config.py" "$srcdir/$_config" .config "$PWD"
+	# The explicit target writes real built-in exports to vmlinux.symvers.
+	# A full build writes Module.symvers instead and preserves that first table.
+	make ARCH="$_carch" LLVM=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1))-postmarketOS" vmlinux
+	make ARCH="$_carch" LLVM=1 \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1))-postmarketOS"
+}
+
+check() {
+	export PATH=/usr/lib/llvm23/bin:$PATH
+	python3 "$srcdir/check-kernel-config.py" "$srcdir/$_config" .config "$PWD"
+	test "$(make -s ARCH="$_carch" LLVM=1 kernelrelease)" = 7.1.3-msm89x7
+	test -s vmlinux.symvers
+	test -s Module.symvers
+	# Check every complete fix, without fuzzy matching or partial application.
+	for fix in 0001-CVE-2026-98858.patch 0002-CVE-2026-98823.patch \
+		0003-CVE-2026-72112.patch 0004-CVE-2026-98850.patch \
+		0005-CVE-2026-100077.patch 0006-CVE-2026-93059.patch \
+		0007-CVE-2026-81000.patch 0008-CVE-2026-98829.patch; do
+		patch --batch --reverse --fuzz=0 --dry-run -p1 < "$srcdir/$fix"
+	done
+}
+
+package() {
+	export PATH=/usr/lib/llvm23/bin:$PATH
+	mkdir -p "$pkgdir"/boot
+	make zinstall modules_install dtbs_install \
+		ARCH="$_carch" \
+		LLVM=1 \
+		INSTALL_PATH="$pkgdir"/boot \
+		INSTALL_MOD_PATH="$pkgdir"/usr \
+		INSTALL_MOD_STRIP=1 \
+		INSTALL_DTBS_PATH="$pkgdir"/boot/dtbs
+	install -Dm644 "$builddir/arch/$_carch/boot/vmlinuz.efi" \
+		"$pkgdir/boot/linux.efi"
+	install -Dm644 "$builddir/arch/$_carch/boot/vmlinuz" \
+		"$pkgdir/boot/vmlinuz"
+	# Record the real generated config, including equivalent tool metadata.
+	install -Dm644 .config "$pkgdir/boot/config"
+	rm -f "$pkgdir"/usr/lib/modules/*/build "$pkgdir"/usr/lib/modules/*/source
+	install -Dm644 include/config/kernel.release \
+		"$pkgdir/usr/share/kernel/$_flavor/kernel.release"
+	install -Dm644 "$srcdir/security-fixes.json" \
+		"$pkgdir/usr/share/kernel/$_flavor/rpd-security-fixes.json"
+}
+
+sha512sums="
+c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a  linux-postmarketos-qcom-msm89x7-v7.1.3-r1.tar.gz
+f4fed9713ddfb399d926f1424f6231137ad64f5d63c1ce25663e48877a425fcdaea1de423f4bbe0f44161611ba305556c1b5b672af36dd7c988a2c715936bd84  config-postmarketos-qcom-msm89x7.aarch64
+b61ada4914236f2a908c5c1518836a137d079684bfa283a5b12a1aa6aaf291848216c8d7b9c4b06eab1446acfee91e2158706f1f32779a938646c2d89001178b  check-kernel-config.py
+bcd044e0927c652c7c4cb716316d1f7e4ed06f122400dde505834bd3269da5be33992089959642cc89e4aeda4351fac5c410cf56dc79abf6ba523a580b196d2e  security-fixes.json
+81d6d5984dc8638b72f9e51f9254624bb0e18fd69f9d2616e3d853918f009036c3f67aa53ff8e94886b70744bf2e6510135d09d49edfb5dc44166365cbda7bf2  0001-CVE-2026-98858.patch
+4b7761949bf12147e8613487a38f212c83a2de9e6ce07f7a953155a3cbdd9657c57a3dea6b376468a0db6a7e5274ea6159ec606fa26d4ac43a0bf1b0269e3489  0002-CVE-2026-98823.patch
+39bdeadbd275e19fe5d37eca030794f233ce36299c6817ffa9ad7445034c95547614caaa082f752f92462b3f25def01931e3572ea8d7dc609ad9606f0017fb5b  0003-CVE-2026-72112.patch
+e5d7b3b2a81199db40a971becbc169240f9dfd11193b657eb0f80893cc0f3f089216d70481d820077ecaa102a9c363c5986c6a9f07c6ba9af66bad8e82570bf9  0004-CVE-2026-98850.patch
+21df66bb2aecf5748771b27c48ba1ff460c12dcb792d29d902d1d4c55bd2b6b90f7f6b032709268ba49c850f500f5271f5c24cddc88b792130700939fdc1b3b4  0005-CVE-2026-100077.patch
+ec823b17e61b93a6ec235965fd28d5dbce16f9564ae545e96d5710ab161fa024023dfeb31841d77d49b6fd6d5a039a23815d4c0257dba2bb946e2ceb1cf380c1  0006-CVE-2026-93059.patch
+f0ed270d14f79b76615594c1bf042fd3656e20814e68021c7433bcb1f17ccdc1628e6101122fadcfa80b6c7b21f306fdb5924dfdaf6809c8076c6d518ed3c66f  0007-CVE-2026-81000.patch
+fe688f499dfaaf392d29d4811a1a9b736479308ea93ea9d1d6b911bf0db55d131f179f5744786df14d002856b06429c6cc1d48d0c45d7270efe65c2679b34165  0008-CVE-2026-98829.patch
+"

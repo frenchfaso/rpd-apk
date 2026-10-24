@@ -6,7 +6,8 @@ trap 'rm -rf "$root"' EXIT
 mkdir -p "$root/etc/apk/keys"
 cp /etc/apk/keys/*.pub "$root/etc/apk/keys/"
 cp /etc/apk/repositories "$root/etc/apk/repositories"
-apk --root "$root" --initdb --no-scripts add rpd-desktop-m10
+apk --root "$root" --initdb --no-scripts add rpd-desktop-m10 systemd polkit-systemd squeekboard-systemd
+sh scripts/verify-security-runtime.sh "$root" > out/security-runtime.json
 ! apk --root "$root" info | grep -E '^(raspi-config|raspberrypi-bootloader|linux-rpi|rpi-eeprom|apt|dpkg)$'
 # The runtime theme must not pull GTK headers and their development toolchain.
 ! apk --root "$root" info | grep -E '^(rpd-gtk2-engine-dev|gtk\+2\.0-dev|qt6-qtbase-dev|qt6-qtbase-private-dev)$'

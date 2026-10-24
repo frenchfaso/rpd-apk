@@ -5,7 +5,7 @@ pkgdesc="Portable Raspberry Pi Desktop session and defaults"
 url="https://github.com/frenchfaso/rpd-apk"
 arch="noarch"
 license="MIT"
-depends="python3 wayvnc gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard>=1.43.1-r100 network-manager-applet mate-polkit polkit mousepad"
+depends="python3 wayvnc gsettings-desktop-schemas labwc dbus lxsession gnome-keyring gnome-keyring-pam xdg-user-dirs xsettingsd dconf pipewire pipewire-pulse wireplumber kanshi swayidle wlopm xdg-desktop-portal-gtk xdg-desktop-portal-wlr squeekboard>=1.43.1-r171 network-manager-applet mate-polkit polkit>=9999127-r100 mousepad"
 options="!check"
 source="rpd-screen-power 90-rpd-desktop-audio.conf rpd-idle rpd-idle.service rpd-reload-displays rpd-kanshi.service lxsession-default-apps.desktop rpd-polkit.service lxpolkit.desktop polkit-mate-authentication-agent-1.desktop desktop-items-0.conf rpd-panel.service pipewire.desktop rpd-session.target xsettingsd.conf labwc-portals.conf nm-applet.desktop rpd-edit-launcher rpd-session rpd-autostart rpd-session-services rpd-panel-settings rpd-session.desktop wf-panel-pi.ini rc.xml settings.ini"
 package() {

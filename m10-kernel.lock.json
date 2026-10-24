@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "package": "linux-postmarketos-qcom-msm89x7",
+  "arch": "aarch64",
+  "provider": "rpd-security-overlay",
+  "upstream_base": {
+    "apk_version": "7.1.3-r1",
+    "recipe_sha256": "502d5919b009020758a295997b978c0aa186e8d4bca712c01ad93f57fdfcd853",
+    "source_archive": "linux-postmarketos-qcom-msm89x7-v7.1.3-r1.tar.gz",
+    "source_sha512": "c4bebf0d92f803297004d14573fbf0ccca5fc8927944f0aeecd767472ca21639ec931b6648b5601ec46eb49dd489939ae00e17f36933307bcdd371b87059796a",
+    "config_sha256": "1b0eee41ffbf59b12da95e2e692c56f75d1d7ff8e3ecc97df5503f53ee43fd08",
+    "apk_data_sha256": "0f145890442cae11d46577c39ab51e005e907d1f55e7c4278142df522ac58b41"
+  },
+  "effective": {
+    "apk_version": "7.1.3-r100",
+    "kernelrelease": "7.1.3-msm89x7"
+  },
+  "security_manifest": {
+    "path": "ports/linux-postmarketos-qcom-msm89x7/security-fixes.json",
+    "sha256": "8dc67331ce199ec9af252044fc10533f03be5ae9882840c74cc3b7c70c2c0df1"
+  }
+}

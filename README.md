@@ -26,8 +26,7 @@ sudo reboot
 
 Replace `YOUR_USERNAME` with your existing username. Sign in at the graphical login after rebooting.
 
-GNOME Web is the default browser. Chromium is optional (`sudo apk add chromium`)
-and can be selected in Control Centre when installed.
+GNOME Web is the default browser.
 
 ## Update
 
@@ -38,8 +37,9 @@ sudo apk update && sudo apk upgrade
 GitHub Actions tracks official Raspberry component releases and publishes signed
 APKs after building and testing. Incompatible upstream changes may require manual
 maintenance. Raspberry board-specific packages are excluded.
-Official kernel updates are never blocked: M10 modules require a matching build
-and may remain temporarily unavailable after a kernel upgrade.
+M10 modules require a matching kernel build and may be temporarily unavailable
+after an official kernel upgrade. The temporary security kernel and same-version
+update policy are explained in [security updates](docs/SECURITY-UPDATES.md).
 
 The metapackage restores the desktop and integrations, not personal files, Wi-Fi
 credentials or battery calibration history. Battery charge and runtime are estimates.

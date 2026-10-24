@@ -60,11 +60,12 @@ also leaves boot/session startup running. In that case software brightness contr
 is unavailable until a compatible backlight package is published; display scanout
 continues at the brightness established by the firmware.
 
-The scheduled workflow still checks the authenticated published postmarketOS
-kernel, updates the matching source/config/LLVM metadata and rebuilds the module.
-Source recipe changes beyond versions/checksums require review. Failed module
-builds do not constrain the tablet's official kernel upgrades. Hardware regression
-tests remain necessary for new kernels. No compiler is installed on the tablet.
+The scheduled workflow checks the authenticated published postmarketOS kernel.
+With the temporary security overlay active, a changed official base is reported
+for review before matching source/config/LLVM metadata and modules are updated;
+see [security updates](SECURITY-UPDATES.md) for same-version package ordering.
+Hardware regression tests remain necessary for new kernels. No compiler is
+installed on the tablet.
 
 Validation: the module loads on stock 7.1.3-msm89x7, user brightness changes work,
 and systemd saves/restores the level across module reload. The 2026-09-22 device

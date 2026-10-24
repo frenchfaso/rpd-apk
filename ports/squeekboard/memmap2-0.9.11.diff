@@ -1,0 +1,18 @@
+Fix RUSTSEC-2026-0186 with a compatible release; keep all other crate pins.
+https://rustsec.org/advisories/RUSTSEC-2026-0186.html
+
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -643,9 +643,9 @@
+ 
+ [[package]]
+ name = "memmap2"
+-version = "0.9.5"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "fd3f7eed9d3848f8b98834af67102b720745c4ec028fcd0aa0239277e7de374f"
++version = "0.9.11"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d1219ed1b7f229ee7104d281dd01d6802fe28bb6e95d292942c4daacdeb798c0"
+ dependencies = [
+  "libc",
+ ]

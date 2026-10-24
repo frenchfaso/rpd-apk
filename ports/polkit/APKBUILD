@@ -1,0 +1,123 @@
+# Based on postmarketOS extra-repos/systemd/polkit (upstream reference retained).
+# Temporary security backport: retain logind integration and the package ABI.
+maintainer=""
+pkgname=polkit
+_pkgver=127
+pkgver=9999$_pkgver
+pkgrel=100
+pkgdesc="Application development toolkit for controlling system-wide privileges"
+url="https://github.com/polkit-org/polkit"
+arch="aarch64"
+license="GPL-2.0-or-later"
+# Full upstream tests need a functioning system D-Bus. check() runs the
+# cookie parser directly without invoking a setuid helper.
+options="suid"
+makedepends="
+	dbus-dev
+	duktape-dev
+	systemd-stage0-dev
+	systemd-stage0-libs
+	expat-dev
+	glib-dev
+	gobject-introspection-dev
+	linux-pam-dev
+	meson
+	perl
+	python3
+	pkgconf
+	"
+pkgusers="polkitd"
+pkggroups="polkitd"
+install="$pkgname.pre-install $pkgname.pre-upgrade"
+subpackages="
+	$pkgname-dev
+	$pkgname-libs
+	$pkgname-doc
+	$pkgname-lang
+	$pkgname-systemd
+	"
+source="https://github.com/polkit-org/polkit/archive/refs/tags/$_pkgver/polkit-$_pkgver.tar.gz
+	alpine-polkit.pam
+	0001-CVE-2026-4897.patch
+	0002-reject-overlong-cookie.patch
+	0003-CVE-2026-85498.patch
+	verify-cookie.py
+	"
+builddir="$srcdir/polkit-$_pkgver"
+# Not running 'systemctl preset' on polkit
+# Reasoning from fedora:
+#  # The implied (systemctl preset) will fail and complain, but the macro hides
+#  # and ignores the fact.  This is in fact what we want, polkit.service does not
+#  # have an [Install] section and it is always started on demand.
+# https://src.fedoraproject.org/rpms/polkit/blob/rawhide/f/polkit.spec
+
+# secfixes:
+#   9999127-r100:
+#     - CVE-2026-4897
+#     - CVE-2026-85498
+#   0.120-r2:
+#     - CVE-2021-4034
+#   0.119-r0:
+#     - CVE-2021-3560
+
+build() {
+	msg 'Building with systemd'
+	_build systemd -Dsession_tracking="logind"
+}
+
+_build() {
+	local outdir="$1"
+	shift
+	abuild-meson \
+		-Db_lto=true \
+		-Dtests=false \
+		-Dman=true \
+		-Dpam_prefix=/etc/pam.d \
+		"$@" \
+		. "$outdir"
+	meson compile -C "$outdir"
+}
+
+check() {
+	python3 "$srcdir/verify-cookie.py" src/polkitagent/polkitagenthelperprivate.c
+}
+
+package() {
+	depends="$pkgname-libs=$pkgver-r$pkgrel"
+	provides="$pkgname-elogind=$pkgver-r$pkgrel"
+	provider_priority=9999
+
+	DESTDIR="$pkgdir" meson install --no-rebuild -C systemd
+
+	cd "$pkgdir"
+
+	# Use our own polkit rules, upstream may change them
+	install -m644 "$srcdir"/alpine-polkit.pam etc/pam.d/polkit-1
+
+	# See polkit's configure script which tells us what permissions to set
+	chmod 4755 usr/lib/polkit-1/polkit-agent-helper-1
+	chmod 4755 usr/bin/pkexec
+}
+
+libs() {
+	provides="polkit-elogind-libs polkit-noelogind-libs"
+	provider_priority=9999
+
+	default_libs
+}
+
+dev() {
+	provides="polkit-elogind-dev polkit-noelogind-dev"
+	provider_priority=9999
+
+	default_dev
+}
+
+sha512sums="
+54b315f2ca05e957e7b9aafda16c1cddcc2266d6018c77dbf4cfe73b7d5b1569e6e07570884b9c5ecc4bdb3a29966169006aa727b089019d959208f2b53067e6  polkit-127.tar.gz
+f5102dc00d390b3a3c957b62e1712db778c7ffb7378f3d8e816c0757c11a308c5d5303e42595b0d6add9839247c773880cd34e56afacc89eb6efaadf9aae7826  alpine-polkit.pam
+9ee5de25b7e408cb910192db938e4a389b1f6f310c3d73dec8b2f700b11b2403433fda16e28af2fb3c1fa84c9ee1866612762af50391e4eda9e5ab5ec09ff8a4  0001-CVE-2026-4897.patch
+1b7838634dc256485467910c82065f7f62c944354fe56c8cb6a735a2d7e8a91814ae226c729648136b59fc11c21129779ec4d6a1021f309a884f604c6aa84feb  0002-reject-overlong-cookie.patch
+05eaf81896be92d23327c8447c1b7a80329830236ce3ebeffc06c95770440a298e82ed3cb5c453c7fdaf85bd016b42327c332da19d206e7b785cdfb886dfb3b4  0003-CVE-2026-85498.patch
+6e3daadd9dae77bc312a3117fa7fa7d05da9aafcc1a819a1a6ffa79937510db6e44ff27c70a8168f64c6986648df2fdb1c9bbb28e8f909977266b1a71b7465d5  verify-cookie.py
+"

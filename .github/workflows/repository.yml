@@ -21,22 +21,32 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event_name == 'push' && github.sha || 'main' }}
+          ref: ${{ github.event_name == 'schedule' && 'main' || github.sha }}
+          persist-credentials: ${{ github.ref == 'refs/heads/main' }}
       - name: Test packaging logic
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Check signed upstream releases
         # Pushes publish reviewed pins; scheduled/manual builds follow releases.
-        if: github.event_name != 'push'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'push'
         run: |
-          docker run --rm -v "$PWD:/work" -w /work alpine:edge sh -ec 'apk add --no-cache python3; python3 scripts/update-m10-kernel.py; python3 scripts/update-mesa.py'
+          docker run --rm -v "$PWD:/work" -w /work alpine:edge sh -ec 'apk add --no-cache python3; python3 scripts/update-m10-kernel.py > kernel-update-status.json; python3 scripts/update-mesa.py'
           sudo chown -R "$(id -u):$(id -g)" ports/rpd-backlight-m10 ports/mesa
+          cat kernel-update-status.json
           python3 scripts/update-upstream.py
+      - name: Retain kernel tracking decision
+        if: github.ref == 'refs/heads/main' && github.event_name != 'push'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: kernel-update-status
+          path: kernel-update-status.json
+          retention-days: 3
       - name: Allocate APK revision
+        if: github.ref == 'refs/heads/main'
         run: |
           python3 scripts/bump-revision.py
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add upstream.lock.json ports/
+          git add upstream.lock.json m10-kernel.lock.json ports/
           git commit -m 'Update published upstream sources and APK build revisions'
           git push origin HEAD:main
       - id: revision
@@ -52,8 +62,106 @@ jobs:
           persist-credentials: false
       - name: Verify Qt6 GTK2 compatibility before the full build
         run: docker run --rm -v "$PWD:/work" -w /work alpine:edge sh scripts/qt6-preflight.sh
-  build:
+  runtime:
     needs: [prepare, qt6]
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [polkit, squeekboard]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+          persist-credentials: false
+      - name: Build native runtime with an ephemeral key
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          mkdir -p out-security
+          docker run --rm \
+            -e ABUILD_LAST_COMMIT="$(git rev-parse HEAD)" \
+            -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+            -e "PACKAGER=RPD CI <rpd-ci-$PACKAGE@rpd.invalid>" \
+            -v "$PWD:/work:ro" -v "$PWD/out-security:/out" -w /work \
+            alpine:edge sh scripts/runtime-security-build.sh "$PACKAGE"
+          sudo chown -R "$(id -u):$(id -g)" out-security
+          git archive --format=tar.gz HEAD > "out-security/$PACKAGE/sources/rpd-apk-packaging.tar.gz"
+          git rev-parse HEAD > "out-security/$PACKAGE/source-commit.txt"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-runtime-${{ matrix.package }}
+          path: out-security/${{ matrix.package }}/
+          retention-days: 3
+  kernel:
+    needs: [prepare, qt6]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+          persist-credentials: false
+      - name: Build complete kernel and matching modules with an ephemeral key
+        run: |
+          mkdir -p out-kernel
+          docker run --rm \
+            -e RPD_SOURCE_COMMIT="$(git rev-parse HEAD)" \
+            -e ABUILD_LAST_COMMIT="$(git rev-parse HEAD)" \
+            -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+            -e 'PACKAGER=RPD CI <rpd-ci-kernel@rpd.invalid>' \
+            -v "$PWD:/work:ro" -v "$PWD/out-kernel:/out" -w /work \
+            alpine:edge sh scripts/kernel-security-build.sh
+          sudo chown -R "$(id -u):$(id -g)" out-kernel
+          git archive --format=tar.gz HEAD > out-kernel/sources/rpd-apk-packaging.tar.gz
+          git rev-parse HEAD > out-kernel/source-commit.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-kernel
+          path: out-kernel/
+          retention-days: 3
+          compression-level: 0
+      - name: Retain failed kernel build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-kernel-failure-diagnostics
+          path: |
+            out-kernel/proof/
+            out-kernel/metrics/
+          retention-days: 3
+  webkit:
+    needs: [prepare, qt6]
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
+          persist-credentials: false
+      - name: Build native GTK4 WebKit with an ephemeral key
+        run: |
+          mkdir -p out-webkit
+          docker run --rm \
+            -e RPD_DISPOSABLE_BUILD=1 \
+            -e RPD_SOURCE_REVISION="$(git rev-parse HEAD)" \
+            -e ABUILD_LAST_COMMIT="$(git rev-parse HEAD)" \
+            -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+            -e 'PACKAGER=RPD CI <rpd-ci-webkit@rpd.invalid>' \
+            -v "$PWD:/work:ro" -v "$PWD/out-webkit:/out" -w /work \
+            alpine:edge sh scripts/webkit-build.sh
+          sudo chown -R "$(id -u):$(id -g)" out-webkit
+          git archive --format=tar.gz HEAD > out-webkit/sources/rpd-apk-packaging.tar.gz
+          git rev-parse HEAD > out-webkit/source-commit.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-webkit
+          path: out-webkit/
+          retention-days: 3
+          compression-level: 0
+  build:
+    needs: [prepare, qt6, runtime, kernel, webkit]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 180
     steps:
@@ -61,9 +169,31 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.revision }}
           persist-credentials: false
-      - name: Build and test with an ephemeral key
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-runtime-polkit
+          path: ${{ runner.temp }}/rpd-native/polkit
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-runtime-squeekboard
+          path: ${{ runner.temp }}/rpd-native/squeekboard
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-kernel
+          path: ${{ runner.temp }}/rpd-native/kernel
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-webkit
+          path: ${{ runner.temp }}/rpd-native/webkit
+      - name: Build and test the combined repository with an ephemeral key
         run: |
-          docker run --rm -v "$PWD:/work" -w /work alpine:edge sh scripts/build.sh
+          docker run --rm \
+            -e RPD_IMPORT_DIR=/incoming \
+            -e ABUILD_LAST_COMMIT="$(git rev-parse HEAD)" \
+            -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+            -e 'PACKAGER=RPD CI <rpd-ci-desktop@rpd.invalid>' \
+            -v "$RUNNER_TEMP/rpd-native:/incoming:ro" -v "$PWD:/work" -w /work \
+            alpine:edge sh scripts/build.sh
           sudo chown -R "$(id -u):$(id -g)" out
       - name: Include exact packaging sources
         run: git archive --format=tar.gz HEAD > out/sources/rpd-apk-packaging.tar.gz
@@ -73,6 +203,7 @@ jobs:
           path: out/
           retention-days: 3
   sign:
+    if: github.ref == 'refs/heads/main'
     needs: [prepare, build]
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 90
@@ -85,6 +216,8 @@ jobs:
         with:
           name: verified-test-build
           path: out/
+      - name: Check public archive size before accessing the signing key
+        run: python3 scripts/check-pages-size.py out --extra docs --extra README.md --extra scripts/install-repository.sh --extra keys/rpd-apk.rsa.pub
       - name: Prepare isolated signing container
         run: |
           docker create --name signer -v "$PWD:/work" -w /work alpine:edge sleep infinity
@@ -102,8 +235,8 @@ jobs:
           printf '%s\n' "$APK_SIGNING_KEY" > "$keyfile"
           docker cp "$keyfile" signer:/tmp/rpd-apk.rsa
           docker exec signer python3 scripts/sign.py /tmp/rpd-apk.rsa
-      - name: Verify production signatures without the private key
-        run: docker exec signer sh scripts/verify-release.sh
+      - name: Verify production signatures and runtime in a fresh container
+        run: docker run --rm -v "$PWD:/work" -w /work alpine:edge sh scripts/verify-release.sh
       - name: Prepare public archive
         run: |
           cp README.md out/README.md
@@ -112,6 +245,7 @@ jobs:
           cp scripts/install-repository.sh out/
           touch out/.nojekyll
           test -z "$(find out -type f \( -name '*.rsa' -o -name '*.pem' \) -print)"
+          python3 scripts/check-pages-size.py out
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: out/
@@ -120,6 +254,7 @@ jobs:
         if: always()
         run: docker rm -f signer || true
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: sign
     runs-on: ubuntu-latest
     timeout-minutes: 15

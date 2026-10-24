@@ -1,0 +1,42 @@
+name: Build native WebKitGTK security candidate
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: rpd-apk-webkit-candidate
+  cancel-in-progress: false
+jobs:
+  webkit:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test candidate validation
+        run: python3 -m unittest discover -s tests -p test_webkit_candidate.py
+      - name: Compile native musl GTK4 engine with an ephemeral key
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out-webkit/reports out-webkit/sources
+          git archive --format=tar.gz HEAD ports/webkit2gtk-6.0 scripts/webkit-build.sh scripts/source-download.curlrc tests/test_webkit_candidate.py .github/workflows/webkit-candidate.yml > out-webkit/sources/packaging.tar.gz
+          docker pull alpine:edge
+          docker image inspect alpine:edge > out-webkit/reports/container-image.json
+          docker run --rm --pull=never \
+            -e RPD_DISPOSABLE_BUILD=1 \
+            -e RPD_SOURCE_REVISION="$GITHUB_SHA" \
+            -e ABUILD_LAST_COMMIT="$GITHUB_SHA" \
+            -e 'PACKAGER=RPD CI <rpd-ci-webkit@rpd.invalid>' \
+            -e SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)" \
+            -v "$PWD:/work:ro" -v "$PWD/out-webkit:/out" -w /work \
+            alpine:edge sh scripts/webkit-build.sh 2>&1 | tee out-webkit/reports/build.log
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: webkitgtk-aarch64-candidate-${{ github.run_id }}
+          path: out-webkit/
+          if-no-files-found: warn
+          retention-days: 7
+          compression-level: 0
